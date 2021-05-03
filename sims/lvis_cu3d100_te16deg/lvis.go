@@ -288,7 +288,7 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.Params = ParamSets
-	ss.TestInterval = 50
+	ss.TestInterval = 0 // todo: 50  not working yet
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
 	ss.Prjn4x4Skp2.Size.Set(4, 4)
@@ -361,10 +361,10 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.Images.NTestPerCat = 2
 	ss.TrainEnv.Images.SplitByItm = true
-	// ss.TrainEnv.Images.SetPath(path, []string{".png"}, "_")
-	// ss.TrainEnv.OpenConfig()
-	ss.TrainEnv.Images.OpenPath(path, []string{".png"}, "_")
-	ss.TrainEnv.SaveConfig()
+	ss.TrainEnv.Images.SetPath(path, []string{".png"}, "_")
+	ss.TrainEnv.OpenConfig()
+	// ss.TrainEnv.Images.OpenPath(path, []string{".png"}, "_")
+	// ss.TrainEnv.SaveConfig()
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
@@ -1193,7 +1193,6 @@ func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Trial", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Tick", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Idx", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Cat", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
@@ -1486,7 +1485,7 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	no := objs.Rows
 	dt.SetNumRows(no)
 	for i := 0; i < no; i++ {
-		dt.SetCellFloat("Cat", i, float64(i))
+		dt.SetCellString("Cat", i, objs.Cols[0].StringVal1D(i))
 		dt.SetCellFloat("PctErr", i, objs.Cols[1].FloatVal1D(i))
 	}
 	ss.TstEpcPlot.GoUpdate()
@@ -1499,7 +1498,7 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	sch := etable.Schema{
-		{"Cat", etensor.INT64, nil, nil},
+		{"Cat", etensor.STRING, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)

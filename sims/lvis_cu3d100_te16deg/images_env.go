@@ -66,7 +66,8 @@ func (ev *ImagesEnv) Validate() error {
 }
 
 func (ev *ImagesEnv) Defaults() {
-	ev.TransMax.Set(0.3, 0.3)
+	ev.TransMax.Set(0.15, 0.15) // todo: gaussian!
+	// ev.TransMax.Set(0.3, 0.3)
 	ev.ScaleRange.Set(0.4, 1.0)
 	ev.RotateMax = 8
 	ev.V1m16.Defaults(24, 8)
