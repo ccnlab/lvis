@@ -17,9 +17,11 @@ import (
 	"github.com/anthonynsimon/bild/transform"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/empi/empi"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/minmax"
 	"github.com/goki/gi/gi"
+	"github.com/goki/ki/ints"
 	"github.com/goki/mat32"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/math/f64"
@@ -39,6 +41,8 @@ type ImagesEnv struct {
 	V1m8       Vis             `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
 	V1h8       Vis             `desc:"v1 8deg higher resolution filtering of image -- V1AllTsr has result"`
 	Output     etensor.Float32 `desc:"output category"`
+	StRow      int             `desc:"starting row, e.g., for mpi allocation across processors"`
+	EdRow      int             `desc:"ending row -- if 0 it is ignored"`
 	Order      []int           `desc:"order of images to present"`
 	Run        env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
 	Epoch      env.Ctr         `view:"inline" desc:"arbitrary aggregation of trials, for stats etc"`
@@ -81,6 +85,11 @@ func (ev *ImagesEnv) ImageList() []string {
 	return ev.Images.FlatTrain
 }
 
+// MPIAlloc allocate objects based on mpi processor number
+func (ev *ImagesEnv) MPIAlloc() {
+	ev.StRow, ev.EdRow, _ = empi.AllocN(len(ev.ImageList()))
+}
+
 func (ev *ImagesEnv) Init(run int) {
 	ev.Run.Scale = env.Run
 	ev.Epoch.Scale = env.Epoch
@@ -91,8 +100,20 @@ func (ev *ImagesEnv) Init(run int) {
 	ev.Trial.Init()
 	ev.Run.Cur = run
 	ev.Row.Cur = -1 // init state -- key so that first Step() = 0
-	ev.Row.Max = len(ev.ImageList())
-	ev.Order = rand.Perm(ev.Row.Max)
+	nitm := len(ev.ImageList())
+	if ev.EdRow > 0 {
+		ev.EdRow = ints.MinInt(ev.EdRow, nitm)
+		nr := ev.EdRow - ev.StRow
+		ev.Order = make([]int, nr)
+		for i := 0; i < nr; i++ {
+			ev.Order[i] = ev.StRow + i
+		}
+		erand.PermuteInts(ev.Order)
+		ev.Row.Max = nr
+	} else {
+		ev.Row.Max = nitm
+		ev.Order = rand.Perm(ev.Row.Max)
+	}
 	ev.Output.SetShape([]int{len(ev.Images.Cats)}, nil, nil)
 }
 
@@ -173,10 +194,7 @@ func (ev *ImagesEnv) SaveConfig() {
 // CurImage returns current image based on row and
 func (ev *ImagesEnv) CurImage() string {
 	il := ev.ImageList()
-	sz := len(il)
-	if len(ev.Order) != sz {
-		ev.Order = rand.Perm(ev.Row.Max)
-	}
+	sz := len(ev.Order)
 	if ev.Row.Cur >= sz {
 		ev.Row.Max = sz
 		ev.Row.Cur = 0
@@ -256,7 +274,7 @@ func (ev *ImagesEnv) SetOutput() {
 }
 
 func (ev *ImagesEnv) String() string {
-	return fmt.Sprintf("%s:%s_%d", ev.CurCat, ev.CurImage, ev.Trial.Cur)
+	return fmt.Sprintf("%s:%s_%d", ev.CurCat, ev.CurImg, ev.Trial.Cur)
 }
 
 func (ev *ImagesEnv) Step() bool {
