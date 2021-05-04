@@ -34,6 +34,7 @@ import (
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/etview" // include to get gui views
+	"github.com/emer/etable/norm"
 	"github.com/emer/etable/split"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/gi/gi"
@@ -73,7 +74,7 @@ var ParamSets = params.Sets{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
 					"Layer.Learn.AvgL.Gain": "2.5", // standard
-					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig, 0.1 new def
+					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig > 0.1 new def
 					"Layer.Act.XX1.Gain":    "80",  // 100 def, apparently was 80 for a long time
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
@@ -90,19 +91,19 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "0",
-					"Layer.Inhib.ActAvg.Init": "0.04", // sparse
+					"Layer.Inhib.ActAvg.Init": "0.04",
 				}},
 			{Sel: ".V2m", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "0",
-					"Layer.Inhib.ActAvg.Init": "0.025", // sparse
+					"Layer.Inhib.ActAvg.Init": "0.04",
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":    "0",
-					"Layer.Inhib.ActAvg.Init": "0.05", // sparse
+					"Layer.Inhib.Layer.FB":    "0",    // 0 > 1 def
+					"Layer.Inhib.ActAvg.Init": "0.04",
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
@@ -110,20 +111,21 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.5",
+					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 > 1.6
 					"Layer.Inhib.ActAvg.Init": "0.15",
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "3",
-					"Layer.Inhib.ActAvg.Init": "0.005",
+					"Layer.Inhib.Layer.Gi":    "2.8",
+					"Layer.Inhib.ActAvg.Init": "0.01",
 				}},
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "false", // env currently has ordering constraint -- need to fix
-					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "true", // critical!
+					"Prjn.Learn.Momentum.On": "true",
 					"Prjn.Learn.WtBal.On":    "true",
+					"Prjn.Learn.WtBal.Targs": "true",
 					"Prjn.Learn.Lrate":       "0.04", // must set initial lrate here when using schedule!
 					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
 				}},
@@ -149,7 +151,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.15",
+					"Prjn.WtScale.Rel": "0.15", // .15 orig
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
@@ -207,6 +209,10 @@ type Sim struct {
 	Prjn4x4Skp2Recip *prjn.PoolTile    `view:"Reciprocal"`
 	Prjn2x2Skp1      *prjn.PoolTile    `view:"same-size prjn"`
 	Prjn2x2Skp1Recip *prjn.PoolTile    `view:"same-size prjn reciprocal"`
+	Prjn4x4Skp0      *prjn.PoolTile    `view:"for V4 <-> TEO"`
+	Prjn4x4Skp0Recip *prjn.PoolTile    `view:"for V4 <-> TEO"`
+	Prjn1x1Skp0      *prjn.PoolTile    `view:"for TE <-> TEO"`
+	Prjn1x1Skp0Recip *prjn.PoolTile    `view:"for TE <-> TEO"`
 	StartRun         int               `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
 	MaxRuns          int               `desc:"maximum number of model runs to perform"`
 	MaxEpcs          int               `desc:"maximum number of epochs to run per model run"`
@@ -224,7 +230,7 @@ type Sim struct {
 	ActRFNms         []string          `desc:"names of layers to compute activation rfields on"`
 
 	// statistics: note use float64 as that is best for etable.Table
-	TrlErr        float64   `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)"`
+	TrlErr        float64   `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on max out unit"`
 	TrlSSE        float64   `inactive:"+" desc:"current trial's sum squared error"`
 	TrlAvgSSE     float64   `inactive:"+" desc:"current trial's average sum squared error"`
 	TrlCosDiff    float64   `inactive:"+" desc:"current trial's cosine difference"`
@@ -299,10 +305,7 @@ func (ss *Sim) New() {
 	ss.Prjn4x4Skp2.TopoRange.Min = 0.8
 
 	ss.Prjn4x4Skp2Recip = prjn.NewPoolTile()
-	ss.Prjn4x4Skp2Recip.Size.Set(4, 4)
-	ss.Prjn4x4Skp2Recip.Skip.Set(2, 2)
-	ss.Prjn4x4Skp2Recip.Start.Set(-1, -1)
-	ss.Prjn4x4Skp2Recip.TopoRange.Min = 0.8 // note: none of these make a very big diff
+	*ss.Prjn4x4Skp2Recip = *ss.Prjn4x4Skp2
 	ss.Prjn4x4Skp2Recip.Recip = true
 
 	ss.Prjn2x2Skp1 = prjn.NewPoolTile()
@@ -312,11 +315,32 @@ func (ss *Sim) New() {
 	ss.Prjn2x2Skp1.TopoRange.Min = 0.8
 
 	ss.Prjn2x2Skp1Recip = prjn.NewPoolTile()
-	ss.Prjn2x2Skp1Recip.Size.Set(2, 2)
-	ss.Prjn2x2Skp1Recip.Skip.Set(1, 1)
-	ss.Prjn2x2Skp1Recip.Start.Set(0, 0)
-	ss.Prjn2x2Skp1Recip.TopoRange.Min = 0.8
+	*ss.Prjn2x2Skp1Recip = *ss.Prjn2x2Skp1
 	ss.Prjn2x2Skp1Recip.Recip = true
+
+	ss.Prjn4x4Skp0 = prjn.NewPoolTile()
+	ss.Prjn4x4Skp0.Size.Set(4, 4)
+	ss.Prjn4x4Skp0.Skip.Set(0, 0)
+	ss.Prjn4x4Skp0.Start.Set(0, 0)
+	ss.Prjn4x4Skp0.GaussFull.Sigma = 1.5
+	ss.Prjn4x4Skp0.GaussInPool.Sigma = 1.5
+	ss.Prjn4x4Skp0.TopoRange.Min = 0.8
+
+	ss.Prjn4x4Skp0Recip = prjn.NewPoolTile()
+	*ss.Prjn4x4Skp0Recip = *ss.Prjn4x4Skp0
+	ss.Prjn4x4Skp0Recip.Recip = true
+
+	ss.Prjn1x1Skp0 = prjn.NewPoolTile()
+	ss.Prjn1x1Skp0.Size.Set(1, 1)
+	ss.Prjn1x1Skp0.Skip.Set(0, 0)
+	ss.Prjn1x1Skp0.Start.Set(0, 0)
+	ss.Prjn1x1Skp0.GaussFull.Sigma = 1.5
+	ss.Prjn1x1Skp0.GaussInPool.Sigma = 1.5
+	ss.Prjn1x1Skp0.TopoRange.Min = 0.8
+
+	ss.Prjn1x1Skp0Recip = prjn.NewPoolTile()
+	*ss.Prjn1x1Skp0Recip = *ss.Prjn1x1Skp0
+	ss.Prjn1x1Skp0Recip.Recip = true
 
 	ss.RndSeeds = make([]int64, 100) // make enough for plenty of runs
 	for i := 0; i < 100; i++ {
@@ -367,6 +391,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.OpenConfig()
 	// ss.TrainEnv.Images.OpenPath(path, []string{".png"}, "_")
 	// ss.TrainEnv.SaveConfig()
+
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
@@ -383,6 +408,11 @@ func (ss *Sim) ConfigEnv() {
 	// ss.TestEnv.SaveConfig()
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 	ss.TestEnv.Validate()
+
+	// Delete to 80
+	// last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
+	// ss.TrainEnv.Images.DeleteCats(last20)
+	// ss.TrainEnv.Images.DeleteCats(last20)
 
 	if ss.UseMPI {
 		ss.TrainEnv.MPIAlloc()
@@ -459,21 +489,21 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	v2v4.SetClass("V2V4sm")
 
 	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, full)
-	v4teo.SetClass("V4TEO")
-	teov4.SetClass("TEOV4")
-	net.ConnectLayers(v4f8, teo16, full, emer.Forward).SetClass("V4TEOoth")
+	v4teo.SetClass("V4TEO").SetPattern(ss.Prjn4x4Skp0)
+	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Recip)
+	net.ConnectLayers(v4f8, teo16, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
 
 	v4teo, teov4 = net.BidirConnectLayers(v4f8, teo8, full)
-	v4teo.SetClass("V4TEO")
-	teov4.SetClass("TEOV4")
-	net.ConnectLayers(v4f16, teo8, full, emer.Forward).SetClass("V4TEOoth")
+	v4teo.SetClass("V4TEO").SetPattern(ss.Prjn4x4Skp0)
+	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Recip)
+	net.ConnectLayers(v4f16, teo8, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
 
 	teote, teteo := net.BidirConnectLayers(teo16, te, full)
-	teote.SetClass("TEOTE")
-	teteo.SetClass("TETEO")
+	teote.SetClass("TEOTE").SetPattern(ss.Prjn1x1Skp0)
+	teteo.SetClass("TETEO").SetPattern(ss.Prjn1x1Skp0Recip)
 	teote, teteo = net.BidirConnectLayers(teo8, te, full)
-	teote.SetClass("TEOTE")
-	teteo.SetClass("TETEO")
+	teote.SetClass("TEOTE").SetPattern(ss.Prjn1x1Skp0)
+	teteo.SetClass("TETEO").SetPattern(ss.Prjn1x1Skp0Recip)
 
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
 	teoout.SetClass("TEOOut")
@@ -736,7 +766,7 @@ func (ss *Sim) RunEnd() {
 	ss.LogRun(ss.RunLog)
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
-		fmt.Printf("Saving Weights to: %s\n", fnm)
+		mpi.Printf("Saving Weights to: %s\n", fnm)
 		ss.Net.SaveWtsJSON(gi.FileName(fnm))
 	}
 }
@@ -786,10 +816,14 @@ func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	ss.TrlCosDiff = float64(out.CosDiff.Cos)
 	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
-	if ss.TrlSSE > 0 {
-		ss.TrlErr = 1
-	} else {
+
+	ovt := ss.ValsTsr("Output")
+	out.UnitValsTensor(ovt, "ActM")
+	_, mxi := norm.MaxIdx32(ovt.Values)
+	if mxi >= 0 && out.Neurons[mxi].Targ > 0.5 {
 		ss.TrlErr = 0
+	} else {
+		ss.TrlErr = 1
 	}
 	return
 }
@@ -1895,43 +1929,45 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	// 		win.Close()
 	// 	})
 
-	inQuitPrompt := false
-	gi.SetQuitReqFunc(func() {
-		if inQuitPrompt {
-			return
-		}
-		inQuitPrompt = true
-		gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Quit?",
-			Prompt: "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"}, gi.AddOk, gi.AddCancel,
-			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-				if sig == int64(gi.DialogAccepted) {
-					gi.Quit()
-				} else {
-					inQuitPrompt = false
-				}
-			})
-	})
+	/*
+		inQuitPrompt := false
+		gi.SetQuitReqFunc(func() {
+			if inQuitPrompt {
+				return
+			}
+			inQuitPrompt = true
+			gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Quit?",
+				Prompt: "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"}, gi.AddOk, gi.AddCancel,
+				win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+					if sig == int64(gi.DialogAccepted) {
+						gi.Quit()
+					} else {
+						inQuitPrompt = false
+					}
+				})
+		})
 
-	// gi.SetQuitCleanFunc(func() {
-	// 	fmt.Printf("Doing final Quit cleanup here..\n")
-	// })
+		// gi.SetQuitCleanFunc(func() {
+		// 	fmt.Printf("Doing final Quit cleanup here..\n")
+		// })
 
-	inClosePrompt := false
-	win.SetCloseReqFunc(func(w *gi.Window) {
-		if inClosePrompt {
-			return
-		}
-		inClosePrompt = true
-		gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Close Window?",
-			Prompt: "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"}, gi.AddOk, gi.AddCancel,
-			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-				if sig == int64(gi.DialogAccepted) {
-					gi.Quit()
-				} else {
-					inClosePrompt = false
-				}
-			})
-	})
+		inClosePrompt := false
+		win.SetCloseReqFunc(func(w *gi.Window) {
+			if inClosePrompt {
+				return
+			}
+			inClosePrompt = true
+			gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Close Window?",
+				Prompt: "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"}, gi.AddOk, gi.AddCancel,
+				win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+					if sig == int64(gi.DialogAccepted) {
+						gi.Quit()
+					} else {
+						inClosePrompt = false
+					}
+				})
+		})
+	*/
 
 	win.SetCloseCleanFunc(func(w *gi.Window) {
 		go gi.Quit() // once main window is closed, quit
@@ -1968,7 +2004,8 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.StartRun, "run", 0, "starting run number -- determines the random seed -- runs counts from there -- can do all runs in parallel by launching separate jobs with each run, runs = 1")
-	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.IntVar(&ss.MaxEpcs, "epcs", 1000, "number of epochs per run")
+	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
@@ -1988,10 +2025,10 @@ func (ss *Sim) CmdArgs() {
 	ss.Init()
 
 	if note != "" {
-		fmt.Printf("note: %s\n", note)
+		mpi.Printf("note: %s\n", note)
 	}
 	if ss.ParamSet != "" {
-		fmt.Printf("Using ParamSet: %s\n", ss.ParamSet)
+		mpi.Printf("Using ParamSet: %s\n", ss.ParamSet)
 	}
 
 	if saveEpcLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
@@ -2055,7 +2092,7 @@ func (ss *Sim) CmdArgs() {
 		if mpi.WorldRank() != 0 {
 			ss.SaveWts = false
 		}
-		fmt.Printf("Saving final weights per run\n")
+		mpi.Printf("Saving final weights per run\n")
 	}
 	mpi.Printf("Running %d Runs starting at %d\n", ss.MaxRuns, ss.StartRun)
 	ss.TrainEnv.Run.Set(ss.StartRun)

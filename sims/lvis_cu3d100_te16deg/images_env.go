@@ -18,7 +18,6 @@ import (
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/empi/empi"
-	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/minmax"
 	"github.com/goki/gi/gi"
@@ -33,6 +32,7 @@ type ImagesEnv struct {
 	Nm         string          `desc:"name of this environment"`
 	Dsc        string          `desc:"description of this environment"`
 	Test       bool            `desc:"present test items, else train"`
+	Sequential bool            `desc:"present items in sequential order -- else shuffled"`
 	Images     Images          `desc:"images list"`
 	TransMax   mat32.Vec2      `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
 	TransSigma float32         `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
@@ -45,7 +45,8 @@ type ImagesEnv struct {
 	Output     etensor.Float32 `desc:"output category"`
 	StRow      int             `desc:"starting row, e.g., for mpi allocation across processors"`
 	EdRow      int             `desc:"ending row -- if 0 it is ignored"`
-	Order      []int           `desc:"order of images to present"`
+	Shuffle    []int           `desc:"suffled list of entire set of images -- re-shuffle every time through imgidxs"`
+	ImgIdxs    []int           `desc:"indexs of images to present -- from StRow to EdRow"`
 	Run        env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
 	Epoch      env.Ctr         `view:"inline" desc:"arbitrary aggregation of trials, for stats etc"`
 	Trial      env.Ctr         `view:"inline" desc:"each object trajectory is one trial"`
@@ -70,7 +71,7 @@ func (ev *ImagesEnv) Validate() error {
 func (ev *ImagesEnv) Defaults() {
 	ev.TransSigma = 0.15
 	ev.TransMax.Set(0.3, 0.3)
-	ev.ScaleRange.Set(0.4, 1.0)
+	ev.ScaleRange.Set(0.5, 1.1)
 	ev.RotateMax = 8
 	ev.V1m16.Defaults(24, 8)
 	ev.V1h16.Defaults(12, 4)
@@ -92,9 +93,9 @@ func (ev *ImagesEnv) ImageList() []string {
 func (ev *ImagesEnv) MPIAlloc() {
 	nim := len(ev.ImageList())
 	ev.StRow, ev.EdRow, _ = empi.AllocN(nim)
-	mpi.PrintAllProcs = true
-	mpi.Printf("allocated images: n: %d st: %d ed: %d\n", nim, ev.StRow, ev.EdRow)
-	mpi.PrintAllProcs = false
+	// mpi.PrintAllProcs = true
+	// mpi.Printf("allocated images: n: %d st: %d ed: %d\n", nim, ev.StRow, ev.EdRow)
+	// mpi.PrintAllProcs = false
 }
 
 func (ev *ImagesEnv) Init(run int) {
@@ -110,17 +111,15 @@ func (ev *ImagesEnv) Init(run int) {
 	nitm := len(ev.ImageList())
 	if ev.EdRow > 0 {
 		ev.EdRow = ints.MinInt(ev.EdRow, nitm)
-		nr := ev.EdRow - ev.StRow
-		ev.Order = make([]int, nr)
-		for i := 0; i < nr; i++ {
-			ev.Order[i] = ev.StRow + i
-		}
-		erand.PermuteInts(ev.Order)
-		ev.Row.Max = nr
+		ev.ImgIdxs = make([]int, ev.EdRow-ev.StRow)
 	} else {
-		ev.Row.Max = nitm
-		ev.Order = rand.Perm(ev.Row.Max)
+		ev.ImgIdxs = make([]int, nitm)
 	}
+	for i := range ev.ImgIdxs {
+		ev.ImgIdxs[i] = ev.StRow + i
+	}
+	ev.Shuffle = rand.Perm(nitm)
+	ev.Row.Max = len(ev.ImgIdxs)
 	ev.Output.SetShape([]int{len(ev.Images.Cats)}, nil, nil)
 }
 
@@ -182,6 +181,7 @@ func (ev *ImagesEnv) OpenConfig() bool {
 		OpenListJSON(&ev.Images.Cats, cfnm)
 		OpenList2JSON(&ev.Images.ImagesTest, tsfnm)
 		OpenList2JSON(&ev.Images.ImagesTrain, trfnm)
+		ev.Images.ToTrainAll()
 		ev.Images.Flats()
 		return true
 	}
@@ -198,20 +198,28 @@ func (ev *ImagesEnv) SaveConfig() {
 	SaveList2JSON(ev.Images.ImagesTrain, trfnm)
 }
 
+// NewShuffle generates a new random order of items to present
+func (ev *ImagesEnv) NewShuffle() {
+	erand.PermuteInts(ev.Shuffle)
+}
+
 // CurImage returns current image based on row and
 func (ev *ImagesEnv) CurImage() string {
 	il := ev.ImageList()
-	sz := len(ev.Order)
+	sz := len(ev.ImgIdxs)
 	if ev.Row.Cur >= sz {
 		ev.Row.Max = sz
 		ev.Row.Cur = 0
-		erand.PermuteInts(ev.Order)
+		ev.NewShuffle()
 	}
 	r := ev.Row.Cur
 	if r < 0 {
 		r = 0
 	}
-	i := ev.Order[r]
+	i := ev.ImgIdxs[r]
+	if !ev.Sequential {
+		i = ev.Shuffle[i]
+	}
 	ev.CurImg = il[i]
 	ev.CurCat = ev.Images.Cat(ev.CurImg)
 	ev.CurCatIdx = ev.Images.CatMap[ev.CurCat]
@@ -296,7 +304,9 @@ func (ev *ImagesEnv) String() string {
 
 func (ev *ImagesEnv) Step() bool {
 	ev.Epoch.Same() // good idea to just reset all non-inner-most counters at start
-	ev.Row.Incr()   // auto-rotates
+	if ev.Row.Incr() {
+		ev.NewShuffle()
+	}
 	if ev.Trial.Incr() {
 		ev.Epoch.Incr()
 	}
