@@ -18,6 +18,7 @@ import (
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/empi/empi"
+	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/minmax"
 	"github.com/goki/gi/gi"
@@ -34,6 +35,7 @@ type ImagesEnv struct {
 	Test       bool            `desc:"present test items, else train"`
 	Images     Images          `desc:"images list"`
 	TransMax   mat32.Vec2      `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
+	TransSigma float32         `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
 	ScaleRange minmax.F32      `desc:"def 0.5 - 1.1 range of scale"`
 	RotateMax  float32         `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
 	V1m16      Vis             `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
@@ -66,8 +68,8 @@ func (ev *ImagesEnv) Validate() error {
 }
 
 func (ev *ImagesEnv) Defaults() {
-	ev.TransMax.Set(0.15, 0.15) // todo: gaussian!
-	// ev.TransMax.Set(0.3, 0.3)
+	ev.TransSigma = 0.15
+	ev.TransMax.Set(0.3, 0.3)
 	ev.ScaleRange.Set(0.4, 1.0)
 	ev.RotateMax = 8
 	ev.V1m16.Defaults(24, 8)
@@ -88,7 +90,11 @@ func (ev *ImagesEnv) ImageList() []string {
 
 // MPIAlloc allocate objects based on mpi processor number
 func (ev *ImagesEnv) MPIAlloc() {
-	ev.StRow, ev.EdRow, _ = empi.AllocN(len(ev.ImageList()))
+	nim := len(ev.ImageList())
+	ev.StRow, ev.EdRow, _ = empi.AllocN(nim)
+	mpi.PrintAllProcs = true
+	mpi.Printf("allocated images: n: %d st: %d ed: %d\n", nim, ev.StRow, ev.EdRow)
+	mpi.PrintAllProcs = false
 }
 
 func (ev *ImagesEnv) Init(run int) {
@@ -224,18 +230,28 @@ func (ev *ImagesEnv) OpenImage() error {
 	return err
 }
 
-// TransformImage transforms the image according to random translation and scaling
-func (ev *ImagesEnv) TransformImage() {
-	ev.CurTrans.X = (rand.Float32()*2 - 1) * ev.TransMax.X
-	ev.CurTrans.Y = (rand.Float32()*2 - 1) * ev.TransMax.Y
+// RandTransforms generates random transforms
+func (ev *ImagesEnv) RandTransforms() {
+	if ev.TransSigma > 0 {
+		ev.CurTrans.X = float32(erand.Gauss(float64(ev.TransSigma), -1))
+		ev.CurTrans.X = mat32.Clamp(ev.CurTrans.X, -ev.TransMax.X, ev.TransMax.X)
+		ev.CurTrans.Y = float32(erand.Gauss(float64(ev.TransSigma), -1))
+		ev.CurTrans.Y = mat32.Clamp(ev.CurTrans.Y, -ev.TransMax.Y, ev.TransMax.Y)
+	} else {
+		ev.CurTrans.X = (rand.Float32()*2 - 1) * ev.TransMax.X
+		ev.CurTrans.Y = (rand.Float32()*2 - 1) * ev.TransMax.Y
+	}
 	ev.CurScale = ev.ScaleRange.Min + ev.ScaleRange.Range()*rand.Float32()
 	ev.CurRot = (rand.Float32()*2 - 1) * ev.RotateMax
+}
 
-	s := ev.Image.Bounds().Size()
+// TransformImage transforms the image according to current translation and scaling
+func (ev *ImagesEnv) TransformImage() {
+	s := mat32.NewVec2FmPoint(ev.Image.Bounds().Size())
 	transformer := draw.BiLinear
-	tx := 0.5 * ev.CurTrans.X * float32(s.X)
-	ty := 0.5 * ev.CurTrans.Y * float32(s.Y)
-	m := mat32.Translate2D(tx, ty).Scale(ev.CurScale, ev.CurScale).Rotate(mat32.DegToRad(ev.CurRot))
+	tx := 0.5 * ev.CurTrans.X * s.X
+	ty := 0.5 * ev.CurTrans.Y * s.Y
+	m := mat32.Translate2D(s.X*.5+tx, s.Y*.5+ty).Scale(ev.CurScale, ev.CurScale).Rotate(mat32.DegToRad(ev.CurRot)).Translate(-s.X*.5, -s.Y*.5)
 	s2d := f64.Aff3{float64(m.XX), float64(m.XY), float64(m.X0), float64(m.YX), float64(m.YY), float64(m.Y0)}
 
 	// use first color in upper left as fill color
@@ -284,6 +300,7 @@ func (ev *ImagesEnv) Step() bool {
 	if ev.Trial.Incr() {
 		ev.Epoch.Incr()
 	}
+	ev.RandTransforms()
 	ev.FilterImage()
 	ev.SetOutput()
 	return true

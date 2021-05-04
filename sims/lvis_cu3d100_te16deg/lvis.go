@@ -121,8 +121,8 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
+					"Prjn.Learn.Norm.On":     "false", // env currently has ordering constraint -- need to fix
+					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.WtBal.On":    "true",
 					"Prjn.Learn.Lrate":       "0.04", // must set initial lrate here when using schedule!
 					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
@@ -251,6 +251,8 @@ type Sim struct {
 	RunPlot      *eplot.Plot2D                 `view:"-" desc:"the run plot"`
 	TrnEpcFile   *os.File                      `view:"-" desc:"log file"`
 	TrnTrlFile   *os.File                      `view:"-" desc:"log file"`
+	TstEpcFile   *os.File                      `view:"-" desc:"log file"`
+	TstTrlFile   *os.File                      `view:"-" desc:"log file"`
 	RunFile      *os.File                      `view:"-" desc:"log file"`
 	ValsTsrs     map[string]*etensor.Float32   `view:"-" desc:"for holding layer values"`
 	SaveWts      bool                          `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
@@ -288,7 +290,7 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.Params = ParamSets
-	ss.TestInterval = 0 // todo: 50  not working yet
+	ss.TestInterval = 10
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
 	ss.Prjn4x4Skp2.Size.Set(4, 4)
@@ -374,6 +376,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Defaults()
 	ss.TestEnv.Images.NTestPerCat = 2
 	ss.TestEnv.Images.SplitByItm = true
+	ss.TestEnv.Test = true
 	ss.TestEnv.Images.SetPath(path, []string{".png"}, "_")
 	ss.TestEnv.OpenConfig()
 	// ss.TestEnv.Images.OpenPath(path, []string{".png"}, "_")
@@ -878,6 +881,10 @@ func (ss *Sim) LrateSched(epc int) {
 	case 800:
 		ss.Net.LrateMult(0.05)
 		mpi.Printf("dropped lrate to 0.05 at epoch: %d\n", epc)
+	case 900:
+		ss.TrainEnv.TransSigma = 0
+		ss.TestEnv.TransSigma = 0
+		mpi.Printf("reset TransSigma to 0 at epoch: %d\n", epc)
 	}
 }
 
@@ -1153,12 +1160,12 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
 
-	// if ss.TrnTrlFile != nil && (!ss.UseMPI || ss.SaveProcLog) { // otherwise written at end of epoch, integrated
-	// 	if ss.TrainEnv.Run.Cur == ss.StartRun && epc == 0 && row == 0 {
-	// 		dt.WriteCSVHeaders(ss.TrnTrlFile, etable.Tab)
-	// 	}
-	// 	dt.WriteCSVRow(ss.TrnTrlFile, row, etable.Tab)
-	// }
+	if ss.TrnTrlFile != nil && (!ss.UseMPI || ss.SaveProcLog) { // otherwise written at end of epoch, integrated
+		if ss.TrainEnv.Run.Cur == ss.StartRun && epc == 0 && row == 0 {
+			dt.WriteCSVHeaders(ss.TrnTrlFile, etable.Tab)
+		}
+		dt.WriteCSVRow(ss.TrnTrlFile, row, etable.Tab)
+	}
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnTrlPlot.GoUpdate()
@@ -1272,14 +1279,14 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	row := dt.Rows
 	dt.SetNumRows(row + 1)
 
-	epc := ss.TrainEnv.Epoch.Prv         // this is triggered by increment so use previous value
-	nt := float64(ss.TrainEnv.Trial.Max) // number of trials in view
+	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
 
 	trl := ss.TrnTrlLog
 	if ss.UseMPI {
 		empi.GatherTableRows(ss.TrnTrlLogAll, ss.TrnTrlLog, ss.Comm)
 		trl = ss.TrnTrlLogAll
 	}
+	nt := float64(trl.Rows)
 	tix := etable.NewIdxView(trl)
 
 	ss.EpcSSE = agg.Mean(tix, "SSE")[0]
@@ -1314,6 +1321,16 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
 	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
 
+	tst := ss.TstEpcLog
+	if tst.Rows > 0 {
+		trow := tst.Rows - 1
+		dt.SetCellFloat("TstSSE", row, tst.CellFloat("SSE", trow))
+		dt.SetCellFloat("TstAvgSSE", row, tst.CellFloat("AvgSSE", trow))
+		dt.SetCellFloat("TstPctErr", row, tst.CellFloat("PctErr", trow))
+		dt.SetCellFloat("TstPctCor", row, tst.CellFloat("PctCor", trow))
+		dt.SetCellFloat("TstCosDiff", row, tst.CellFloat("CosDiff", trow))
+	}
+
 	for li, lnm := range ss.HidLays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		hog, dead := ss.HogDead(lnm)
@@ -1326,10 +1343,21 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
 	if ss.TrnEpcFile != nil {
-		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
+		if ss.TrainEnv.Run.Cur == ss.StartRun && row == 0 {
+			// note: can't use row=0 b/c reset table each run
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
 		}
 		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
+	}
+
+	if ss.TrnTrlFile != nil && !(!ss.UseMPI || ss.SaveProcLog) { // saved at trial level otherwise
+		if ss.TrainEnv.Run.Cur == ss.StartRun && row == 0 {
+			// note: can't just use row=0 b/c reset table each run
+			trl.WriteCSVHeaders(ss.TrnTrlFile, etable.Tab)
+		}
+		for ri := 0; ri < trl.Rows; ri++ {
+			trl.WriteCSVRow(ss.TrnTrlFile, ri, etable.Tab)
+		}
 	}
 }
 
@@ -1348,6 +1376,11 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
 		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
+		{"TstSSE", etensor.FLOAT64, nil, nil},
+		{"TstAvgSSE", etensor.FLOAT64, nil, nil},
+		{"TstPctErr", etensor.FLOAT64, nil, nil},
+		{"TstPctCor", etensor.FLOAT64, nil, nil},
+		{"TstCosDiff", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.HidLays {
 		sch = append(sch, etable.Column{lnm + "_Dead", etensor.FLOAT64, nil, nil})
@@ -1371,6 +1404,11 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TstSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TstAvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TstPctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+	plt.SetColParams("TstPctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TstCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
 	for _, lnm := range ss.HidLays {
 		plt.SetColParams(lnm+"_Dead", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
@@ -1414,6 +1452,13 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	}
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
+
+	if ss.TstTrlFile != nil && (!ss.UseMPI || ss.SaveProcLog) { // otherwise written at end of epoch, integrated
+		if ss.TrainEnv.Run.Cur == ss.StartRun && ss.TstEpcLog.Rows == 0 && row == 0 {
+			dt.WriteCSVHeaders(ss.TstTrlFile, etable.Tab)
+		}
+		dt.WriteCSVRow(ss.TstTrlFile, row, etable.Tab)
+	}
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
@@ -1468,13 +1513,24 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 //  TstEpcLog
 
 func (ss *Sim) LogTstEpc(dt *etable.Table) {
+	row := dt.Rows
+	dt.SetNumRows(row + 1)
+
 	trl := ss.TstTrlLog
 	if ss.UseMPI {
 		empi.GatherTableRows(ss.TstTrlLogAll, ss.TstTrlLog, ss.Comm)
 		trl = ss.TstTrlLogAll
 	}
 	tix := etable.NewIdxView(trl)
-	// epc := ss.TrainEnv.Epoch.Prv // ?
+	epc := ss.TrainEnv.Epoch.Prv // ?
+
+	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
+	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, agg.Sum(tix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, agg.Mean(tix, "Err")[0])
+	dt.SetCellFloat("PctCor", row, 1-agg.Mean(tix, "Err")[0])
+	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
 
 	spl := split.GroupBy(tix, []string{"Cat"})
 	_, err := split.AggTry(spl, "Err", agg.AggMean)
@@ -1483,12 +1539,29 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	}
 	objs := spl.AggsToTable(etable.AddAggName)
 	no := objs.Rows
-	dt.SetNumRows(no)
+
 	for i := 0; i < no; i++ {
-		dt.SetCellString("Cat", i, objs.Cols[0].StringVal1D(i))
-		dt.SetCellFloat("PctErr", i, objs.Cols[1].FloatVal1D(i))
+		cat := objs.Cols[0].StringVal1D(i)
+		dt.SetCellFloat(cat, row, objs.Cols[1].FloatVal1D(i))
 	}
+
 	ss.TstEpcPlot.GoUpdate()
+	if ss.TstEpcFile != nil {
+		if ss.TrainEnv.Run.Cur == ss.StartRun && row == 0 {
+			dt.WriteCSVHeaders(ss.TstEpcFile, etable.Tab)
+		}
+		dt.WriteCSVRow(ss.TstEpcFile, row, etable.Tab)
+	}
+
+	if ss.TstTrlFile != nil && !(!ss.UseMPI || ss.SaveProcLog) { // saved at trial level otherwise
+		if ss.TrainEnv.Run.Cur == ss.StartRun && row == 0 {
+			// note: can't just use row=0 b/c reset table each run
+			trl.WriteCSVHeaders(ss.TstTrlFile, etable.Tab)
+		}
+		for ri := 0; ri < trl.Rows; ri++ {
+			trl.WriteCSVRow(ss.TstTrlFile, ri, etable.Tab)
+		}
+	}
 }
 
 func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
@@ -1498,8 +1571,16 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	sch := etable.Schema{
-		{"Cat", etensor.STRING, nil, nil},
+		{"Run", etensor.INT64, nil, nil},
+		{"Epoch", etensor.INT64, nil, nil},
+		{"SSE", etensor.FLOAT64, nil, nil},
+		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
+		{"PctCor", etensor.FLOAT64, nil, nil},
+		{"CosDiff", etensor.FLOAT64, nil, nil},
+	}
+	for _, cat := range ss.TestEnv.Images.Cats {
+		sch = append(sch, etable.Column{cat, etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1510,8 +1591,17 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.Params.Type = eplot.Bar
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Cat", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+	plt.SetColParams("PctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+
+	for _, cat := range ss.TestEnv.Images.Cats {
+		plt.SetColParams(cat, eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	}
 	return plt
 }
 
@@ -1650,6 +1740,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	tg := tv.AddNewTab(etview.KiT_TensorGrid, "Image").(*etview.TensorGrid)
 	tg.SetStretchMax()
 	ss.CurImgGrid = tg
+	ss.TrainEnv.V1h16.ImgTsr.SetMetaData("colormap", "DarkLight")
+	ss.TrainEnv.V1h16.ImgTsr.SetMetaData("grid-fill", "1")
 	tg.SetTensor(&ss.TrainEnv.V1h16.ImgTsr)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstTrlPlot").(*eplot.Plot2D)
@@ -1869,6 +1961,8 @@ func (ss *Sim) CmdArgs() {
 	var nogui bool
 	var saveEpcLog bool
 	var saveRunLog bool
+	var saveTrnTrlLog bool
+	var saveTstTrlLog bool
 	var note string
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
@@ -1879,6 +1973,8 @@ func (ss *Sim) CmdArgs() {
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", false, "if true, save run epoch log to file")
+	flag.BoolVar(&saveTrnTrlLog, "trntrllog", false, "if true, save training trial log to file")
+	flag.BoolVar(&saveTstTrlLog, "tsttrllog", false, "if true, save testing trial log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.BoolVar(&ss.UseMPI, "mpi", false, "if set, use MPI for distributed computation")
 	flag.Parse()
@@ -1900,14 +1996,47 @@ func (ss *Sim) CmdArgs() {
 
 	if saveEpcLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
 		var err error
-		fnm := ss.LogFileName("epc")
+		fnm := ss.LogFileName("trn_epc")
 		ss.TrnEpcFile, err = os.Create(fnm)
 		if err != nil {
 			log.Println(err)
 			ss.TrnEpcFile = nil
 		} else {
-			mpi.Printf("Saving epoch log to: %s\n", fnm)
+			mpi.Printf("Saving training epoch log to: %s\n", fnm)
 			defer ss.TrnEpcFile.Close()
+		}
+		fnm = ss.LogFileName("tst_epc")
+		ss.TstEpcFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.TstEpcFile = nil
+		} else {
+			mpi.Printf("Saving testing epoch log to: %s\n", fnm)
+			defer ss.TstEpcFile.Close()
+		}
+	}
+	if saveTrnTrlLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
+		var err error
+		fnm := ss.LogFileName("trn_trl")
+		ss.TrnTrlFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.TrnTrlFile = nil
+		} else {
+			mpi.Printf("Saving train trial log to: %v\n", fnm)
+			defer ss.TrnTrlFile.Close()
+		}
+	}
+	if saveTstTrlLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
+		var err error
+		fnm := ss.LogFileName("tst_trl")
+		ss.TstTrlFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.TstTrlFile = nil
+		} else {
+			mpi.Printf("Saving testing trial log to: %v\n", fnm)
+			defer ss.TstTrlFile.Close()
 		}
 	}
 	if saveRunLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
@@ -1960,7 +2089,7 @@ func (ss *Sim) MPIFinalize() {
 
 // CollectDWts collects the weight changes from all synapses into AllDWts
 func (ss *Sim) CollectDWts(net *leabra.Network) {
-	made := net.CollectDWts(&ss.AllDWts, 78163328) // plug in number from printout below, to avoid realloc
+	made := net.CollectDWts(&ss.AllDWts, 23664000) // plug in number from printout below, to avoid realloc
 	if made {
 		mpi.Printf("MPI: AllDWts len: %d\n", len(ss.AllDWts)) // put this number in above make
 	}
