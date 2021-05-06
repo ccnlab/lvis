@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.2.17
+	github.com/emer/axon v1.2.22
 	github.com/emer/emergent v1.1.27
 	github.com/emer/empi v1.0.10
 	github.com/emer/etable v1.0.27

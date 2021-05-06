@@ -73,7 +73,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Learn.AvgL.Gain": "2.5", // 2.5 standard
+					"Layer.Learn.AvgL.Gain": "3.5", // 3.5 > 3.0 > 2.5
 					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig > 0.1 new def
 					"Layer.Act.XX1.Gain":    "80",  // 100 def, apparently was 80 for a long time
 				}},
@@ -118,7 +118,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "2.8", // 2.8 best?
+					"Layer.Inhib.Layer.Gi":    "2.8", // 2.8 == 2.9
 					"Layer.Inhib.ActAvg.Init": "0.01",
 				}},
 			// projections
@@ -137,68 +137,68 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V1V2hi", Desc: "abs boost",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
-					// "Prjn.WtScale.Abs": "1.2",  // 1.2 in fix8, 1.0 prev
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff -- .0004 in fix8 but this fails
+					"Prjn.WtScale.Abs": "1.0", // 1.2 in fix8, 1.0 prev -- 1.0 better
 				}},
 			{Sel: ".V1V2med", Desc: "abs boost",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
-					// "Prjn.WtScale.Abs": "2",    // 2.0 in fix8, 1.0 prev
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff
+					"Prjn.WtScale.Abs": "1.0", // 2.0 in fix8, 1.0 prev -- 1.0 better
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff
 					"Prjn.WtScale.Rel": "0.2",
 				}},
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff
 					"Prjn.WtScale.Rel": "0.02",
 				}},
 			{Sel: ".V2V4", Desc: "abs boost",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff
 					"Prjn.WtScale.Abs": "1.2",
 				}},
 			{Sel: ".V2V4sm", Desc: "stronger -- same as other",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff
 					"Prjn.WtScale.Abs": "1.2",
 				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.08", // 2x
+					// "Prjn.Learn.Lrate": "0.08", // 2x no diff
 					"Prjn.WtScale.Rel": "0.15", // .15 orig
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02", // .5
+					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Abs": "1.6",
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02", // .5
+					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Abs": "1.2",
 					"Prjn.WtScale.Rel": "0.5",
 				}},
 			{Sel: ".TEOTE", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02", // .5
+					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Abs": "1.5",
 				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02", // .5
+					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Rel": "0.15",
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02", // .5
+					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Rel": "0.1",
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02", // .5
+					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Rel": "0.1",
 				}},
 			{Sel: ".TEOOut", Desc: "weaker",
@@ -434,12 +434,14 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 	ss.TestEnv.Validate()
 
-	// Delete to 80 / 60
-	last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
-	// next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
-	// last40 := append(last20, next20...)
-	ss.TrainEnv.Images.DeleteCats(last20)
-	ss.TrainEnv.Images.DeleteCats(last20)
+	/*
+		// Delete to 80 / 60
+		last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
+		// next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
+		// last40 := append(last20, next20...)
+		ss.TrainEnv.Images.DeleteCats(last20)
+		ss.TrainEnv.Images.DeleteCats(last20)
+	*/
 
 	/*
 		objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
@@ -502,23 +504,19 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2, emer.Forward).SetClass("V1V2med")
 
 	v2v4, v4v2 := net.BidirConnectLayers(v2h16, v4f16, ss.Prjn4x4Skp2)
-	v4v2.SetPattern(ss.Prjn4x4Skp2Recip)
-	v4v2.SetClass("V4V2")
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Recip)
 	v2v4.SetClass("V2V4")
 
 	v2v4, v4v2 = net.BidirConnectLayers(v2m16, v4f16, ss.Prjn2x2Skp1)
-	v4v2.SetPattern(ss.Prjn2x2Skp1Recip)
-	v4v2.SetClass("V4V2")
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Recip)
 	v2v4.SetClass("V2V4sm")
 
 	v2v4, v4v2 = net.BidirConnectLayers(v2h8, v4f8, ss.Prjn4x4Skp2)
-	v4v2.SetPattern(ss.Prjn4x4Skp2Recip)
-	v4v2.SetClass("V4V2")
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Recip)
 	v2v4.SetClass("V2V4")
 
 	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, ss.Prjn2x2Skp1)
-	v4v2.SetPattern(ss.Prjn2x2Skp1Recip)
-	v4v2.SetClass("V4V2")
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Recip)
 	v2v4.SetClass("V2V4sm")
 
 	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, full)
@@ -566,9 +564,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	v4f8.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2h8.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
 	teo8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f8.Name(), YAlign: relpos.Front, Space: 4})
 
-	te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 4})
+	te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
 
-	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 4})
+	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
 
 	ss.OutLays = []string{}
 	ss.HidLays = []string{}
