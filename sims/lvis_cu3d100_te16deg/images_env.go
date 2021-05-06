@@ -42,6 +42,7 @@ type ImagesEnv struct {
 	V1h16      Vis             `desc:"v1 16deg higher resolution filtering of image -- V1AllTsr has result"`
 	V1m8       Vis             `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
 	V1h8       Vis             `desc:"v1 8deg higher resolution filtering of image -- V1AllTsr has result"`
+	OutSize    int             `desc:"the output tensor size is Max(OutSize, number of cats)"`
 	Output     etensor.Float32 `desc:"output category"`
 	StRow      int             `desc:"starting row, e.g., for mpi allocation across processors"`
 	EdRow      int             `desc:"ending row -- if 0 it is ignored"`
@@ -73,12 +74,10 @@ func (ev *ImagesEnv) Defaults() {
 	ev.TransMax.Set(0.3, 0.3)
 	ev.ScaleRange.Set(0.5, 1.1)
 	ev.RotateMax = 8
-	ev.V1m16.Defaults(24, 8)
-	ev.V1h16.Defaults(12, 4)
-	ev.V1m8.Defaults(12, 4)
-	ev.V1m8.V1sGeom.Border = image.Point{38, 38}
-	ev.V1h8.Defaults(6, 2)
-	ev.V1h8.V1sGeom.Border = image.Point{38, 38}
+	ev.V1m16.Defaults(0, 24, 8)
+	ev.V1h16.Defaults(0, 12, 4)
+	ev.V1m8.Defaults(32, 12, 4)
+	ev.V1h8.Defaults(32, 6, 2)
 }
 
 // ImageList returns the list of images -- train or test
@@ -120,7 +119,9 @@ func (ev *ImagesEnv) Init(run int) {
 	}
 	ev.Shuffle = rand.Perm(nitm)
 	ev.Row.Max = len(ev.ImgIdxs)
-	ev.Output.SetShape([]int{len(ev.Images.Cats)}, nil, nil)
+	nc := len(ev.Images.Cats)
+	os := ints.MaxInt(nc, ev.OutSize)
+	ev.Output.SetShape([]int{os}, nil, nil)
 }
 
 // SaveListJSON saves flat string list to a JSON-formatted file.

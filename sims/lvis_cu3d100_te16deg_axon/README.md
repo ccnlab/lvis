@@ -24,6 +24,8 @@ The translation params have a big impact: .3 uniform is fairly difficult, and th
 
 This is a good benchmark for performance.  On the `blanca` cluster, with 4 threads per MPI node and 16 nodes, it takes about 40 secs per 504 trials = 80 msec per trial (i.e., 80% of real time for 100 msec alpha cycle ;)
 
+
+
 # Params
 
 This model is generally highly sensitive to parameters, and is an excellent platform for testing different parameters.

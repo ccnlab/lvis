@@ -76,7 +76,11 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.Gi":  "1",
 					"Layer.Learn.AvgL.Gain": "2.5", // standard
 					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Init.Decay":  "0.5", // 0.5 > 1 > 0
+					"Layer.Act.Init.Decay":  "0.2", // 0.5 > 1 > 0 -- less dk better?
+					"Layer.Act.Noise.Dist":  "Gaussian",
+					"Layer.Act.Noise.Mean":  "0.05",    // .05 max for blowup
+					"Layer.Act.Noise.Var":   "0.01",    //
+					"Layer.Act.Noise.Type":  "GeNoise", // no diff -- maybe tiny bit better
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -98,30 +102,39 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",
-					"Layer.Inhib.ActAvg.Init": "0.04",
+					"Layer.Inhib.ActAvg.Init": "0.025",
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
+					"Layer.Inhib.Layer.Gi":    "1.1",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    // 0 in lba
 					"Layer.Inhib.ActAvg.Init": "0.04",
+					"Layer.Act.NMDA.Gbar":     "0.03", // ?
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.15",
+					"Layer.Inhib.Layer.Gi":    "1.1",
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.ActAvg.Init": "0.05",
+					"Layer.Inhib.Adapt.On":    "true",
+					"Layer.Act.NMDA.Gbar":     "0.03", // less sticky
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "0.9",
-					"Layer.Inhib.ActAvg.Init": "0.15",
+					"Layer.Inhib.Layer.Gi":    "1.1",
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.ActAvg.Init": "0.05",
+					"Layer.Inhib.Adapt.On":    "true",
+					"Layer.Act.NMDA.Gbar":     "0.03", // less sticky
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.2",
+					"Layer.Inhib.Layer.Gi":    "1.4",
 					"Layer.Inhib.ActAvg.Init": "0.01",
 					"Layer.Act.GABAB.Gbar":    "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":     "0.02",  //
-					"Layer.Act.Clamp.Rate":    "120",   // 120 > 100 > 150 > 180
+					"Layer.Act.Clamp.Rate":    "180",   // 120 > 100 > 150 > 180
 					"Layer.Act.Init.Decay":    "1",     // 1 >> 0.5 >> 0
 				}},
 			// projections
@@ -143,21 +156,26 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.15",
 				}},
+			{Sel: ".Forward", Desc: "use pfail only on forward cons?",
+				Params: params.Params{
+					"Prjn.Com.PFail":      "0.2",
+					"Prjn.Com.PFailWtMax": "1.0",
+				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
 				}},
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .02 in lba
+					"Prjn.WtScale.Rel": "0.05", // .02 in lba
 				}},
 			{Sel: ".V2V4", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "1.2",
+					"Prjn.WtScale.Abs": "1.2", // 1.6 causes blowup?
 				}},
 			{Sel: ".V2V4sm", Desc: "stronger -- same as other",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "1.2",
+					"Prjn.WtScale.Abs": "1.2", // was 1.6
 				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
@@ -165,7 +183,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "1.6",
+					"Prjn.WtScale.Abs": "1.2", // 1.2 defa?
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
@@ -174,7 +192,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEOTE", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "1.5",
+					"Prjn.WtScale.Abs": "1.2",
 				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
@@ -355,7 +373,7 @@ func (ss *Sim) New() {
 		ss.RndSeeds[i] = int64(i) + 1 // exclude 0
 	}
 	ss.ViewOn = true
-	ss.TrainUpdt = axon.Quarter
+	ss.TrainUpdt = axon.AlphaCycle
 	ss.TestUpdt = axon.Quarter
 	ss.ActRFNms = []string{"V4f16:Image", "V4f8:Output", "TEO8:Image", "TEO8:Output", "TEO16:Image", "TEO16:Output"}
 }
@@ -395,6 +413,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.Images.NTestPerCat = 2
 	ss.TrainEnv.Images.SplitByItm = true
+	ss.TrainEnv.OutSize = 100
 	ss.TrainEnv.Images.SetPath(path, []string{".png"}, "_")
 	ss.TrainEnv.OpenConfig()
 	// ss.TrainEnv.Images.OpenPath(path, []string{".png"}, "_")
@@ -409,6 +428,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Defaults()
 	ss.TestEnv.Images.NTestPerCat = 2
 	ss.TestEnv.Images.SplitByItm = true
+	ss.TestEnv.OutSize = 100
 	ss.TestEnv.Test = true
 	ss.TestEnv.Images.SetPath(path, []string{".png"}, "_")
 	ss.TestEnv.OpenConfig()
@@ -417,10 +437,18 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 	ss.TestEnv.Validate()
 
-	// Delete to 80
-	// last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
-	// ss.TrainEnv.Images.DeleteCats(last20)
-	// ss.TrainEnv.Images.DeleteCats(last20)
+	// Delete to 60
+	/*
+		last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
+		next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
+		last40 := append(last20, next20...)
+		ss.TrainEnv.Images.DeleteCats(last40)
+		ss.TrainEnv.Images.DeleteCats(last40)
+	*/
+
+	objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
+	ss.TrainEnv.Images.SelectCats(objs20)
+	ss.TrainEnv.Images.SelectCats(objs20)
 
 	if ss.UseMPI {
 		ss.TrainEnv.MPIAlloc()
@@ -456,12 +484,12 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
-	teo16 := net.AddLayer2D("TEOf16", 20, 20, emer.Hidden)
-	teo8 := net.AddLayer2D("TEOf8", 20, 20, emer.Hidden)
+	teo16 := net.AddLayer4D("TEOf16", 2, 2, 10, 10, emer.Hidden)
+	teo8 := net.AddLayer4D("TEOf8", 2, 2, 10, 10, emer.Hidden)
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
-	te := net.AddLayer2D("TE", 20, 20, emer.Hidden)
+	te := net.AddLayer4D("TE", 2, 2, 10, 10, emer.Hidden)
 	out := net.AddLayer2D("Output", 10, 10, emer.Target)
 
 	full := prjn.NewFull()
@@ -507,11 +535,11 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	net.ConnectLayers(v4f16, teo8, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
 
 	teote, teteo := net.BidirConnectLayers(teo16, te, full)
-	teote.SetClass("TEOTE").SetPattern(ss.Prjn1x1Skp0)
-	teteo.SetClass("TETEO").SetPattern(ss.Prjn1x1Skp0Recip)
+	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
+	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
 	teote, teteo = net.BidirConnectLayers(teo8, te, full)
-	teote.SetClass("TEOTE").SetPattern(ss.Prjn1x1Skp0)
-	teteo.SetClass("TETEO").SetPattern(ss.Prjn1x1Skp0Recip)
+	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
+	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
 
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
 	teoout.SetClass("TEOOut")

@@ -19,7 +19,7 @@ import (
 
 // Vis encapsulates specific visual processing pipeline for V1 filtering
 type Vis struct {
-	V1sGabor      gabor.Filter    `desc:"V1 simple gabor filter parameters"`
+	V1sGabor      gabor.Filter    `view:"inline" desc:"V1 simple gabor filter parameters"`
 	V1sGeom       vfilter.Geom    `inactive:"+" view:"inline" desc:"geometry of input, output for V1 simple-cell processing"`
 	V1sNeighInhib kwta.NeighInhib `desc:"neighborhood inhibition for V1s -- each unit gets inhibition from same feature in nearest orthogonal neighbors -- reduces redundancy of feature code"`
 	V1sKWTA       kwta.KWTA       `desc:"kwta parameters for V1s"`
@@ -42,15 +42,19 @@ type Vis struct {
 
 var KiT_Vis = kit.Types.AddType(&Vis{}, nil)
 
-func (vi *Vis) Defaults(sz, spc int) { // high: sz = 12, spc = 4, med: sz = 24, spc = 8
+func (vi *Vis) Defaults(bord_ex, sz, spc int) { // high: sz = 12, spc = 4, med: sz = 24, spc = 8
 	vi.V1sGabor.Defaults()
 	vi.V1sGabor.SetSize(sz, spc)
 	// note: first arg is border -- we are relying on Geom
 	// to set border to .5 * filter size
 	// any further border sizes on same image need to add Geom.FiltRt!
-	vi.V1sGeom.Set(image.Point{0, 0}, image.Point{spc, spc}, image.Point{sz, sz})
+	vi.V1sGeom.Set(image.Point{sz/2 + bord_ex, sz/2 + bord_ex}, image.Point{spc, spc}, image.Point{sz, sz})
 	vi.V1sNeighInhib.Defaults()
 	vi.V1sKWTA.Defaults()
+	// values from lvis models
+	vi.V1sKWTA.LayFFFB.Gi = 1.5
+	vi.V1sKWTA.XX1.Gain = 80
+	vi.V1sKWTA.XX1.NVar = 0.01
 	vi.ImgSize = image.Point{128, 128}
 	vi.V1sGabor.ToTensor(&vi.V1sGaborTsr)
 	// vi.ImgTsr.SetMetaData("image", "+")

@@ -22,7 +22,10 @@ The translation params have a big impact: .3 uniform is fairly difficult, and th
 
 # Compute Speed
 
-This is a good benchmark for performance.  On the `blanca` cluster, with 4 threads per MPI node and 16 nodes, it takes about 40 secs per 504 trials = 80 msec per trial (i.e., 80% of real time for 100 msec alpha cycle ;)
+This is a good benchmark for performance.  On the `blanca` cluster, `cemer` with 4 threads per MPI node and 16 nodes, it takes about 40 secs per 504 trials = 80 msec per trial (i.e., 80% of real time for 100 msec alpha cycle ;)
+
+The go version is very close to this same speed on the new `hpc2` cluster, meaning that it is likely about 20% or so slower overall -- will try to get some blanca comparable benchmarks.
+
 
 # Params
 
