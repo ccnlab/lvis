@@ -73,7 +73,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Learn.AvgL.Gain": "3.5", // 3.5 > 3.0 > 2.5
+					"Layer.Learn.AvgL.Gain": "4.0", // 3.5 > 3.0 > 2.5
 					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig > 0.1 new def
 					"Layer.Act.XX1.Gain":    "80",  // 100 def, apparently was 80 for a long time
 				}},
@@ -186,6 +186,14 @@ var ParamSets = params.Sets{
 					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Abs": "1.5",
 				}},
+			{Sel: ".TEOOut", Desc: "weaker shortcut",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.2",
+				}},
+			{Sel: ".V4Out", Desc: "weaker shortcut",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.2",
+				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
 					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
@@ -196,14 +204,14 @@ var ParamSets = params.Sets{
 					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Rel": "0.1",
 				}},
+			{Sel: ".OutV4", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.1", // .1 orig
+				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
 					// "Prjn.Learn.Lrate": "0.02", // .5 no diff
 					"Prjn.WtScale.Rel": "0.1",
-				}},
-			{Sel: ".TEOOut", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
 				}},
 		},
 	}},
@@ -545,6 +553,14 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	outteo.SetClass("OutTEO")
 
 	net.BidirConnectLayers(te, out, full)
+
+	v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
+	v4out.SetClass("V4Out")
+	outv4.SetClass("OutV4")
+
+	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
+	v4out.SetClass("V4Out")
+	outv4.SetClass("OutV4")
 
 	v1h8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1h16.Name(), YAlign: relpos.Front, Space: 4})
 

@@ -97,6 +97,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Init.KnaDecay":  "0.0",  // 0 > 0.5 interesting..
 					"Layer.Act.Gbar.L":         "0.2",  // .2 > .1 @176
 					"Layer.Act.Gbar.E":         "1.0",  // 1.2 maybe better % cor but not cosdiff
+					"Layer.Act.Gbar.K":         "1.0",  // 1.0 > 0.5 > 2.0 -- interactive test
 					"Layer.Act.NMDA.Gbar":      "0.03", // 0.03 > .04 @176 > .02 -- massive effects for .02
 					"Layer.Act.NMDA.Tau":       "100",  // 100 def
 					"Layer.Act.GABAB.Gbar":     "0.2",  // .1 == .2 pretty much
@@ -157,7 +158,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Clamp.Rate":    "180",   // 180 best here too
 					"Layer.Act.GABAB.Gbar":    "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.GABAB.GiSpike": "10",
-					"Layer.Act.NMDA.Gbar":     "0.03", // .03 > .02 > .01
+					"Layer.Act.NMDA.Gbar":     "0.03", // .03 > .02 > .01 > .1
 				}},
 			{Sel: "#ITToOutput", Desc: "no random sampling here",
 				Params: params.Params{

@@ -73,13 +73,14 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":  "1",
-					"Layer.Learn.AvgL.Gain": "3.5", // 2.5 std
+					"Layer.Inhib.Layer.Gi":  "1.1", // 1.1 > 1.0 > 1.2 -- all layers
+					"Layer.Inhib.Pool.Gi":   "1.1", // 1.1 > 1.0 -- universal for all layers
+					"Layer.Learn.AvgL.Gain": "4.0", // 4 > 3.5 > 3 > 2.5 -- small effects
 					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Init.Decay":  "0.5", // 0.5 > 1 > 0 -- less dk better?
+					"Layer.Act.Init.Decay":  "0.5", // 0.5 > 0.2
 					"Layer.Act.Noise.Dist":  "Gaussian",
-					"Layer.Act.Noise.Mean":  "0.05",    // .05 max for blowup
-					"Layer.Act.Noise.Var":   "0.01",    //
+					"Layer.Act.Noise.Mean":  "0.0",     // .05 max for blowup
+					"Layer.Act.Noise.Var":   "0.01",    // .01 a bit worse
 					"Layer.Act.Noise.Type":  "NoNoise", // off for now
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
@@ -106,45 +107,40 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.1",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":    "1",    // 0 in lba
-					"Layer.Inhib.ActAvg.Init": "0.04",
-					"Layer.Act.NMDA.Gbar":     "0.03", // 0.03 > 0.02 > 0.015
+					"Layer.Inhib.Layer.FB":    "1",    // 1 >= 0 in lba
+					"Layer.Inhib.ActAvg.Init": "0.04", // .04 >= .03 > .05
+					"Layer.Inhib.Adapt.On":    "true", // adapt > not -- reduces hoging
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.3",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.ActAvg.Init": "0.1",
-					"Layer.Inhib.Adapt.On":    "true",
-					"Layer.Act.NMDA.Gbar":     "0.03", // less sticky
+					"Layer.Inhib.ActAvg.Init": "0.06", // .06 > .05 = .04
+					"Layer.Inhib.Adapt.On":    "true", // adapt > not -- reduces hoging
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.3",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.ActAvg.Init": "0.1",
-					"Layer.Inhib.Adapt.On":    "true",
-					"Layer.Act.NMDA.Gbar":     "0.03",
+					"Layer.Inhib.ActAvg.Init": "0.06", // .06 > .05 = .04 (TEO)
+					"Layer.Inhib.Adapt.On":    "true", // adapt > not -- reduces hoging
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.5",
+					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 = 1.6 > 1.4
 					"Layer.Inhib.ActAvg.Init": "0.01",
 					"Layer.Act.GABAB.Gbar":    "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":     "0.02",  //
-					"Layer.Act.Clamp.Rate":    "180",   // 120 > 100 > 150 > 180
-					"Layer.Act.Init.Decay":    ".5",    //
+					"Layer.Act.Clamp.Rate":    "180",   //
+					"Layer.Act.Init.Decay":    "0.5",   // 0.5 > 1
 				}},
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
 					"Prjn.Learn.WtBal.On":     "true",
-					"Prjn.Learn.WtBal.Targs":  "true",
+					"Prjn.Learn.WtBal.Targs":  "true",  // true > false by a small amount
 					"Prjn.Learn.WtSig.Gain":   "6",     // 6 def
 					"Prjn.Learn.Lrate":        "0.04",  // must set initial lrate here when using schedule!
-					"Prjn.Learn.XCal.SetLLrn": "false", // false enables std mech, true = override to none
+					"Prjn.Learn.XCal.SetLLrn": "false", // false enables BCM mech, true = override to none -- BCM slightly better but not really
 					"Prjn.Learn.XCal.LLrn":    "0",
 					"Prjn.Com.PFail":          "0.0",
 					"Prjn.Com.PFailWtMax":     "0.0",
@@ -158,7 +154,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Forward", Desc: "use pfail only on forward cons?",
 				Params: params.Params{
-					"Prjn.Com.PFail":      "0.1", // .1 > .2 esp later
+					// .2 max 1 = no diff, .5 max .8 = no diff
+					"Prjn.Com.PFail":      "0.0", // 0 > .05 > .1 > .2
 					"Prjn.Com.PFailWtMax": "0.0",
 				}},
 			{Sel: ".V1V2h16", Desc: "weaker",
@@ -173,21 +170,17 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
 				}},
-			{Sel: ".V4V2", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.02", // .02 in lba
-				}},
 			{Sel: ".V2V4", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", // 1.6 causes blowup?
+					"Prjn.WtScale.Abs": "0.5", //
 				}},
 			{Sel: ".V2V4sm", Desc: "stronger -- same as other",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", // was 1.6
+					"Prjn.WtScale.Abs": "0.5", //
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", // 1.2 defa?
+					"Prjn.WtScale.Abs": "0.5", // 1.2 def?
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
@@ -198,26 +191,41 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Abs": "0.5",
 				}},
+			{Sel: ".TEOOut", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "1", // 0.5 orig
+				}},
+			{Sel: ".V4Out", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "1", // 1 >= 0.5 > .2 -- no advantage to making weaker.
+				}},
+
+			// back projections
+			{Sel: ".V4V2", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.02", // .02 > .05
+				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.05", // .15 orig
+					"Prjn.WtScale.Rel": "0.1", // .1 >= .15 > .2
 				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 orig
+					"Prjn.WtScale.Rel": "0.2", // .1 orig
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 orig
+					"Prjn.WtScale.Rel": "0.3", // .3 > .2
 				}},
-			{Sel: ".TEOOut", Desc: "weaker",
+			{Sel: ".OutV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5",
+					"Prjn.WtScale.Rel": "0.3", // .3 > .2
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 orig
+					"Prjn.WtScale.Rel": "0.2", // todo: try .3
 				}},
+
 			// shortcuts
 			{Sel: ".V1V4", Desc: "weaker",
 				Params: params.Params{
@@ -517,7 +525,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
-	te := net.AddLayer4D("TE", 2, 2, 10, 10, emer.Hidden)
+	// te := net.AddLayer4D("TE", 2, 2, 10, 10, emer.Hidden)
 	out := net.AddLayer2D("Output", 10, 10, emer.Target)
 
 	full := prjn.NewFull()
@@ -560,12 +568,12 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Recip)
 	net.ConnectLayers(v4f16, teo8, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
 
-	teote, teteo := net.BidirConnectLayers(teo16, te, full)
-	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
-	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
-	teote, teteo = net.BidirConnectLayers(teo8, te, full)
-	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
-	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
+	// teote, teteo := net.BidirConnectLayers(teo16, te, full)
+	// teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
+	// teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
+	// teote, teteo = net.BidirConnectLayers(teo8, te, full)
+	// teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
+	// teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
 
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
 	teoout.SetClass("TEOOut")
@@ -575,7 +583,15 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teoout.SetClass("TEOOut")
 	outteo.SetClass("OutTEO")
 
-	net.BidirConnectLayers(te, out, full)
+	// net.BidirConnectLayers(te, out, full)
+
+	v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
+	v4out.SetClass("V4Out")
+	outv4.SetClass("OutV4")
+
+	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
+	v4out.SetClass("V4Out")
+	outv4.SetClass("OutV4")
 
 	// shortcuts:
 
@@ -602,6 +618,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		tev4.SetClass("TEV4")
 	*/
 
+	// these shortcuts are essential!
 	net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1V4")
 	net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1V4")
 
@@ -610,8 +627,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
 	net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
 
-	net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
-	net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
+	// net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
+	// net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
 
 	v1h8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1h16.Name(), YAlign: relpos.Front, Space: 4})
 
@@ -631,9 +648,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4f8.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2h8.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
 	teo8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f8.Name(), YAlign: relpos.Front, Space: 4})
 
-	te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
+	// te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
 
-	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
+	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
 
 	ss.OutLays = []string{}
 	ss.HidLays = []string{}
@@ -655,7 +672,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	teo16.SetThread(1)
 	teo8.SetThread(1)
-	te.SetThread(1)
+	// te.SetThread(1)
 	out.SetThread(1)
 
 	net.Defaults()

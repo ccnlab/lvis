@@ -1,6 +1,6 @@
 module github.com/ccnlab/lvis/sims
 
-go 1.13
+go 1.15
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
