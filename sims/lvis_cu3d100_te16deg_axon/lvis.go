@@ -73,15 +73,19 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":  "1.1", // 1.1 > 1.0 > 1.2 -- all layers
-					"Layer.Inhib.Pool.Gi":   "1.1", // 1.1 > 1.0 -- universal for all layers
-					"Layer.Learn.AvgL.Gain": "4.0", // 4 > 3.5 > 3 > 2.5 -- small effects
-					"Layer.Act.Gbar.L":      "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Init.Decay":  "0.5", // 0.5 > 0.2
-					"Layer.Act.Noise.Dist":  "Gaussian",
-					"Layer.Act.Noise.Mean":  "0.0",     // .05 max for blowup
-					"Layer.Act.Noise.Var":   "0.01",    // .01 a bit worse
-					"Layer.Act.Noise.Type":  "NoNoise", // off for now
+					"Layer.Inhib.Layer.Gi":              "1.1", // 1.1 > 1.0 > 1.2 -- all layers
+					"Layer.Inhib.Pool.Gi":               "1.1", // 1.1 > 1.0 -- universal for all layers
+					"Layer.Learn.AvgL.Gain":             "4.0", // 4 > 3.5 > 3 > 2.5 -- small effects
+					"Layer.Act.Gbar.L":                  "0.2", // 0.2 orig > 0.1 new def
+					"Layer.Act.Init.Decay":              "0.5", // 0.5 > 0.2
+					"Layer.Act.Noise.Dist":              "Gaussian",
+					"Layer.Act.Noise.Mean":              "0.0",     // .05 max for blowup
+					"Layer.Act.Noise.Var":               "0.01",    // .01 a bit worse
+					"Layer.Act.Noise.Type":              "NoNoise", // off for now
+					"Layer.Learn.SynScale.Rate":         "0.01",
+					"Layer.Learn.SynScale.AvgTau":       "200",
+					"Layer.Learn.SynScale.TrgRange.Min": ".5",
+					"Layer.Learn.SynScale.TrgRange.Max": "1.5",
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -136,12 +140,13 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On":     "true",
+					"Prjn.Learn.WtBal.On":     "false",
 					"Prjn.Learn.WtBal.Targs":  "true",  // true > false by a small amount
-					"Prjn.Learn.WtSig.Gain":   "6",     // 6 def
+					"Prjn.Learn.WtSig.Gain":   "6",     // 6 > 1 -- no combination of sig1 + lrate worked..
 					"Prjn.Learn.Lrate":        "0.04",  // must set initial lrate here when using schedule!
 					"Prjn.Learn.XCal.SetLLrn": "false", // false enables BCM mech, true = override to none -- BCM slightly better but not really
 					"Prjn.Learn.XCal.LLrn":    "0",
+					"Prjn.Learn.XCal.SubMean": "0.8",
 					"Prjn.Com.PFail":          "0.0",
 					"Prjn.Com.PFailWtMax":     "0.0",
 					"Prjn.Learn.WtBal.HiGain": "4", // 4 def
@@ -164,7 +169,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V1V2h8", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.8",
+					"Prjn.WtScale.Abs": "1.0", // 1.0 > .8
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -172,15 +177,15 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V2V4", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", //
+					"Prjn.WtScale.Abs": "0.67", // .67 >= .5
 				}},
 			{Sel: ".V2V4sm", Desc: "stronger -- same as other",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", //
+					"Prjn.WtScale.Abs": "0.67", // .67 >= .5
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", // 1.2 def?
+					"Prjn.WtScale.Abs": "0.5", // .5 > .67
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
@@ -530,7 +535,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	full := prjn.NewFull()
 	rndcut := prjn.NewUnifRnd()
-	rndcut.PCon = 0.1 // == 0.2
+	rndcut.PCon = 0.1 // 0.2 > .1
 
 	net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2, emer.Forward).SetClass("V1V2h16")
 	net.ConnectLayers(v1m16, v2h16, ss.Prjn2x2Skp1, emer.Forward).SetClass("V1V2fmSm V1V2h16")
@@ -1475,6 +1480,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		dt.SetCellFloat(lnm+"_Hog", row, hog)
 		dt.SetCellFloat(lnm+"_MaxGeM", row, agg.Mean(tix, lnm+"_MaxGeM")[0])
 		dt.SetCellFloat(lnm+"_ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(lnm+"_AvgDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
+		dt.SetCellFloat(lnm+"_AvgDifMax", row, float64(ly.Pools[0].AvgDif.Max))
 		dt.SetCellFloat(lnm+"_GiMult", row, float64(ly.GiMult))
 	}
 
@@ -1523,6 +1530,8 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_Hog", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_AvgDifAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
@@ -1550,6 +1559,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_Hog", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+		plt.SetColParams(lnm+"_AvgDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
 	return plt

@@ -76,7 +76,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On":     "true",  // if mom, then need wtbal!
+					"Prjn.Learn.WtBal.On":     "false", // if mom, then need wtbal!
 					"Prjn.Learn.WtBal.Targs":  "false", // true == false
 					"Prjn.Learn.WtBal.HiGain": "4",     // 4 def
 					"Prjn.Learn.WtBal.LoGain": "6",     // 6 def
@@ -84,42 +84,46 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Lrate":        "0.04", // gain 1, lr .35 or .4 pretty close to 6/.04
 					"Prjn.Learn.XCal.SetLLrn": "true",
 					"Prjn.Learn.XCal.LLrn":    "0", // no real diff actually
+					"Prjn.Learn.XCal.SubMean": "0.8",
 					"Prjn.Com.PFail":          "0.0",
 					"Prjn.Com.PFailWtMax":     "0.0", // 0.8 default
 					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
 				}},
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "1.0",
-					"Layer.Inhib.Layer.FBTau":  "1.4", // 1.4 def
-					"Layer.Inhib.Pool.FBTau":   "1.4",
-					"Layer.Act.Init.Decay":     "0.5",  // 0.5 > 0.8 > 1 > 0 -- 1, 0.8 start fast then dies, 0 never learns -- very sensitive
-					"Layer.Act.Init.KnaDecay":  "0.0",  // 0 > 0.5 interesting..
-					"Layer.Act.Gbar.L":         "0.2",  // .2 > .1 @176
-					"Layer.Act.Gbar.E":         "1.0",  // 1.2 maybe better % cor but not cosdiff
-					"Layer.Act.Gbar.K":         "1.0",  // 1.0 > 0.5 > 2.0 -- interactive test
-					"Layer.Act.NMDA.Gbar":      "0.03", // 0.03 > .04 @176 > .02 -- massive effects for .02
-					"Layer.Act.NMDA.Tau":       "100",  // 100 def
-					"Layer.Act.GABAB.Gbar":     "0.2",  // .1 == .2 pretty much
-					"Layer.Act.GABAB.Gbase":    "0.2",  // .1 == .2
-					"Layer.Act.GABAB.DecayTau": "50",   // 50 def
-					"Layer.Act.GABAB.RiseTau":  "45",   // 45 def
-					// "Layer.Act.GABAB.GiSpike":   "10",   // 10 -- no diff 8,12 > 8 > 15
-					"Layer.Act.Spike.Exp":       "true", // true > false @176
-					"Layer.Learn.ActAvg.SpikeG": "8",    // 8 for sure..
-					"Layer.Learn.ActAvg.SSTau":  "40",   // 40 > 35 def > 30
-					"Layer.Learn.ActAvg.STau":   "10",   // 10 >= 8 def (10 better early) > 6
-					"Layer.Learn.ActAvg.MTau":   "40",   // for 50 cyc qtr: SS = 40, 50, 45 faster then die
-					"Layer.Act.Dt.GeTau":        "5",    // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.MTau":         "20",   // for 50 cyc qtr, 20 -- no maj diffs +-5 > 10
-					"Layer.Act.KNa.On":          "true", // true > false @176
-					"Layer.Act.Noise.Dist":      "Gaussian",
-					"Layer.Act.Noise.Mean":      "0.0",
-					"Layer.Act.Noise.Var":       "0.01",    // 0.01 > 0.005 > 0.02
-					"Layer.Act.Noise.Type":      "NoNoise", // no diff -- maybe tiny bit better
-					"Layer.Act.Clamp.Rate":      "180",     // 180 == 200 > 150 > 120 > 100 -- major effect on 100, 120
-					"Layer.Act.Clamp.ErrThr":    "0.5",     // 0.5 best
-					"Layer.Learn.AvgL.Gain":     "2.5",     // 2.5 def == 2.0, 3.0
+					"Layer.Inhib.Layer.Gi":              "1.0",
+					"Layer.Inhib.Layer.FBTau":           "1.4", // 1.4 def
+					"Layer.Inhib.Pool.FBTau":            "1.4",
+					"Layer.Act.Init.Decay":              "0.5",  // 0.5 > 0.8 > 1 > 0 -- 1, 0.8 start fast then dies, 0 never learns -- very sensitive
+					"Layer.Act.Init.KnaDecay":           "0.0",  // 0 > 0.5 interesting..
+					"Layer.Act.Gbar.L":                  "0.2",  // .2 > .1 @176
+					"Layer.Act.Gbar.E":                  "1.0",  // 1.2 maybe better % cor but not cosdiff
+					"Layer.Act.Gbar.K":                  "1.0",  // 1.0 > 0.5 > 2.0 -- interactive test
+					"Layer.Act.NMDA.Gbar":               "0.03", // 0.03 > .04 @176 > .02 -- massive effects for .02
+					"Layer.Act.NMDA.Tau":                "100",  // 100 def
+					"Layer.Act.GABAB.Gbar":              "0.2",  // .1 == .2 pretty much
+					"Layer.Act.GABAB.Gbase":             "0.2",  // .1 == .2
+					"Layer.Act.GABAB.DecayTau":          "50",   // 50 def
+					"Layer.Act.GABAB.RiseTau":           "45",   // 45 def
+					"Layer.Act.Spike.Exp":               "true", // true > false @176
+					"Layer.Learn.ActAvg.SpikeG":         "8",    // 8 for sure..
+					"Layer.Learn.ActAvg.SSTau":          "40",   // 40 > 35 def > 30
+					"Layer.Learn.ActAvg.STau":           "10",   // 10 >= 8 def (10 better early) > 6
+					"Layer.Learn.ActAvg.MTau":           "40",   // for 50 cyc qtr: SS = 40, 50, 45 faster then die
+					"Layer.Act.Dt.GeTau":                "5",    // 5 = 4 (bit slower) > 6 > 7 @176
+					"Layer.Act.Dt.MTau":                 "20",   // for 50 cyc qtr, 20 -- no maj diffs +-5 > 10
+					"Layer.Act.KNa.On":                  "true", // true > false @176
+					"Layer.Act.Noise.Dist":              "Gaussian",
+					"Layer.Act.Noise.Mean":              "0.0",
+					"Layer.Act.Noise.Var":               "0.01",    // 0.01 > 0.005 > 0.02
+					"Layer.Act.Noise.Type":              "NoNoise", // no diff -- maybe tiny bit better
+					"Layer.Act.Clamp.Rate":              "180",     // 180 == 200 > 150 > 120 > 100 -- major effect on 100, 120
+					"Layer.Act.Clamp.ErrThr":            "0.5",     // 0.5 best
+					"Layer.Learn.AvgL.Gain":             "2.5",     // 2.5 def == 2.0, 3.0
+					"Layer.Learn.SynScale.Rate":         "0.01",
+					"Layer.Learn.SynScale.AvgTau":       "200",
+					"Layer.Learn.SynScale.TrgRange.Min": ".5",
+					"Layer.Learn.SynScale.TrgRange.Max": "1.5",
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -140,7 +144,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.0 == 0.9 > 0.8..
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.ActAvg.Init": "0.05",
-					"Layer.Inhib.Adapt.On":    "false", // no advantage, no cost at .05
+					"Layer.Inhib.Adapt.On":    "true", // no advantage, no cost at .05
 				}},
 			{Sel: "#IT", Desc: "initial activity",
 				Params: params.Params{
@@ -151,7 +155,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 > 1.4..
+					"Layer.Inhib.Layer.Gi":    "1.5",   // 1.5 > 1.4..
+					"Layer.Inhib.Adapt.On":    "false", // no adapt
 					"Layer.Inhib.ActAvg.Init": "0.05",
 					"Layer.Act.Gbar.E":        "1.0",
 					"Layer.Act.Init.Decay":    "1.0",   // 1 > .5 even with decay fixed
@@ -1012,14 +1017,16 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
-		dt.SetCellFloat(ly.Nm+" MaxGeM", row, float64(ly.Pools[0].GeM.Max))
-		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
-		dt.SetCellFloat(ly.Nm+" GiMult", row, float64(ly.GiMult))
+		dt.SetCellFloat(ly.Nm+"_MaxGeM", row, float64(ly.Pools[0].GeM.Max))
+		dt.SetCellFloat(ly.Nm+"_ActAvg", row, float64(ly.Pools[0].ActAvg.ActMAvg))
+		dt.SetCellFloat(ly.Nm+"_AvgDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
+		dt.SetCellFloat(ly.Nm+"_AvgDifMax", row, float64(ly.Pools[0].AvgDif.Max))
+		dt.SetCellFloat(ly.Nm+"_GiMult", row, float64(ly.GiMult))
 		hog, dead, gnmda, ggabab := ss.HogDead(lnm)
-		dt.SetCellFloat(ly.Nm+" Hog", row, hog)
-		dt.SetCellFloat(ly.Nm+" Dead", row, dead)
-		dt.SetCellFloat(ly.Nm+" Gnmda", row, gnmda)
-		dt.SetCellFloat(ly.Nm+" GgabaB", row, ggabab)
+		dt.SetCellFloat(ly.Nm+"_Hog", row, hog)
+		dt.SetCellFloat(ly.Nm+"_Dead", row, dead)
+		dt.SetCellFloat(ly.Nm+"_Gnmda", row, gnmda)
+		dt.SetCellFloat(ly.Nm+"_GgabaB", row, ggabab)
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1048,13 +1055,15 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.LayStatNms {
-		sch = append(sch, etable.Column{lnm + " MaxGeM", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + " ActAvg", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + " GiMult", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + " Hog", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + " Dead", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + " Gnmda", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + " GgabaB", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_AvgDifAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_Hog", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_Dead", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_Gnmda", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_GgabaB", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1069,17 +1078,19 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
 	plt.SetColParams("PctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("CosDiff", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 
 	for _, lnm := range ss.LayStatNms {
-		plt.SetColParams(lnm+" MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+" ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
-		plt.SetColParams(lnm+" GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+" Hog", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+" Dead", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+" Gnmda", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+" GgabaB", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+		plt.SetColParams(lnm+"_AvgDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_Hog", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_Dead", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_Gnmda", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_GgabaB", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
 	return plt
 }
@@ -1112,7 +1123,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
-		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
+		dt.SetCellFloat(ly.Nm+"_ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
@@ -1139,7 +1150,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"CosDiff", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.LayStatNms {
-		sch = append(sch, etable.Column{lnm + " ActM.Avg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActM.Avg", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, nt)
 }
@@ -1159,7 +1170,7 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
 	for _, lnm := range ss.LayStatNms {
-		plt.SetColParams(lnm+" ActM.Avg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+		plt.SetColParams(lnm+"_ActM.Avg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 	}
 	return plt
 }
