@@ -76,15 +76,9 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On":     "false", // if mom, then need wtbal!
-					"Prjn.Learn.WtBal.Targs":  "false", // true == false
-					"Prjn.Learn.WtBal.HiGain": "4",     // 4 def
-					"Prjn.Learn.WtBal.LoGain": "6",     // 6 def
 					"Prjn.Learn.WtSig.Gain":   "6",
 					"Prjn.Learn.Lrate":        "0.04", // gain 1, lr .35 or .4 pretty close to 6/.04
-					"Prjn.Learn.XCal.SetLLrn": "true",
-					"Prjn.Learn.XCal.LLrn":    "0", // no real diff actually
-					"Prjn.Learn.XCal.SubMean": "0.8",
+					"Prjn.Learn.XCal.SubMean": "1",    // no diffs .6 - 1
 					"Prjn.Com.PFail":          "0.0",
 					"Prjn.Com.PFailWtMax":     "0.0", // 0.8 default
 					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
@@ -119,11 +113,11 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Type":              "NoNoise", // no diff -- maybe tiny bit better
 					"Layer.Act.Clamp.Rate":              "180",     // 180 == 200 > 150 > 120 > 100 -- major effect on 100, 120
 					"Layer.Act.Clamp.ErrThr":            "0.5",     // 0.5 best
-					"Layer.Learn.AvgL.Gain":             "2.5",     // 2.5 def == 2.0, 3.0
-					"Layer.Learn.SynScale.Rate":         "0.01",
-					"Layer.Learn.SynScale.AvgTau":       "200",
-					"Layer.Learn.SynScale.TrgRange.Min": ".5",
-					"Layer.Learn.SynScale.TrgRange.Max": "1.5",
+					"Layer.Learn.SynScale.ErrLrate":     "0.05",
+					"Layer.Learn.SynScale.Rate":         "0.005", // .002 >= .005 > .01
+					"Layer.Learn.SynScale.AvgTau":       "500",   // 500 > 200 = 100
+					"Layer.Learn.SynScale.TrgRange.Min": "0.8",   // .8 > .5 > .2
+					"Layer.Learn.SynScale.TrgRange.Max": "2",     // 2 > 1.5 > 2.5 > 1.2
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -1022,6 +1016,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		dt.SetCellFloat(ly.Nm+"_AvgDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
 		dt.SetCellFloat(ly.Nm+"_AvgDifMax", row, float64(ly.Pools[0].AvgDif.Max))
 		dt.SetCellFloat(ly.Nm+"_GiMult", row, float64(ly.GiMult))
+		dt.SetCellFloat(ly.Nm+"_CosDiff", row, float64(1-ly.CosDiff.Avg))
 		hog, dead, gnmda, ggabab := ss.HogDead(lnm)
 		dt.SetCellFloat(ly.Nm+"_Hog", row, hog)
 		dt.SetCellFloat(ly.Nm+"_Dead", row, dead)
@@ -1060,6 +1055,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_AvgDifAvg", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_CosDiff", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_Hog", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_Dead", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_Gnmda", etensor.FLOAT64, nil, nil})
@@ -1087,6 +1083,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_AvgDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_Hog", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_Dead", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_Gnmda", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)

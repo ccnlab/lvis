@@ -75,17 +75,17 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":              "1.1", // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":               "1.1", // 1.1 > 1.0 -- universal for all layers
-					"Layer.Learn.AvgL.Gain":             "4.0", // 4 > 3.5 > 3 > 2.5 -- small effects
 					"Layer.Act.Gbar.L":                  "0.2", // 0.2 orig > 0.1 new def
 					"Layer.Act.Init.Decay":              "0.5", // 0.5 > 0.2
 					"Layer.Act.Noise.Dist":              "Gaussian",
 					"Layer.Act.Noise.Mean":              "0.0",     // .05 max for blowup
 					"Layer.Act.Noise.Var":               "0.01",    // .01 a bit worse
 					"Layer.Act.Noise.Type":              "NoNoise", // off for now
-					"Layer.Learn.SynScale.Rate":         "0.01",
-					"Layer.Learn.SynScale.AvgTau":       "200",
-					"Layer.Learn.SynScale.TrgRange.Min": ".5",
-					"Layer.Learn.SynScale.TrgRange.Max": "1.5",
+					"Layer.Learn.SynScale.ErrLrate":     "0.05",
+					"Layer.Learn.SynScale.Rate":         "0.005",
+					"Layer.Learn.SynScale.AvgTau":       "500",
+					"Layer.Learn.SynScale.TrgRange.Min": "0.8",
+					"Layer.Learn.SynScale.TrgRange.Max": "2",
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -119,7 +119,7 @@ var ParamSets = params.Sets{
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.ActAvg.Init": "0.06", // .06 > .05 = .04
+					"Layer.Inhib.ActAvg.Init": "0.1",  // .06 > .05 = .04
 					"Layer.Inhib.Adapt.On":    "true", // adapt > not -- reduces hoging
 				}},
 			{Sel: "#TE", Desc: "initial activity",
@@ -140,17 +140,11 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On":     "false",
-					"Prjn.Learn.WtBal.Targs":  "true",  // true > false by a small amount
-					"Prjn.Learn.WtSig.Gain":   "6",     // 6 > 1 -- no combination of sig1 + lrate worked..
-					"Prjn.Learn.Lrate":        "0.04",  // must set initial lrate here when using schedule!
-					"Prjn.Learn.XCal.SetLLrn": "false", // false enables BCM mech, true = override to none -- BCM slightly better but not really
-					"Prjn.Learn.XCal.LLrn":    "0",
-					"Prjn.Learn.XCal.SubMean": "0.8",
+					"Prjn.Learn.WtSig.Gain":   "6",    // 6 > 1 -- no combination of sig1 + lrate worked..
+					"Prjn.Learn.Lrate":        "0.04", // must set initial lrate here when using schedule!
+					"Prjn.Learn.XCal.SubMean": "1",
 					"Prjn.Com.PFail":          "0.0",
 					"Prjn.Com.PFailWtMax":     "0.0",
-					"Prjn.Learn.WtBal.HiGain": "4", // 4 def
-					"Prjn.Learn.WtBal.LoGain": "6", // 6 def
 					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
@@ -1483,6 +1477,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		dt.SetCellFloat(lnm+"_AvgDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
 		dt.SetCellFloat(lnm+"_AvgDifMax", row, float64(ly.Pools[0].AvgDif.Max))
 		dt.SetCellFloat(lnm+"_GiMult", row, float64(ly.GiMult))
+		dt.SetCellFloat(lnm+"_CosDiff", row, float64(1-ly.CosDiff.Avg))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1533,6 +1528,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_AvgDifAvg", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_CosDiff", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1562,6 +1558,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_AvgDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
 	return plt
 }
