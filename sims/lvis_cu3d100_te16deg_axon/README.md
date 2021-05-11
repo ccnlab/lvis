@@ -24,7 +24,9 @@ The translation params have a big impact: .3 uniform is fairly difficult, and th
 
 This is a good benchmark for performance.  On the `blanca` cluster, with 4 threads per MPI node and 16 nodes, it takes about 40 secs per 504 trials = 80 msec per trial (i.e., 80% of real time for 100 msec alpha cycle ;)
 
+The Go leabra replication is about the same speed on the nominally faster hpc2 cluster, with 2 threads and 16 MPI nodes.
 
+Spiking takes about 120 msec for 200 cycles so it is significantly faster per cycle as expected.
 
 # Params
 
@@ -36,5 +38,7 @@ The cemer versions used fairly standard params (because they determined these pa
 * `Gbar.L` = .2 instead of .1
 * `Inhib.Layer.FB` = 0 instead of 1, for layers with pool inhibition.
 
+# TODO:
 
+Compute integrated CosDiff that takes into account ratio of output to per-layer cosdiff so we can measure error attenuation.  Also just L1 abs diff.
 
