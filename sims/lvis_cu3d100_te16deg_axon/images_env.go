@@ -42,8 +42,9 @@ type ImagesEnv struct {
 	V1h16      Vis             `desc:"v1 16deg higher resolution filtering of image -- V1AllTsr has result"`
 	V1m8       Vis             `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
 	V1h8       Vis             `desc:"v1 8deg higher resolution filtering of image -- V1AllTsr has result"`
-	OutSize    int             `desc:"the output tensor size is Max(OutSize, number of cats)"`
-	Output     etensor.Float32 `desc:"output category"`
+	OutSize    int             `desc:"the output tensor size in number of cats is is Max(OutSize, number of cats)"`
+	NOutPer    int             `desc:"number of output units per category -- spiking benefits from replication"`
+	Output     etensor.Float32 `desc:"output category * NOutPer replicated units"`
 	StRow      int             `desc:"starting row, e.g., for mpi allocation across processors"`
 	EdRow      int             `desc:"ending row -- if 0 it is ignored"`
 	Shuffle    []int           `desc:"suffled list of entire set of images -- re-shuffle every time through imgidxs"`
@@ -74,6 +75,7 @@ func (ev *ImagesEnv) Defaults() {
 	ev.TransMax.Set(0.3, 0.3)
 	ev.ScaleRange.Set(0.8, 1.1)
 	ev.RotateMax = 8
+	ev.NOutPer = 5
 	ev.V1m16.Defaults(0, 24, 8)
 	ev.V1h16.Defaults(0, 12, 4)
 	ev.V1m8.Defaults(32, 12, 4)
@@ -121,7 +123,7 @@ func (ev *ImagesEnv) Init(run int) {
 	ev.Row.Max = len(ev.ImgIdxs)
 	nc := len(ev.Images.Cats)
 	os := ints.MaxInt(nc, ev.OutSize)
-	ev.Output.SetShape([]int{os}, nil, nil)
+	ev.Output.SetShape([]int{os * ev.NOutPer}, nil, nil)
 }
 
 // SaveListJSON saves flat string list to a JSON-formatted file.
@@ -294,9 +296,57 @@ func (ev *ImagesEnv) FilterImage() error {
 }
 
 // SetOutput sets output by category
-func (ev *ImagesEnv) SetOutput() {
+func (ev *ImagesEnv) SetOutput(out int) {
 	ev.Output.SetZeros()
-	ev.Output.Set1D(ev.CurCatIdx, 1)
+	si := ev.NOutPer * out
+	for i := 0; i < ev.NOutPer; i++ {
+		ev.Output.SetFloat1D(si+i, 1)
+	}
+}
+
+// OutErr scores the output activity of network, returning the index of
+// item with max overall activity, and 1 if that is error, 0 if correct.
+// also returns a top-two error: if 2nd most active output was correct.
+func (ev *ImagesEnv) OutErr(tsr *etensor.Float32) (maxi int, err, err2 float64) {
+	nc := ev.Output.Len() / ev.NOutPer
+	maxi = 0
+	maxv := 0.0
+	for i := 0; i < nc; i++ {
+		si := ev.NOutPer * i
+		sum := 0.0
+		for j := 0; j < ev.NOutPer; j++ {
+			sum += tsr.FloatVal1D(si + j)
+		}
+		if sum > maxv {
+			maxi = i
+			maxv = sum
+		}
+	}
+	err = 1.0
+	if maxi == ev.CurCatIdx {
+		err = 0
+	}
+	maxv2 := 0.0
+	maxi2 := 0
+	for i := 0; i < nc; i++ {
+		if i == maxi { // skip top
+			continue
+		}
+		si := ev.NOutPer * i
+		sum := 0.0
+		for j := 0; j < ev.NOutPer; j++ {
+			sum += tsr.FloatVal1D(si + j)
+		}
+		if sum > maxv2 {
+			maxi2 = i
+			maxv2 = sum
+		}
+	}
+	err2 = err
+	if maxi2 == ev.CurCatIdx {
+		err2 = 0
+	}
+	return
 }
 
 func (ev *ImagesEnv) String() string {
@@ -313,7 +363,7 @@ func (ev *ImagesEnv) Step() bool {
 	}
 	ev.RandTransforms()
 	ev.FilterImage()
-	ev.SetOutput()
+	ev.SetOutput(ev.CurCatIdx)
 	return true
 }
 

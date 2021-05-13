@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
@@ -35,8 +36,6 @@ import (
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/etview" // include to get gui views
-	"github.com/emer/etable/minmax"
-	"github.com/emer/etable/norm"
 	"github.com/emer/etable/split"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
@@ -78,6 +77,9 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":               "1.1", // 1.1 > 1.0 -- universal for all layers
 					"Layer.Act.Gbar.L":                  "0.2", // 0.2 orig > 0.1 new def
 					"Layer.Act.Init.Decay":              "0.5", // 0.5 > 0.2
+					"Layer.Act.KNa.Fast.Max":            "0.1", // fm both .2 worse
+					"Layer.Act.KNa.Med.Max":             "0.2", // 0.2 > 0.1 def
+					"Layer.Act.KNa.Slow.Max":            "0.2", // 0.2 > higher
 					"Layer.Act.Noise.Dist":              "Gaussian",
 					"Layer.Act.Noise.Mean":              "0.0",     // .05 max for blowup
 					"Layer.Act.Noise.Var":               "0.01",    // .01 a bit worse
@@ -85,8 +87,8 @@ var ParamSets = params.Sets{
 					"Layer.Learn.SynScale.ErrLrate":     "0.02",
 					"Layer.Learn.SynScale.Rate":         "0.005",
 					"Layer.Learn.SynScale.AvgTau":       "500",
-					"Layer.Learn.SynScale.TrgRange.Min": "0.8",
-					"Layer.Learn.SynScale.TrgRange.Max": "2",
+					"Layer.Learn.SynScale.TrgRange.Min": "0.2", // objrec .2 > .5
+					"Layer.Learn.SynScale.TrgRange.Max": "2.0", // objrec 2 > 1.8
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -115,13 +117,13 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    // 1 >= 0 in lba
 					"Layer.Inhib.ActAvg.Init": "0.04", // .04 >= .03 > .05
-					"Layer.Inhib.Adapt.On":    "true", // adapt > not -- reduces hoging
+					"Layer.Inhib.Adapt.On":    "true", // adapt > not still better v34
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.ActAvg.Init": "0.1",  // .06 > .05 = .04
-					"Layer.Inhib.Adapt.On":    "true", // adapt > not -- reduces hoging
+					"Layer.Inhib.Adapt.On":    "true", // this is probably essential
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
@@ -131,15 +133,20 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.5",   // 1.5 = 1.6 > 1.4
-					"Layer.Inhib.Adapt.On":    "false", // no adapt
-					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Act.Init.Decay":    "0.5", // 0.5 > 1
-					"Layer.Act.Clamp.Rate":    "180", // 180 best here too
-					"Layer.Act.Clamp.Type":    "GeClamp",
-					"Layer.Act.Clamp.Ge":      "0.6",   // .6 = .7 > .5 (tiny diff)
-					"Layer.Act.GABAB.Gbar":    "0.005", // .005 > .01 > .02 > .05 > .1 > .2
-					"Layer.Act.NMDA.Gbar":     "0.03",  // was .02
+					"Layer.Inhib.Layer.Gi":     "1.5", // 1.5 = 1.6 > 1.4
+					"Layer.Inhib.ActAvg.Init":  "0.01",
+					"Layer.Inhib.Adapt.On":     "false", // true = definitely worse
+					"Layer.Inhib.Adapt.LoTol":  "0.8",
+					"Layer.Act.Init.Decay":     "0.5", // 0.5 > 1
+					"Layer.Act.Clamp.Rate":     "180", // 180 best here too
+					"Layer.Act.Clamp.Type":     "GeClamp",
+					"Layer.Act.Clamp.Ge":       "0.6",   // .6 = .7 > .5 (tiny diff)
+					"Layer.Act.Clamp.BurstThr": "0.5",   //
+					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same
+					"Layer.Act.Clamp.BurstCyc": "0",     // 20 > 15 > 10 -- maybe refractory?
+					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
+					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
+					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
 				}},
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
@@ -207,11 +214,11 @@ var ParamSets = params.Sets{
 			// back projections
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.02", // .02 > .05
+					"Prjn.WtScale.Rel": "0.05", // .05 > .02 > .1
 				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 >= .15 > .2
+					"Prjn.WtScale.Rel": "0.2", // .1 == .2
 				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
@@ -219,21 +226,21 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // .3 > .2
+					"Prjn.WtScale.Rel": "0.3", // .3 > .2 (.2 fast early, then worse later)
 				}},
 			{Sel: ".OutV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // .3 > .2
+					"Prjn.WtScale.Rel": "0.3", // .3 > .2 (.2 fast early, then worse later)
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2", // todo: try .3
+					"Prjn.WtScale.Rel": "0.2", //
 				}},
 
 			// shortcuts
 			{Sel: ".V1V4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5", // .5 > .2 -- all tested together
+					"Prjn.WtScale.Rel": "0.5", // .5 > .2 (v32 still) -- all tested together
 				}},
 			{Sel: ".V2TEO", Desc: "weaker",
 				Params: params.Params{
@@ -300,22 +307,21 @@ type Sim struct {
 	ActRFNms         []string        `desc:"names of layers to compute activation rfields on"`
 
 	// statistics: note use float64 as that is best for etable.Table
-	TrlErr        float64                     `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on max out unit"`
-	TrlAnyErr     float64                     `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on whether target was among those active above .2 threshold"`
-	TrlUnitErr    float64                     `inactive:"+" desc:"current trial's average sum squared error"`
-	TrlTrgAct     float64                     `inactive:"+" desc:"activity of target output unit on this trial"`
-	TrlCosDiff    float64                     `inactive:"+" desc:"current trial's cosine difference"`
-	EpcUnitErr    float64                     `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
-	EpcPctErr     float64                     `inactive:"+" desc:"last epoch's average TrlErr"`
-	EpcPctCor     float64                     `inactive:"+" desc:"1 - last epoch's average TrlErr"`
-	EpcPctAnyErr  float64                     `inactive:"+" desc:"last epoch's average TrlAnyErr"`
-	EpcCosDiff    float64                     `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
-	EpcErrTrgAct  float64                     `inactive:"+" desc:"avg activity of target output unit on err trials"`
-	EpcCorTrgAct  float64                     `inactive:"+" desc:"avg activity of target output unit on correct trials"`
-	EpcPerTrlMSec float64                     `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
-	FirstZero     int                         `inactive:"+" desc:"epoch at when Err first went to zero"`
-	NZero         int                         `inactive:"+" desc:"number of epochs in a row with zero Err"`
-	LayErrGrad    map[string]*minmax.AvgMax32 `desc:"proportion of output layer cos diff penetrating to this layer, over epoch"`
+	TrlErr        float64 `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on max out unit"`
+	TrlErr2       float64 `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on whether target was among those active above .2 threshold"`
+	TrlUnitErr    float64 `inactive:"+" desc:"current trial's average sum squared error"`
+	TrlTrgAct     float64 `inactive:"+" desc:"activity of target output unit on this trial"`
+	TrlCosDiff    float64 `inactive:"+" desc:"current trial's cosine difference"`
+	EpcUnitErr    float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
+	EpcPctErr     float64 `inactive:"+" desc:"last epoch's average TrlErr"`
+	EpcPctCor     float64 `inactive:"+" desc:"1 - last epoch's average TrlErr"`
+	EpcPctErr2    float64 `inactive:"+" desc:"last epoch's average TrlErr2"`
+	EpcCosDiff    float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
+	EpcErrTrgAct  float64 `inactive:"+" desc:"avg activity of target output unit on err trials"`
+	EpcCorTrgAct  float64 `inactive:"+" desc:"avg activity of target output unit on correct trials"`
+	EpcPerTrlMSec float64 `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
+	FirstZero     int     `inactive:"+" desc:"epoch at when Err first went to zero"`
+	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero Err"`
 
 	// internal state - view:"-"
 	Win          *gi.Window                    `view:"-" desc:"main GUI window"`
@@ -369,7 +375,10 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.Params = ParamSets
-	ss.TestInterval = 10
+	ss.TestInterval = 0 // maybe causing issues?
+
+	ss.Time.CycPerQtr = 60 // 60/50 best
+	ss.Time.PlusCyc = 50
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
 	ss.Prjn4x4Skp2.Size.Set(4, 4)
@@ -446,7 +455,7 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxRuns = 1
 	}
 	if ss.MaxEpcs == 0 { // allow user override
-		ss.MaxEpcs = 1000
+		ss.MaxEpcs = 150 // was 1000
 		ss.NZeroStop = -1
 	}
 	if ss.MaxTrls == 0 { // allow user override
@@ -537,7 +546,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teo8.SetClass("TEO")
 
 	// te := net.AddLayer4D("TE", 2, 2, 10, 10, emer.Hidden)
-	out := net.AddLayer2D("Output", 10, 10, emer.Target)
+	out := net.AddLayer4D("Output", 10, 10, ss.TrainEnv.NOutPer, 1, emer.Target)
 
 	full := prjn.NewFull()
 	rndcut := prjn.NewUnifRnd()
@@ -718,6 +727,8 @@ func (ss *Sim) Init() {
 	ss.InitRndSeed()
 	ss.StopNow = false
 	ss.SetParams("", false) // all sheets
+	// note: in general shortening the time constants based on MPI is not useful
+	ss.Net.SynScaleInterval = 100 // 100 > 20
 	ss.NewRun()
 	ss.UpdateView(true)
 }
@@ -784,7 +795,8 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ss.Net.AlphaCycInit()
 	ss.Time.AlphaCycStart()
 	for qtr := 0; qtr < 4; qtr++ {
-		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
+		mxcyc := ss.Time.CurCycles()
+		for cyc := 0; cyc < mxcyc; cyc++ {
 			ss.Net.Cycle(&ss.Time)
 			ss.Time.CycleInc()
 			if ss.ViewOn {
@@ -920,25 +932,15 @@ func (ss *Sim) InitStats() {
 	ss.NZero = 0
 	// clear rest just to make Sim look initialized
 	ss.TrlErr = 0
-	ss.TrlAnyErr = 0
+	ss.TrlErr2 = 0
 	ss.TrlTrgAct = 0
 	ss.TrlUnitErr = 0
 	ss.EpcUnitErr = 0
 	ss.EpcPctErr = 0
-	ss.EpcPctAnyErr = 0
+	ss.EpcPctErr2 = 0
 	ss.EpcCosDiff = 0
 	ss.EpcErrTrgAct = 0
 	ss.EpcCorTrgAct = 0
-
-	if ss.LayErrGrad == nil {
-		ss.LayErrGrad = make(map[string]*minmax.AvgMax32)
-		for _, lnm := range ss.HidLays {
-			ss.LayErrGrad[lnm] = &minmax.AvgMax32{}
-		}
-	}
-	for _, am := range ss.LayErrGrad {
-		am.Init()
-	}
 }
 
 // TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
@@ -953,46 +955,13 @@ func (ss *Sim) TrialStats(accum bool) {
 
 	ovt := ss.ValsTsr("Output")
 	out.UnitValsTensor(ovt, "ActM")
-	_, mxi := norm.MaxIdx32(ovt.Values)
-	if mxi >= 0 && out.Neurons[mxi].Targ > 0.5 {
-		ss.TrlErr = 0
-	} else {
-		ss.TrlErr = 1
-	}
 
-	out.UnitValsTensor(ovt, "Targ")
-	_, mxi = norm.MaxIdx32(ovt.Values)
-	ss.TrlTrgAct = float64(out.Neurons[mxi].ActP)
-	if out.Neurons[mxi].ActM >= 0.2 {
-		ss.TrlAnyErr = 0
-	} else {
-		ss.TrlAnyErr = 1
-	}
+	rsp := 0
+	rsp, ss.TrlErr, ss.TrlErr2 = ss.TrainEnv.OutErr(ovt)
+	_ = rsp
+	// ss.TrlOut = fmt.Sprintf("%d", rsp)
 
-	ss.ErrGradStats()
-}
-
-func (ss *Sim) ErrGradStats() {
-	trl := ss.TrainEnv.Trial.Cur
-	if trl == 0 {
-		for _, am := range ss.LayErrGrad {
-			am.Init()
-		}
-	}
-	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
-	if ss.TrlErr == 0 || out.CosDiff.Cos > .9 { // close enough
-		return
-	}
-	oce := 1 - out.CosDiff.Cos
-	for lnm, am := range ss.LayErrGrad {
-		if trl == 1 {
-			am.Init()
-		}
-		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
-		lce := 1 - ly.CosDiff.Cos
-		lr := lce / oce
-		am.UpdateVal(lr, trl)
-	}
+	ss.TrlTrgAct = float64(out.Pools[0].ActP.Avg / 0.01)
 }
 
 // TrainEpoch runs training trials for remainder of this epoch
@@ -1346,7 +1315,7 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	dt.SetCellString("TrialName", row, ss.TrainEnv.String())
 
 	dt.SetCellFloat("Err", row, ss.TrlErr)
-	dt.SetCellFloat("AnyErr", row, ss.TrlAnyErr)
+	dt.SetCellFloat("Err2", row, ss.TrlErr2)
 	dt.SetCellFloat("TrgAct", row, ss.TrlTrgAct)
 	dt.SetCellFloat("UnitErr", row, ss.TrlUnitErr)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
@@ -1354,6 +1323,17 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	for _, lnm := range ss.HidLays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		dt.SetCellFloat(lnm+"_MaxGeM", row, float64(ly.Pools[0].GeM.Max))
+
+		lvt := ss.ValsTsr(lnm)
+		ly.UnitValsTensor(lvt, "ActDif")
+		mad := 0.0
+		for i := range lvt.Values {
+			mad += math.Abs(float64(lvt.Values[i]))
+		}
+		mad /= float64(len(lvt.Values))
+
+		dt.SetCellFloat(lnm+"_CosDiff", row, float64(1-ly.CosDiff.Cos))
+		dt.SetCellFloat(lnm+"_ActDif", row, mad)
 	}
 
 	if ss.TrnTrlFile != nil && (!ss.UseMPI || ss.SaveProcLog) { // otherwise written at end of epoch, integrated
@@ -1381,13 +1361,15 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 		{"Cat", etensor.STRING, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
 		{"Err", etensor.FLOAT64, nil, nil},
-		{"AnyErr", etensor.FLOAT64, nil, nil},
+		{"Err2", etensor.FLOAT64, nil, nil},
 		{"TrgAct", etensor.FLOAT64, nil, nil},
 		{"UnitErr", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.HidLays {
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_CosDiff", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActDif", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1405,13 +1387,15 @@ func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 
 	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("AnyErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("Err2", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("TrgAct", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
 	for _, lnm := range ss.HidLays {
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+		plt.SetColParams(lnm+"_CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+		plt.SetColParams(lnm+"_ActDif", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	}
 	return plt
 }
@@ -1497,22 +1481,20 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	ss.EpcUnitErr = agg.Mean(tix, "UnitErr")[0]
 	ss.EpcPctErr = agg.Mean(tix, "Err")[0]
 	ss.EpcPctCor = 1 - ss.EpcPctErr
-	ss.EpcPctAnyErr = agg.Mean(tix, "AnyErr")[0]
+	ss.EpcPctErr2 = agg.Mean(tix, "Err2")[0]
 	ss.EpcCosDiff = agg.Mean(tix, "CosDiff")[0]
 
-	spl := split.GroupBy(tix, []string{"AnyErr"})
+	spl := split.GroupBy(tix, []string{"Err"})
 	split.Desc(spl, "TrgAct")
+	for _, lnm := range ss.HidLays {
+		split.Desc(spl, lnm+"_CosDiff")
+		split.Desc(spl, lnm+"_ActDif")
+	}
 	ss.TrnErrStats = spl.AggsToTable(etable.AddAggName)
 
-	if ss.TrnErrStats.Rows > 0 {
-		if ss.TrnErrStats.CellFloat("AnyErr", 0) == 0 {
-			ss.EpcCorTrgAct = ss.TrnErrStats.CellFloat("TrgAct:Mean", 0)
-		}
-		if ss.TrnErrStats.CellFloat("AnyErr", 0) == 1 {
-			ss.EpcErrTrgAct = ss.TrnErrStats.CellFloat("TrgAct:Mean", 0)
-		} else if ss.TrnErrStats.Rows > 1 {
-			ss.EpcErrTrgAct = ss.TrnErrStats.CellFloat("TrgAct:Mean", 1)
-		}
+	if ss.EpcPctErr > 0 && ss.EpcPctErr < 1 {
+		ss.EpcCorTrgAct = ss.TrnErrStats.CellFloat("TrgAct:Mean", 0)
+		ss.EpcErrTrgAct = ss.TrnErrStats.CellFloat("TrgAct:Mean", 1)
 	}
 
 	if ss.FirstZero < 0 && ss.EpcPctErr == 0 {
@@ -1532,16 +1514,12 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	}
 	ss.LastEpcTime = time.Now()
 
-	for _, am := range ss.LayErrGrad {
-		am.CalcAvg()
-	}
-
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
 	dt.SetCellFloat("UnitErr", row, ss.EpcUnitErr)
 	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
 	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
-	dt.SetCellFloat("PctAnyErr", row, ss.EpcPctAnyErr)
+	dt.SetCellFloat("PctErr2", row, ss.EpcPctErr2)
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
 	dt.SetCellFloat("ErrTrgAct", row, ss.EpcErrTrgAct)
 	dt.SetCellFloat("CorTrgAct", row, ss.EpcCorTrgAct)
@@ -1562,12 +1540,16 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		dt.SetCellFloat(lnm+"_Dead", row, dead)
 		dt.SetCellFloat(lnm+"_Hog", row, hog)
 		dt.SetCellFloat(lnm+"_MaxGeM", row, agg.Mean(tix, lnm+"_MaxGeM")[0])
-		dt.SetCellFloat(lnm+"_ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(lnm+"_ActAvg", row, float64(ly.ActAvg.ActMAvg))
+		dt.SetCellFloat(lnm+"_GiMult", row, float64(ly.ActAvg.GiMult))
 		dt.SetCellFloat(lnm+"_AvgDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
 		dt.SetCellFloat(lnm+"_AvgDifMax", row, float64(ly.Pools[0].AvgDif.Max))
-		dt.SetCellFloat(lnm+"_GiMult", row, float64(ly.GiMult))
-		dt.SetCellFloat(lnm+"_ErrGradAvg", row, float64(ss.LayErrGrad[lnm].Avg))
-		dt.SetCellFloat(lnm+"_ErrGradMax", row, float64(ss.LayErrGrad[lnm].Max))
+		if ss.EpcPctErr > 0 && ss.EpcPctErr < 1 {
+			dt.SetCellFloat(lnm+"_CorCosDiff", row, ss.TrnErrStats.CellFloat(lnm+"_CosDiff:Mean", 0))
+			dt.SetCellFloat(lnm+"_ErrCosDiff", row, ss.TrnErrStats.CellFloat(lnm+"_CosDiff:Mean", 1))
+			dt.SetCellFloat(lnm+"_CorActDif", row, ss.TrnErrStats.CellFloat(lnm+"_ActDif:Mean", 0))
+			dt.SetCellFloat(lnm+"_ErrActDif", row, ss.TrnErrStats.CellFloat(lnm+"_ActDif:Mean", 1))
+		}
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1603,7 +1585,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"UnitErr", etensor.FLOAT64, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
-		{"PctAnyErr", etensor.FLOAT64, nil, nil},
+		{"PctErr2", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
 		{"ErrTrgAct", etensor.FLOAT64, nil, nil},
 		{"CorTrgAct", etensor.FLOAT64, nil, nil},
@@ -1618,11 +1600,13 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_Hog", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_AvgDifAvg", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_ErrGradAvg", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_ErrGradMax", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_CorCosDiff", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ErrCosDiff", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_CorActDif", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ErrActDif", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1637,7 +1621,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
 	plt.SetColParams("PctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("PctAnyErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("PctErr2", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("ErrTrgAct", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("CorTrgAct", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -1652,11 +1636,13 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_Hog", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_AvgDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_ErrGradAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_ErrGradMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_CorCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_ErrCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_CorActDif", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_ErrActDif", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
 	return plt
 }
@@ -2203,7 +2189,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.StartRun, "run", 0, "starting run number -- determines the random seed -- runs counts from there -- can do all runs in parallel by launching separate jobs with each run, runs = 1")
-	flag.IntVar(&ss.MaxEpcs, "epcs", 1000, "number of epochs per run")
+	flag.IntVar(&ss.MaxEpcs, "epcs", 150, "number of epochs per run")
 	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
@@ -2324,11 +2310,9 @@ func (ss *Sim) MPIFinalize() {
 }
 
 // CollectDWts collects the weight changes from all synapses into AllDWts
+// includes all other long adapting factors too: DTrgAvg, ActAvg, etc
 func (ss *Sim) CollectDWts(net *axon.Network) {
-	made := net.CollectDWts(&ss.AllDWts, 24633600) // plug in number from printout below, to avoid realloc
-	if made {
-		mpi.Printf("MPI: AllDWts len: %d\n", len(ss.AllDWts)) // put this number in above make
-	}
+	net.CollectDWts(&ss.AllDWts)
 }
 
 // MPIWtFmDWt updates weights from weight changes, using MPI to integrate
@@ -2342,7 +2326,7 @@ func (ss *Sim) MPIWtFmDWt() {
 			ss.SumDWts = make([]float32, ndw)
 		}
 		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
-		ss.Net.SetDWts(ss.SumDWts)
+		ss.Net.SetDWts(ss.SumDWts, mpi.WorldSize())
 	}
 	ss.Net.WtFmDWt()
 }

@@ -22,6 +22,7 @@ type LEDEnv struct {
 	Dsc       string          `desc:"description of this environment"`
 	Draw      LEDraw          `desc:"draws LEDs onto image"`
 	Vis       Vis             `desc:"visual processing params"`
+	NOutPer   int             `desc:"number of output units per LED item -- spiking benefits from replication"`
 	MinLED    int             `min:"0" max:"19" desc:"minimum LED number to draw (0-19)"`
 	MaxLED    int             `min:"0" max:"19" desc:"maximum LED number to draw (0-19)"`
 	CurLED    int             `inactive:"+" desc:"current LED number that was drawn"`
@@ -78,6 +79,7 @@ func (ev *LEDEnv) Actions() env.Elements {
 func (ev *LEDEnv) Defaults() {
 	ev.Draw.Defaults()
 	ev.Vis.Defaults()
+	ev.NOutPer = 5
 	ev.XFormRand.TransX.Set(-0.25, 0.25)
 	ev.XFormRand.TransY.Set(-0.25, 0.25)
 	ev.XFormRand.Scale.Set(0.7, 1)
@@ -94,7 +96,7 @@ func (ev *LEDEnv) Init(run int) {
 	ev.Trial.Init()
 	ev.Run.Cur = run
 	ev.Trial.Cur = -1 // init state -- key so that first Step() = 0
-	ev.Output.SetShape([]int{4, 5}, nil, []string{"Y", "X"})
+	ev.Output.SetShape([]int{4, 5, ev.NOutPer, 1}, nil, []string{"Y", "X", "N", "1"})
 }
 
 func (ev *LEDEnv) Step() bool {
@@ -142,7 +144,55 @@ func (ev *LEDEnv) String() string {
 // SetOutput sets the output LED bit
 func (ev *LEDEnv) SetOutput(out int) {
 	ev.Output.SetZeros()
-	ev.Output.SetFloat1D(out, 1)
+	si := ev.NOutPer * out
+	for i := 0; i < ev.NOutPer; i++ {
+		ev.Output.SetFloat1D(si+i, 1)
+	}
+}
+
+// OutErr scores the output activity of network, returning the index of
+// item with max overall activity, and 1 if that is error, 0 if correct.
+// also returns a top-two error: if 2nd most active output was correct.
+func (ev *LEDEnv) OutErr(tsr *etensor.Float32) (maxi int, err, err2 float64) {
+	nc := ev.Output.Len() / ev.NOutPer
+	maxi = 0
+	maxv := 0.0
+	for i := 0; i < nc; i++ {
+		si := ev.NOutPer * i
+		sum := 0.0
+		for j := 0; j < ev.NOutPer; j++ {
+			sum += tsr.FloatVal1D(si + j)
+		}
+		if sum > maxv {
+			maxi = i
+			maxv = sum
+		}
+	}
+	err = 1.0
+	if maxi == ev.CurLED {
+		err = 0
+	}
+	maxv2 := 0.0
+	maxi2 := 0
+	for i := 0; i < nc; i++ {
+		if i == maxi { // skip top
+			continue
+		}
+		si := ev.NOutPer * i
+		sum := 0.0
+		for j := 0; j < ev.NOutPer; j++ {
+			sum += tsr.FloatVal1D(si + j)
+		}
+		if sum > maxv2 {
+			maxi2 = i
+			maxv2 = sum
+		}
+	}
+	err2 = err
+	if maxi2 == ev.CurLED {
+		err2 = 0
+	}
+	return
 }
 
 // DrawRndLED picks a new random LED and draws it
