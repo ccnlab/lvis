@@ -73,44 +73,47 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":              "1.1", // 1.1 > 1.0 > 1.2 -- all layers
-					"Layer.Inhib.Pool.Gi":               "1.1", // 1.1 > 1.0 -- universal for all layers
-					"Layer.Act.Gbar.L":                  "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Init.Decay":              "0.5", // 0.5 > 0.2
-					"Layer.Act.KNa.Fast.Max":            "0.1", // fm both .2 worse
-					"Layer.Act.KNa.Med.Max":             "0.2", // 0.2 > 0.1 def
-					"Layer.Act.KNa.Slow.Max":            "0.2", // 0.2 > higher
+					"Layer.Inhib.Layer.Gi":              "1.1",  // 1.1 > 1.0 > 1.2 -- all layers
+					"Layer.Inhib.Pool.Gi":               "1.1",  // 1.1 > 1.0 -- universal for all layers
+					"Layer.Inhib.ActAvg.Fixed":          "true", // too much fluctuation
+					"Layer.Act.Gbar.L":                  "0.2",  // 0.2 orig > 0.1 new def
+					"Layer.Act.Init.Decay":              "0.5",  // 0.5 > 0.2
+					"Layer.Act.KNa.Fast.Max":            "0.1",  // fm both .2 worse
+					"Layer.Act.KNa.Med.Max":             "0.2",  // 0.2 > 0.1 def
+					"Layer.Act.KNa.Slow.Max":            "0.2",  // 0.2 > higher
 					"Layer.Act.Noise.Dist":              "Gaussian",
 					"Layer.Act.Noise.Mean":              "0.0",     // .05 max for blowup
 					"Layer.Act.Noise.Var":               "0.01",    // .01 a bit worse
 					"Layer.Act.Noise.Type":              "NoNoise", // off for now
-					"Layer.Learn.SynScale.ErrLrate":     "0.02",
+					"Layer.Learn.SynScale.ErrLrate":     "0.005",   // 0.005 > .02 maybe
 					"Layer.Learn.SynScale.Rate":         "0.005",
 					"Layer.Learn.SynScale.AvgTau":       "500",
-					"Layer.Learn.SynScale.TrgRange.Min": "0.2", // objrec .2 > .5
+					"Layer.Learn.SynScale.TrgRange.Min": "0.5", // .5 > .2 for hogging
 					"Layer.Learn.SynScale.TrgRange.Max": "2.0", // objrec 2 > 1.8
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // clamped, so not relevant, but just in case
-					"Layer.Inhib.ActAvg.Init": "0.08",
+					"Layer.Inhib.ActAvg.Init": "0.1",
 				}},
 			{Sel: ".V1m", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // clamped, so not relevant, but just in case
-					"Layer.Inhib.ActAvg.Init": "0.12",
+					"Layer.Inhib.ActAvg.Init": "0.1",
 				}},
 			{Sel: ".V2h", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",
-					"Layer.Inhib.ActAvg.Init": "0.04",
+					"Layer.Inhib.ActAvg.Init": "0.02",
+					"Layer.Inhib.Adapt.On":    "true",
 				}},
 			{Sel: ".V2m", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",
-					"Layer.Inhib.ActAvg.Init": "0.025",
+					"Layer.Inhib.ActAvg.Init": "0.02",
+					"Layer.Inhib.Adapt.On":    "true",
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -140,10 +143,11 @@ var ParamSets = params.Sets{
 					"Layer.Act.Init.Decay":     "0.5", // 0.5 > 1
 					"Layer.Act.Clamp.Rate":     "180", // 180 best here too
 					"Layer.Act.Clamp.Type":     "GeClamp",
-					"Layer.Act.Clamp.Ge":       "0.6",   // .6 = .7 > .5 (tiny diff)
+					"Layer.Act.Clamp.Ge":       "0.6", // .6 = .7 > .5 (tiny diff)
+					"Layer.Act.Clamp.Burst":    "false",
 					"Layer.Act.Clamp.BurstThr": "0.5",   //
 					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same
-					"Layer.Act.Clamp.BurstCyc": "0",     // 20 > 15 > 10 -- maybe refractory?
+					"Layer.Act.Clamp.BurstCyc": "20",    // 20 > 15 > 10 -- maybe refractory?
 					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
 					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
@@ -152,7 +156,8 @@ var ParamSets = params.Sets{
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
 					"Prjn.Learn.WtSig.Gain":   "6",    // 6 > 1 -- no combination of sig1 + lrate worked..
-					"Prjn.Learn.Lrate":        "0.04", // must set initial lrate here when using schedule!
+					"Prjn.Learn.WtSig.Min":    "0.0",  // todo: try .2 again
+					"Prjn.Learn.Lrate":        "0.01", // .01 > .04 must set initial lrate here when using schedule!
 					"Prjn.Learn.XCal.SubMean": "1",
 					"Prjn.Learn.XCal.DWtThr":  "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":          "0.0",
@@ -162,6 +167,7 @@ var ParamSets = params.Sets{
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
+					// "Prjn.Learn.Lrate": "0",
 				}},
 			{Sel: ".Forward", Desc: "use pfail only on forward cons?",
 				Params: params.Params{
@@ -169,33 +175,17 @@ var ParamSets = params.Sets{
 					"Prjn.Com.PFail":      "0.0", // 0 > .05 > .1 > .2
 					"Prjn.Com.PFailWtMax": "0.0",
 				}},
-			{Sel: ".V1V2h16", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.67",
-				}},
-			{Sel: ".V1V2h8", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Abs": "1.0", // 1.0 > .8
-				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
 				}},
-			{Sel: ".V2V4", Desc: "stronger",
-				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.67", // .67 >= .5
-				}},
-			{Sel: ".V2V4sm", Desc: "stronger -- same as other",
-				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.67", // .67 >= .5
-				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5", // .5 > .67
+					"Prjn.WtScale.Abs": "1.2", // trying bigger -- was low
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "0.5",
+					"Prjn.WtScale.Abs": "1.2", // trying bigger -- was low
 					"Prjn.WtScale.Rel": "0.5",
 				}},
 			{Sel: ".TEOTE", Desc: "weaker",
@@ -216,21 +206,25 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.05", // .05 > .02 > .1
 				}},
+			{Sel: ".TEOV2", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.05", // .05 > .02 > .1
+				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2", // .1 == .2
+					"Prjn.WtScale.Rel": "0.1", // .1 == .2
 				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2", // .1 orig
+					"Prjn.WtScale.Rel": "0.1", // .1 orig
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // .3 > .2 (.2 fast early, then worse later)
+					"Prjn.WtScale.Rel": "0.3", // now .2 > .3
 				}},
 			{Sel: ".OutV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // .3 > .2 (.2 fast early, then worse later)
+					"Prjn.WtScale.Rel": "0.1", // .1 > higher now
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
@@ -250,13 +244,25 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.5",
 				}},
-			{Sel: ".TEOV2", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.05",
-				}},
 			{Sel: ".TEV4", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.05",
+				}},
+		},
+	}},
+	{Name: "WeakShorts", Desc: "weaker shortcuts", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: ".V1V4", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.1",
+				}},
+			{Sel: ".V2TEO", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.1",
+				}},
+			{Sel: ".V4TE", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.1",
 				}},
 		},
 	}},
@@ -302,6 +308,7 @@ type Sim struct {
 	ViewOn           bool            `desc:"whether to update the network view while running"`
 	TrainUpdt        axon.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt         axon.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
+	InLays           []string        `view:"-" desc:"input layers -- for stats"`
 	OutLays          []string        `view:"-" desc:"output layers -- for stats"`
 	HidLays          []string        `view:"-" desc:"hidden layers -- for all main stats"`
 	ActRFNms         []string        `desc:"names of layers to compute activation rfields on"`
@@ -493,16 +500,20 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 	ss.TestEnv.Validate()
 
-	// Delete to 60
 	/*
-		last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
-		next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
-		last40 := append(last20, next20...)
-		ss.TrainEnv.Images.DeleteCats(last40)
-		ss.TrainEnv.Images.DeleteCats(last40)
+		// Delete to 60
+			last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
+			next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
+			last40 := append(last20, next20...)
+			ss.TrainEnv.Images.DeleteCats(last40)
+			ss.TrainEnv.Images.DeleteCats(last40)
 	*/
 
 	objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
+
+	// objsnxt20 := []string{"submarine", "synthesizer", "tank", "telephone", "television", "toaster", "toilet", "trafficlight", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht", "pedestalsink", "pliers", "sectionalcouch", "skull"}
+
+	// objs40 := append(objs20, objsnxt20...)
 	ss.TrainEnv.Images.SelectCats(objs20)
 	ss.TrainEnv.Images.SelectCats(objs20)
 
@@ -588,6 +599,13 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Recip)
 	net.ConnectLayers(v4f16, teo8, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
 
+	// TEO -> V2 shortcuts
+	// net.ConnectLayers(teo16, v2h16, full, emer.Back).SetClass("TEOV2")
+	// net.ConnectLayers(teo16, v2m16, full, emer.Back).SetClass("TEOV2")
+	// net.ConnectLayers(teo8, v2h8, full, emer.Back).SetClass("TEOV2")
+	// net.ConnectLayers(teo8, v2m8, full, emer.Back).SetClass("TEOV2")
+
+	// holding off on TE for now..
 	// teote, teteo := net.BidirConnectLayers(teo16, te, full)
 	// teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
 	// teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
@@ -672,6 +690,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
 
+	ss.InLays = []string{}
 	ss.OutLays = []string{}
 	ss.HidLays = []string{}
 	for _, ly := range net.Layers {
@@ -679,6 +698,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 			continue
 		}
 		switch ly.Type() {
+		case emer.Input:
+			ss.InLays = append(ss.InLays, ly.Name())
 		case emer.Target:
 			ss.OutLays = append(ss.OutLays, ly.Name())
 			fallthrough
@@ -1028,6 +1049,9 @@ func (ss *Sim) SaveWeights(filename gi.FileName) {
 // LrateSched implements the learning rate schedule
 func (ss *Sim) LrateSched(epc int) {
 	switch epc {
+	// case 50: // this does not work at all -- needs its shorts!!
+	// 	ss.SetParamsSet("WeakShorts", "Network", true)
+	// 	mpi.Printf("weaker shortcut cons at epoch: %d\n", epc)
 	case 200:
 		ss.Net.LrateMult(0.5)
 		mpi.Printf("dropped lrate to 0.5 at epoch: %d\n", epc)
@@ -1552,6 +1576,11 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		}
 	}
 
+	for _, lnm := range ss.InLays {
+		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
+		dt.SetCellFloat(lnm+"_ActAvg", row, float64(ly.ActAvg.ActMAvg))
+	}
+
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
 	if ss.TrnEpcFile != nil {
@@ -1608,6 +1637,11 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_CorActDif", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ErrActDif", etensor.FLOAT64, nil, nil})
 	}
+
+	for _, lnm := range ss.InLays {
+		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
+	}
+
 	dt.SetFromSchema(sch, 0)
 }
 
@@ -1644,6 +1678,11 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_CorActDif", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_ErrActDif", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
+
+	for _, lnm := range ss.InLays {
+		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+	}
+
 	return plt
 }
 

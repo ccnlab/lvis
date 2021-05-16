@@ -40,5 +40,22 @@ The cemer versions used fairly standard params (because they determined these pa
 
 # TODO:
 
-Compute integrated CosDiff that takes into account ratio of output to per-layer cosdiff so we can measure error attenuation.  Also just L1 abs diff.
+* Reduce Out->TEO on schedule
 
+* SynScale.TrgRange.Min = 0.5
+
+* Slower SynScale.ErrLrate
+
+* Slower lrate, lower contrast again.
+
+* Different params for top-down vs. forward prjns: less contrast, slower, etc: keep the error propagation channels open more to reduce positive feedback loops.
+
+* exclude back from synscale
+
+* More objects -- keep things more diverse.  random output patterns or go back to single units even.
+
+* smaller topo-mapped pools that directly support combinatorial coding
+
+* Experiment with just spacing out stimuli by some amount, instead of decay -- find equivalent delay -- decay still likely to be more efficient, but would be interesting.
+
+* 

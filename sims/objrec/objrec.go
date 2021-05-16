@@ -75,7 +75,8 @@ var ParamSets = params.Sets{
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
 					"Prjn.Learn.WtSig.Gain":   "6",
-					"Prjn.Learn.Lrate":        "0.04",   // gain 1, lr .35 or .4 pretty close to 6/.04
+					"Prjn.Learn.WtSig.Min":    "0.25",
+					"Prjn.Learn.Lrate":        "0.04",   // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
 					"Prjn.Learn.XCal.SubMean": "1",      // 1 > .9
 					"Prjn.Learn.XCal.DWtThr":  "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":          "0.0",
@@ -124,7 +125,10 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2", // .2 >= .3 > .15 > .1 > .05 @176
+					"Prjn.WtScale.Rel":      "0.2",  // .2 >= .3 > .15 > .1 > .05 @176
+					"Prjn.Learn.Learn":      "true", // keep random weights to enable exploration
+					"Prjn.Learn.WtSig.Gain": "6",    // must have high gain, else washes out to uniform
+					// "Prjn.Learn.Lrate":      "0.04", // lrate = 0 allows syn scaling still
 				}},
 			{Sel: ".Forward", Desc: "special forward-only params: com prob",
 				Params: params.Params{
@@ -160,10 +164,11 @@ var ParamSets = params.Sets{
 					"Layer.Act.Clamp.Rate":     "180",   // 180 best here too
 					"Layer.Act.Clamp.Type":     "GeClamp",
 					"Layer.Act.Clamp.Ge":       "0.6",   // .6 generally = .5
+					"Layer.Act.Clamp.Burst":    "false", // effective for boosting errors but no overall effect
 					"Layer.Act.Clamp.BurstThr": "0.5",   //
 					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same; 2 = 1.5 = 1 more or less -- tiny bit of extra err diff progressively
-					"Layer.Act.Clamp.BurstCyc": "30",    // 20 > 15 > 10 -- maybe refractory?  25, 30 = 20
-					"Layer.Act.Spike.Tr":       "2",     // 2 >= 3 > 1 > 0
+					"Layer.Act.Clamp.BurstCyc": "20",    // 20 > 15 > 10 -- maybe refractory?  25, 30 = 20
+					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
 					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":      "0.03",  // .03 > .02 > .01 > .1
 				}},
@@ -308,6 +313,10 @@ func (ss *Sim) New() {
 	ss.ActRFNms = []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}
 	ss.PNovel = 0
 	ss.MiniBatches = 1 // 1 > 16
+
+	ss.Time.Defaults()
+	ss.Time.CycPerQtr = 50
+	ss.Time.PlusCyc = 50 // ra25 shows strong effects of timing still
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
