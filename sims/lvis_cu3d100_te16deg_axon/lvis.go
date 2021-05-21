@@ -89,27 +89,31 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Type":              "NoNoise", // off for now
 					"Layer.Act.GTarg.GeMax":             "1",       // objrec 1 > .8
 					"Layer.Act.Dt.TrlAvgTau":            "20",      // 20 > 50 > 100
-					"Layer.Learn.SynScale.ErrLrate":     "0.005",   // 0.005 > .02 maybe
+					"Layer.Learn.SynScale.ErrLrate":     "0.01",    // 0.01 >= .005 > .02 maybe
 					"Layer.Learn.SynScale.Rate":         "0.005",
-					"Layer.Learn.SynScale.TrgRange.Min": "0.5", // .5 > .2 for hogging
+					"Layer.Learn.SynScale.TrgRange.Min": "0.5", // .5 > .2 overall
 					"Layer.Learn.SynScale.TrgRange.Max": "2.0", // objrec 2 > 1.8
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true", // clamped, so not relevant, but just in case
-					"Layer.Inhib.ActAvg.Init": "0.1",
-					"Layer.Inhib.ActAvg.Targ": "0.1",
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.ActAvg.Init": "0.06", // .06 for GeClamp
+					"Layer.Inhib.ActAvg.Targ": "0.06",
+					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
+					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 				}},
 			{Sel: ".V1m", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true", // clamped, so not relevant, but just in case
-					"Layer.Inhib.ActAvg.Init": "0.1",
-					"Layer.Inhib.ActAvg.Targ": "0.1",
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.ActAvg.Init": "0.06",
+					"Layer.Inhib.ActAvg.Targ": "0.06",
+					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
+					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 				}},
 			{Sel: ".V2h", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",
+					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
 					"Layer.Inhib.ActAvg.Init":    "0.02",
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
@@ -146,9 +150,9 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.5", // 1.5 = 1.6 > 1.4
-					"Layer.Inhib.ActAvg.Init":    "0.01",
-					"Layer.Inhib.ActAvg.Targ":    "0.01",
+					"Layer.Inhib.Layer.Gi":       "1.0", // 1.5 = 1.6 > 1.4
+					"Layer.Inhib.ActAvg.Init":    "0.15",
+					"Layer.Inhib.ActAvg.Targ":    "0.15",
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
 					"Layer.Inhib.ActAvg.LoTol":   "0.8",
 					"Layer.Act.Init.Decay":       "0.5", // 0.5 > 1
@@ -170,7 +174,6 @@ var ParamSets = params.Sets{
 					"Prjn.WtScale.LoTol":      "0.8",  //
 					"Prjn.WtScale.Init":       "1",
 					"Prjn.Learn.WtSig.Gain":   "6",    // 6 > 1 -- no combination of sig1 + lrate worked..
-					"Prjn.Learn.WtSig.Min":    "0",    // todo: try .2 again
 					"Prjn.Learn.Lrate":        "0.01", // .01 > .04 must set initial lrate here when using schedule!
 					"Prjn.Learn.XCal.SubMean": "1",
 					"Prjn.Learn.XCal.DWtThr":  "0.0001", // 0.0001 > 0.001
@@ -188,6 +191,16 @@ var ParamSets = params.Sets{
 					// .2 max 1 = no diff, .5 max .8 = no diff
 					"Prjn.Com.PFail":      "0.0", // 0 > .05 > .1 > .2
 					"Prjn.Com.PFailWtMax": "0.0",
+				}},
+			{Sel: ".Inhib", Desc: "inhibitory projection",
+				Params: params.Params{
+					"Prjn.Learn.Learn":   "true", // learned decorrel is good
+					"Prjn.Learn.Lrate":   "0.0001",
+					"Prjn.WtInit.Var":    "0.0",
+					"Prjn.WtInit.Mean":   "0.1",
+					"Prjn.WtScale.Init":  "0.2", // try diff vals
+					"Prjn.WtScale.Adapt": "false",
+					"Prjn.IncGain":       "0.5",
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -282,56 +295,95 @@ var ParamSets = params.Sets{
 	}},
 }
 
+// ErrLrateModParams are overall performance-based error learning rate modulation parameters.
+// Computed learning rate modulator is constrained to be <= 1
+type ErrLrateModParams struct {
+	Base float32 `min:"0" max:"1" desc:"baseline learning rate"`
+	Err  float32 `desc:"multiplier on error factor"`
+}
+
+func (em *ErrLrateModParams) Defaults() {
+	em.Base = 0.1
+	em.Err = 4
+}
+
+func (em *ErrLrateModParams) Update() {
+}
+
+// LrateMod returns the learning rate modulation as a function of any kind of normalized error measure
+func (em *ErrLrateModParams) LrateMod(err float32) float32 {
+	lrm := em.Base + em.Err*err
+	if lrm > 1 {
+		lrm = 1
+	}
+	return lrm
+}
+
 // Sim encapsulates the entire simulation model, and we define all the
 // functionality as methods on this struct.  This structure keeps all relevant
 // state information organized and available without having to pass everything around
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net              *axon.Network                 `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	TrnTrlLog        *etable.Table                 `view:"no-inline" desc:"training trial-level log data"`
-	TrnTrlLogAll     *etable.Table                 `view:"no-inline" desc:"all training trial-level log data (aggregated from MPI)"`
-	TrnTrlRepLog     *etable.Table                 `view:"no-inline" desc:"training trial-level reps log data"`
-	TrnTrlRepLogAll  *etable.Table                 `view:"no-inline" desc:"training trial-level reps log data"`
-	TrnEpcLog        *etable.Table                 `view:"no-inline" desc:"training epoch-level log data"`
-	TstEpcLog        *etable.Table                 `view:"no-inline" desc:"testing epoch-level log data"`
-	TstTrlLog        *etable.Table                 `view:"no-inline" desc:"testing trial-level log data"`
-	TstTrlLogAll     *etable.Table                 `view:"no-inline" desc:"all testing trial-level log data (aggregated from MPI)"`
-	TrnErrStats      *etable.Table                 `view:"no-inline" desc:"training error stats"`
-	ActRFs           actrf.RFs                     `view:"no-inline" desc:"activation-based receptive fields"`
-	RunLog           *etable.Table                 `view:"no-inline" desc:"summary log of each run"`
-	RunStats         *etable.Table                 `view:"no-inline" desc:"aggregate stats on all runs"`
-	Params           params.Sets                   `view:"no-inline" desc:"full collection of param sets"`
-	ParamSet         string                        `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
-	Tag              string                        `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Prjn4x4Skp2      *prjn.PoolTile                `view:"Standard feedforward topographic projection, recv = 1/2 send size"`
-	Prjn4x4Skp2Recip *prjn.PoolTile                `view:"Reciprocal"`
-	Prjn2x2Skp1      *prjn.PoolTile                `view:"same-size prjn"`
-	Prjn2x2Skp1Recip *prjn.PoolTile                `view:"same-size prjn reciprocal"`
-	Prjn4x4Skp0      *prjn.PoolTile                `view:"for V4 <-> TEO"`
-	Prjn4x4Skp0Recip *prjn.PoolTile                `view:"for V4 <-> TEO"`
-	Prjn1x1Skp0      *prjn.PoolTile                `view:"for TE <-> TEO"`
-	Prjn1x1Skp0Recip *prjn.PoolTile                `view:"for TE <-> TEO"`
-	StartRun         int                           `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
-	MaxRuns          int                           `desc:"maximum number of model runs to perform"`
-	MaxEpcs          int                           `desc:"maximum number of epochs to run per model run"`
-	MaxTrls          int                           `desc:"maximum number of training trials per epoch"`
-	RepsInterval     int                           `desc:"how often to analyze the representations"`
-	NZeroStop        int                           `desc:"if a positive number, training will stop after this many epochs with zero Err"`
-	TrainEnv         ImagesEnv                     `desc:"Training environment"`
-	TestEnv          ImagesEnv                     `desc:"Testing environment"`
-	Time             axon.Time                     `desc:"axon timing parameters and state"`
-	TestInterval     int                           `desc:"how often to run through the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
-	ViewOn           bool                          `desc:"whether to update the network view while running"`
-	TrainUpdt        axon.TimeScales               `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
-	TestUpdt         axon.TimeScales               `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
-	InLays           []string                      `view:"-" desc:"input layers -- for stats"`
-	OutLays          []string                      `view:"-" desc:"output layers -- for stats"`
-	HidLays          []string                      `view:"-" desc:"hidden layers -- for all main stats"`
-	ActRFNms         []string                      `desc:"names of layers to compute activation rfields on"`
-	SpikeRastNms     []string                      `view:"-" desc:"spike raster layers"`
-	SpikeRasters     map[string]*etensor.Float32   `desc:"spike raster data for different layers"`
-	SpikeRastGrids   map[string]*etview.TensorGrid `desc:"spike raster plots for different layers"`
+	Net             *axon.Network     `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	TrnTrlLog       *etable.Table     `view:"no-inline" desc:"training trial-level log data"`
+	TrnTrlLogAll    *etable.Table     `view:"no-inline" desc:"all training trial-level log data (aggregated from MPI)"`
+	TrnTrlRepLog    *etable.Table     `view:"no-inline" desc:"training trial-level reps log data"`
+	TrnTrlRepLogAll *etable.Table     `view:"no-inline" desc:"training trial-level reps log data"`
+	TrnEpcLog       *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
+	TstEpcLog       *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
+	TstTrlLog       *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
+	TstTrlLogAll    *etable.Table     `view:"no-inline" desc:"all testing trial-level log data (aggregated from MPI)"`
+	TrnErrStats     *etable.Table     `view:"no-inline" desc:"training error stats"`
+	ActRFs          actrf.RFs         `view:"no-inline" desc:"activation-based receptive fields"`
+	RunLog          *etable.Table     `view:"no-inline" desc:"summary log of each run"`
+	RunStats        *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
+	SubPools        bool              `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
+	ErrLrMod        ErrLrateModParams `view:"inline" desc:"learning rate modulation as function of error"`
+	Params          params.Sets       `view:"no-inline" desc:"full collection of param sets"`
+	ParamSet        string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
+	Tag             string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+
+	Prjn4x4Skp2              *prjn.PoolTile    `view:"-" desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
+	Prjn4x4Skp2Recip         *prjn.PoolTile    `view:"-" desc:"Reciprocal"`
+	Prjn4x4Skp2Sub2          *prjn.PoolTileSub `view:"-" desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
+	Prjn4x4Skp2Sub2Recip     *prjn.PoolTileSub `view:"-" desc:"Reciprocal"`
+	Prjn4x4Skp2Sub2Send      *prjn.PoolTileSub `view:"-" desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
+	Prjn4x4Skp2Sub2SendRecip *prjn.PoolTileSub `view:"-" desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
+	Prjn2x2Skp1              *prjn.PoolTile    `view:"-" desc:"same-size prjn"`
+	Prjn2x2Skp1Recip         *prjn.PoolTile    `view:"-" desc:"same-size prjn reciprocal"`
+	Prjn2x2Skp1Sub2          *prjn.PoolTileSub `view:"-" desc:"same-size prjn"`
+	Prjn2x2Skp1Sub2Recip     *prjn.PoolTileSub `view:"-" desc:"same-size prjn reciprocal"`
+	Prjn2x2Skp1Sub2Send      *prjn.PoolTileSub `view:"-" desc:"same-size prjn"`
+	Prjn2x2Skp1Sub2SendRecip *prjn.PoolTileSub `view:"-" desc:"same-size prjn reciprocal"`
+	Prjn2x2Skp2              *prjn.PoolTileSub `view:"-" desc:"lateral inhib projection"`
+	Prjn4x4Skp0              *prjn.PoolTile    `view:"-" desc:"for V4 <-> TEO"`
+	Prjn4x4Skp0Recip         *prjn.PoolTile    `view:"-" desc:"for V4 <-> TEO"`
+	Prjn4x4Skp0Sub2          *prjn.PoolTileSub `view:"-" desc:"for V4 <-> TEO"`
+	Prjn4x4Skp0Sub2Recip     *prjn.PoolTileSub `view:"-" desc:"for V4 <-> TEO"`
+	Prjn1x1Skp0              *prjn.PoolTile    `view:"-" desc:"for TE <-> TEO"`
+	Prjn1x1Skp0Recip         *prjn.PoolTile    `view:"-" desc:"for TE <-> TEO"`
+
+	StartRun       int                           `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
+	MaxRuns        int                           `desc:"maximum number of model runs to perform"`
+	MaxEpcs        int                           `desc:"maximum number of epochs to run per model run"`
+	MaxTrls        int                           `desc:"maximum number of training trials per epoch"`
+	RepsInterval   int                           `desc:"how often to analyze the representations"`
+	NZeroStop      int                           `desc:"if a positive number, training will stop after this many epochs with zero Err"`
+	TrainEnv       ImagesEnv                     `desc:"Training environment"`
+	TestEnv        ImagesEnv                     `desc:"Testing environment"`
+	Time           axon.Time                     `desc:"axon timing parameters and state"`
+	TestInterval   int                           `desc:"how often to run through the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
+	ViewOn         bool                          `desc:"whether to update the network view while running"`
+	TrainUpdt      axon.TimeScales               `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
+	TestUpdt       axon.TimeScales               `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
+	InLays         []string                      `view:"-" desc:"input layers -- for stats"`
+	OutLays        []string                      `view:"-" desc:"output layers -- for stats"`
+	HidLays        []string                      `view:"-" desc:"hidden layers -- for all main stats"`
+	ActRFNms       []string                      `desc:"names of layers to compute activation rfields on"`
+	SpikeRastNms   []string                      `view:"-" desc:"spike raster layers"`
+	SpikeRasters   map[string]*etensor.Float32   `desc:"spike raster data for different layers"`
+	SpikeRastGrids map[string]*etview.TensorGrid `desc:"spike raster plots for different layers"`
 
 	// statistics: note use float64 as that is best for etable.Table
 	TrlErr        float64 `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on max out unit"`
@@ -349,6 +401,7 @@ type Sim struct {
 	EpcPerTrlMSec float64 `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
 	FirstZero     int     `inactive:"+" desc:"epoch at when Err first went to zero"`
 	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero Err"`
+	PCA           pca.PCA `view:"-" desc:"pca obj"`
 
 	// internal state - view:"-"
 	Win          *gi.Window                    `view:"-" desc:"main GUI window"`
@@ -406,9 +459,12 @@ func (ss *Sim) New() {
 	ss.Params = ParamSets
 	ss.TestInterval = 0 // maybe causing issues?
 
+	ss.Time.Defaults()
 	ss.Time.CycPerQtr = 60 // 60/50 best
 	ss.Time.PlusCyc = 50
 	ss.RepsInterval = 10
+	ss.SubPools = true
+	ss.ErrLrMod.Defaults()
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
 	ss.Prjn4x4Skp2.Size.Set(4, 4)
@@ -420,6 +476,25 @@ func (ss *Sim) New() {
 	*ss.Prjn4x4Skp2Recip = *ss.Prjn4x4Skp2
 	ss.Prjn4x4Skp2Recip.Recip = true
 
+	ss.Prjn4x4Skp2Sub2 = prjn.NewPoolTileSub()
+	ss.Prjn4x4Skp2Sub2.Size.Set(4, 4)
+	ss.Prjn4x4Skp2Sub2.Skip.Set(2, 2)
+	ss.Prjn4x4Skp2Sub2.Start.Set(-1, -1)
+	ss.Prjn4x4Skp2Sub2.Subs.Set(2, 2)
+	ss.Prjn4x4Skp2Sub2.TopoRange.Min = 0.8
+
+	ss.Prjn4x4Skp2Sub2Recip = prjn.NewPoolTileSub()
+	*ss.Prjn4x4Skp2Sub2Recip = *ss.Prjn4x4Skp2Sub2
+	ss.Prjn4x4Skp2Sub2Recip.Recip = true
+
+	ss.Prjn4x4Skp2Sub2Send = prjn.NewPoolTileSub()
+	*ss.Prjn4x4Skp2Sub2Send = *ss.Prjn4x4Skp2Sub2
+	ss.Prjn4x4Skp2Sub2Send.SendSubs = true
+
+	ss.Prjn4x4Skp2Sub2SendRecip = prjn.NewPoolTileSub()
+	*ss.Prjn4x4Skp2Sub2SendRecip = *ss.Prjn4x4Skp2Sub2Send
+	ss.Prjn4x4Skp2Sub2SendRecip.Recip = true
+
 	ss.Prjn2x2Skp1 = prjn.NewPoolTile()
 	ss.Prjn2x2Skp1.Size.Set(2, 2)
 	ss.Prjn2x2Skp1.Skip.Set(1, 1)
@@ -429,6 +504,35 @@ func (ss *Sim) New() {
 	ss.Prjn2x2Skp1Recip = prjn.NewPoolTile()
 	*ss.Prjn2x2Skp1Recip = *ss.Prjn2x2Skp1
 	ss.Prjn2x2Skp1Recip.Recip = true
+
+	ss.Prjn2x2Skp1Sub2 = prjn.NewPoolTileSub()
+	ss.Prjn2x2Skp1Sub2.Size.Set(2, 2)
+	ss.Prjn2x2Skp1Sub2.Skip.Set(1, 1)
+	ss.Prjn2x2Skp1Sub2.Start.Set(0, 0)
+	ss.Prjn2x2Skp1Sub2.Subs.Set(2, 2)
+	ss.Prjn2x2Skp1Sub2.TopoRange.Min = 0.8
+
+	ss.Prjn2x2Skp1Sub2Recip = prjn.NewPoolTileSub()
+	*ss.Prjn2x2Skp1Sub2Recip = *ss.Prjn2x2Skp1Sub2
+	ss.Prjn2x2Skp1Sub2Recip.Recip = true
+
+	ss.Prjn2x2Skp1Sub2Send = prjn.NewPoolTileSub()
+	ss.Prjn2x2Skp1Sub2Send.Size.Set(2, 2)
+	ss.Prjn2x2Skp1Sub2Send.Skip.Set(1, 1)
+	ss.Prjn2x2Skp1Sub2Send.Start.Set(0, 0)
+	ss.Prjn2x2Skp1Sub2Send.Subs.Set(2, 2)
+	ss.Prjn2x2Skp1Sub2Send.SendSubs = true
+	ss.Prjn2x2Skp1Sub2Send.TopoRange.Min = 0.8
+
+	ss.Prjn2x2Skp1Sub2SendRecip = prjn.NewPoolTileSub()
+	*ss.Prjn2x2Skp1Sub2SendRecip = *ss.Prjn2x2Skp1Sub2Send
+	ss.Prjn2x2Skp1Sub2SendRecip.Recip = true
+
+	ss.Prjn2x2Skp2 = prjn.NewPoolTileSub()
+	ss.Prjn2x2Skp2.Size.Set(2, 2)
+	ss.Prjn2x2Skp2.Skip.Set(2, 2)
+	ss.Prjn2x2Skp2.Start.Set(0, 0)
+	ss.Prjn2x2Skp2.Subs.Set(2, 2)
 
 	ss.Prjn4x4Skp0 = prjn.NewPoolTile()
 	ss.Prjn4x4Skp0.Size.Set(4, 4)
@@ -441,6 +545,20 @@ func (ss *Sim) New() {
 	ss.Prjn4x4Skp0Recip = prjn.NewPoolTile()
 	*ss.Prjn4x4Skp0Recip = *ss.Prjn4x4Skp0
 	ss.Prjn4x4Skp0Recip.Recip = true
+
+	ss.Prjn4x4Skp0Sub2 = prjn.NewPoolTileSub()
+	ss.Prjn4x4Skp0Sub2.Size.Set(4, 4)
+	ss.Prjn4x4Skp0Sub2.Skip.Set(0, 0)
+	ss.Prjn4x4Skp0Sub2.Start.Set(0, 0)
+	ss.Prjn4x4Skp0Sub2.Subs.Set(2, 2)
+	ss.Prjn4x4Skp0Sub2.SendSubs = true
+	ss.Prjn4x4Skp0Sub2.GaussFull.Sigma = 1.5
+	ss.Prjn4x4Skp0Sub2.GaussInPool.Sigma = 1.5
+	ss.Prjn4x4Skp0Sub2.TopoRange.Min = 0.8
+
+	ss.Prjn4x4Skp0Sub2Recip = prjn.NewPoolTileSub()
+	*ss.Prjn4x4Skp0Sub2Recip = *ss.Prjn4x4Skp0Sub2
+	ss.Prjn4x4Skp0Sub2Recip.Recip = true
 
 	ss.Prjn1x1Skp0 = prjn.NewPoolTile()
 	ss.Prjn1x1Skp0.Size.Set(1, 1)
@@ -462,7 +580,7 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = axon.AlphaCycle
 	ss.TestUpdt = axon.Quarter
 	ss.ActRFNms = []string{"V4f16:Image", "V4f8:Output", "TEO8:Image", "TEO8:Output", "TEO16:Image", "TEO16:Output"}
-	ss.SpikeRastNms = []string{"V2m16", "V4f16", "TEOf16", "Output"}
+	ss.SpikeRastNms = []string{"V1m16", "V2m16", "V4f16", "TEOf16", "Output"}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -503,7 +621,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.Images.NTestPerCat = 2
 	ss.TrainEnv.Images.SplitByItm = true
-	ss.TrainEnv.OutSize = 100
+	ss.TrainEnv.OutRandom = true
+	ss.TrainEnv.OutSize.Set(10, 10)
 	ss.TrainEnv.Images.SetPath(path, []string{".png"}, "_")
 	ss.TrainEnv.OpenConfig()
 	// ss.TrainEnv.Images.OpenPath(path, []string{".png"}, "_")
@@ -518,7 +637,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Defaults()
 	ss.TestEnv.Images.NTestPerCat = 2
 	ss.TestEnv.Images.SplitByItm = true
-	ss.TestEnv.OutSize = 100
+	ss.TestEnv.OutRandom = true
+	ss.TestEnv.OutSize.Set(10, 10)
 	ss.TestEnv.Test = true
 	ss.TestEnv.Images.SetPath(path, []string{".png"}, "_")
 	ss.TestEnv.OpenConfig()
@@ -533,7 +653,7 @@ func (ss *Sim) ConfigEnv() {
 			next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
 			last40 := append(last20, next20...)
 			ss.TrainEnv.Images.DeleteCats(last40)
-			ss.TrainEnv.Images.DeleteCats(last40)
+			ss.TestEnv.Images.DeleteCats(last40)
 	*/
 
 	objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
@@ -542,7 +662,7 @@ func (ss *Sim) ConfigEnv() {
 
 	// objs40 := append(objs20, objsnxt20...)
 	ss.TrainEnv.Images.SelectCats(objs20)
-	ss.TrainEnv.Images.SelectCats(objs20)
+	ss.TestEnv.Images.SelectCats(objs20)
 
 	if ss.UseMPI {
 		ss.TrainEnv.MPIAlloc()
@@ -564,67 +684,73 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v1m16.SetClass("V1m")
 	v1m8.SetClass("V1m")
 
-	v2h16 := net.AddLayer4D("V2h16", 8, 8, 10, 10, emer.Hidden)
-	v2m16 := net.AddLayer4D("V2m16", 4, 4, 10, 10, emer.Hidden)
-	v2h8 := net.AddLayer4D("V2h8", 8, 8, 10, 10, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", 4, 4, 10, 10, emer.Hidden)
+	v2h16 := net.AddLayer4D("V2h16", 16, 16, 6, 6, emer.Hidden)
+	v2m16 := net.AddLayer4D("V2m16", 8, 8, 6, 6, emer.Hidden)
+	v2h8 := net.AddLayer4D("V2h8", 16, 16, 6, 6, emer.Hidden)
+	v2m8 := net.AddLayer4D("V2m8", 8, 8, 6, 6, emer.Hidden)
 	v2h16.SetClass("V2h")
 	v2h8.SetClass("V2h")
 	v2m16.SetClass("V2m")
 	v2m8.SetClass("V2m")
 
-	v4f16 := net.AddLayer4D("V4f16", 4, 4, 10, 10, emer.Hidden)
-	v4f8 := net.AddLayer4D("V4f8", 4, 4, 10, 10, emer.Hidden)
+	v4f16 := net.AddLayer4D("V4f16", 8, 8, 6, 6, emer.Hidden)
+	v4f8 := net.AddLayer4D("V4f8", 8, 8, 6, 6, emer.Hidden)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
-	teo16 := net.AddLayer4D("TEOf16", 2, 2, 10, 10, emer.Hidden)
-	teo8 := net.AddLayer4D("TEOf8", 2, 2, 10, 10, emer.Hidden)
+	teo16 := net.AddLayer4D("TEOf16", 2, 2, 12, 12, emer.Hidden)
+	teo8 := net.AddLayer4D("TEOf8", 2, 2, 12, 12, emer.Hidden)
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
 	// te := net.AddLayer4D("TE", 2, 2, 10, 10, emer.Hidden)
-	out := net.AddLayer4D("Output", 10, 10, ss.TrainEnv.NOutPer, 1, emer.Target)
+	// out := net.AddLayer4D("Output", ss.TrainEnv.OutSize.Y, ss.TrainEnv.OutSize.X, ss.TrainEnv.NOutPer, 1, emer.Target)
+	out := net.AddLayer2D("Output", ss.TrainEnv.OutSize.Y, ss.TrainEnv.OutSize.X, emer.Target)
 
 	full := prjn.NewFull()
+	_ = full
 	rndcut := prjn.NewUnifRnd()
 	rndcut.PCon = 0.1 // 0.2 > .1
+	rndprjn := prjn.NewUnifRnd()
+	rndprjn.PCon = 0.8 // 0.2 > .1
+	pool1to1 := prjn.NewPoolOneToOne()
+	_ = pool1to1
 
-	net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2, emer.Forward).SetClass("V1V2h16")
-	net.ConnectLayers(v1m16, v2h16, ss.Prjn2x2Skp1, emer.Forward).SetClass("V1V2fmSm V1V2h16")
+	net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2h16")
+	net.ConnectLayers(v1m16, v2h16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2h16")
 
-	net.ConnectLayers(v1m16, v2m16, ss.Prjn4x4Skp2, emer.Forward)
+	net.ConnectLayers(v1m16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward)
 
-	net.ConnectLayers(v1h8, v2h8, ss.Prjn4x4Skp2, emer.Forward).SetClass("V1V2h8")
-	net.ConnectLayers(v1m8, v2h8, ss.Prjn2x2Skp1, emer.Forward).SetClass("V1V2fmSm V1V2h8")
+	net.ConnectLayers(v1h8, v2h8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2h8")
+	net.ConnectLayers(v1m8, v2h8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2h8")
 
-	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2, emer.Forward)
+	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward)
 
-	v2v4, v4v2 := net.BidirConnectLayers(v2h16, v4f16, ss.Prjn4x4Skp2)
+	v2v4, v4v2 := net.BidirConnectLayers(v2h16, v4f16, ss.Prjn4x4Skp2Sub2Send)
 	v2v4.SetClass("V2V4")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Recip)
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2m16, v4f16, ss.Prjn2x2Skp1)
+	v2v4, v4v2 = net.BidirConnectLayers(v2m16, v4f16, ss.Prjn2x2Skp1Sub2Send)
 	v2v4.SetClass("V2V4sm")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Recip)
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Sub2SendRecip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2h8, v4f8, ss.Prjn4x4Skp2)
+	v2v4, v4v2 = net.BidirConnectLayers(v2h8, v4f8, ss.Prjn4x4Skp2Sub2Send)
 	v2v4.SetClass("V2V4")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Recip)
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, ss.Prjn2x2Skp1)
+	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, ss.Prjn2x2Skp1Sub2Send)
 	v2v4.SetClass("V2V4sm")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Recip)
+	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Sub2SendRecip)
 
-	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, full)
-	v4teo.SetClass("V4TEO").SetPattern(ss.Prjn4x4Skp0)
-	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Recip)
-	net.ConnectLayers(v4f8, teo16, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
+	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, ss.Prjn4x4Skp0Sub2)
+	v4teo.SetClass("V4TEO")
+	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Sub2Recip)
+	net.ConnectLayers(v4f8, teo16, ss.Prjn4x4Skp0Sub2, emer.Forward).SetClass("V4TEOoth")
 
-	v4teo, teov4 = net.BidirConnectLayers(v4f8, teo8, full)
-	v4teo.SetClass("V4TEO").SetPattern(ss.Prjn4x4Skp0)
-	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Recip)
-	net.ConnectLayers(v4f16, teo8, full, emer.Forward).SetClass("V4TEOoth").SetPattern(ss.Prjn4x4Skp0)
+	v4teo, teov4 = net.BidirConnectLayers(v4f8, teo8, ss.Prjn4x4Skp0Sub2)
+	v4teo.SetClass("V4TEO")
+	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Sub2Recip)
+	net.ConnectLayers(v4f16, teo8, ss.Prjn4x4Skp0Sub2, emer.Forward).SetClass("V4TEOoth")
 
 	// TEO -> V2 shortcuts
 	// net.ConnectLayers(teo16, v2h16, full, emer.Back).SetClass("TEOV2")
@@ -657,6 +783,16 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
 	v4out.SetClass("V4Out")
 	outv4.SetClass("OutV4")
+
+	// this extra inhibition prevents late decline at .2 lr0001: drives decorrelation
+	net.LateralConnectLayerPrjn(v2h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2m16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2h8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2m8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v4f16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v4f8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
 	// shortcuts:
 
@@ -762,8 +898,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 func (ss *Sim) InitWts(net *axon.Network) {
 	net.InitTopoScales() //  sets all wt scales
+	net.LrateMult(1)     // restore initial learning rate value
 	net.InitWts()
-	net.LrateMult(1) // restore initial learning rate value
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -877,7 +1013,10 @@ func (ss *Sim) AlphaCyc(train bool) {
 		}
 	}
 
+	ss.TrialStats(train)
+
 	if train {
+		ss.Net.LrateMult(ss.ErrLrMod.LrateMod(float32(1 - ss.TrlCosDiff)))
 		ss.Net.DWt()
 	}
 	if ss.ViewOn && viewUpdt == axon.AlphaCycle {
@@ -940,8 +1079,8 @@ func (ss *Sim) TrainTrial() {
 	// note: type must be in place before apply inputs
 	ss.Net.LayerByName("Output").SetType(emer.Target)
 	ss.ApplyInputs(&ss.TrainEnv)
-	ss.AlphaCyc(true)   // train
-	ss.TrialStats(true) // accumulate
+	ss.AlphaCyc(true) // train
+	// ss.TrialStats(true) // in AlphaCyc
 	ss.LogTrnTrl(ss.TrnTrlLog)
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		ss.LogTrnRepTrl(ss.TrnTrlRepLog)
@@ -1085,10 +1224,10 @@ func (ss *Sim) LrateSched(epc int) {
 	// case 50: // this does not work at all -- needs its shorts!!
 	// 	ss.SetParamsSet("WeakShorts", "Network", true)
 	// 	mpi.Printf("weaker shortcut cons at epoch: %d\n", epc)
-	case 200:
+	case 100:
 		ss.Net.LrateMult(0.5)
 		mpi.Printf("dropped lrate to 0.5 at epoch: %d\n", epc)
-	case 400:
+	case 150:
 		ss.Net.LrateMult(0.2)
 		mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
 	case 600:
@@ -1136,8 +1275,8 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// note: type must be in place before apply inputs
 	ss.Net.LayerByName("Output").SetType(emer.Compare)
 	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false)   // !train
-	ss.TrialStats(false) // !accumulate
+	ss.AlphaCyc(false) // !train
+	// ss.TrialStats(false) // !accumulate
 	ss.LogTstTrl(ss.TstTrlLog)
 }
 
@@ -1271,11 +1410,15 @@ func (ss *Sim) SpikeRastGrid(name string) *etview.TensorGrid {
 
 // SetSpikeRastCol sets column of given spike raster from data
 func (ss *Sim) SetSpikeRastCol(ly *axon.Layer, sr, vl *etensor.Float32, col int) {
-	if ly.Is4D() && ly.Nm != "Output" {
-		nu, _, _, si := ss.CenterPoolsIdxs(ly)
-		for ni := 0; ni < 2*nu; ni++ {
-			v := vl.Values[si+ni]
-			sr.Set([]int{ni, col}, v)
+	if ly.Is4D() && ly.Nm != "Output" && !strings.HasPrefix(ly.Nm, "TE") {
+		nu, sis := ss.CenterPoolsIdxs(ly)
+		ti := 0
+		for _, si := range sis {
+			for ni := 0; ni < nu; ni++ {
+				v := vl.Values[si+ni]
+				sr.Set([]int{ti, col}, v)
+				ti++
+			}
 		}
 	} else {
 		for ni, v := range vl.Values {
@@ -1299,9 +1442,9 @@ func (ss *Sim) ConfigSpikeRasts() {
 	for _, lnm := range ss.SpikeRastNms {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		sr := ss.SpikeRastTsr(lnm)
-		if ly.Is4D() && lnm != "Output" {
-			nu, _, _, _ := ss.CenterPoolsIdxs(ly)
-			sr.SetShape([]int{2 * nu, ncy}, nil, []string{"Nrn", "Cyc"})
+		if ly.Is4D() && ly.Nm != "Output" && !strings.HasPrefix(ly.Nm, "TE") {
+			nu, sis := ss.CenterPoolsIdxs(ly)
+			sr.SetShape([]int{len(sis) * nu, ncy}, nil, []string{"Nrn", "Cyc"})
 		} else {
 			sr.SetShape([]int{ly.Shp.Len(), ncy}, nil, []string{"Nrn", "Cyc"})
 		}
@@ -1539,22 +1682,47 @@ func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 //////////////////////////////////////////////
 //  TrnTrlRepLog
 
-// CenterPoolsIdxs returns the indexes for 2 center pools:
-// nu = number of units per pool, si = starting index
-func (ss *Sim) CenterPoolsIdxs(ly *axon.Layer) (nu, py, px, si int) {
-	py = (ly.Shp.Dim(0) - 1) / 2
-	px = (ly.Shp.Dim(1) - 1) / 2
+// CenterPoolsIdxs returns the indexes for 2x2 center pools (including sub-pools):
+// nu = number of units per pool, sis = starting indexes
+func (ss *Sim) CenterPoolsIdxs(ly *axon.Layer) (nu int, sis []int) {
 	nu = ly.Shp.Dim(2) * ly.Shp.Dim(3)
-	si = (py*ly.Shp.Dim(1) + px) * nu
+	npy := ly.Shp.Dim(0)
+	npx := ly.Shp.Dim(1)
+	npxact := npx
+	nsp := 1
+	if ss.SubPools {
+		npy /= 2
+		npx /= 2
+		nsp = 2
+	}
+	cpy := (npy - 1) / 2
+	cpx := (npx - 1) / 2
+
+	for py := 0; py < 2; py++ {
+		for px := 0; px < 2; px++ {
+			for sy := 0; sy < nsp; sy++ {
+				for sx := 0; sx < nsp; sx++ {
+					y := (py+cpy)*nsp + sy
+					x := (px+cpx)*nsp + sx
+					si := (y*npxact + x) * nu
+					sis = append(sis, si)
+				}
+			}
+		}
+	}
 	return
 }
 
 // CopyCenterPools copy 2 center pools of ActM to tensor
 func (ss *Sim) CopyCenterPools(ly *axon.Layer, vl *etensor.Float32) {
-	nu, _, _, si := ss.CenterPoolsIdxs(ly)
-	vl.SetShape([]int{2 * nu}, nil, nil)
-	for ni := 0; ni < 2*nu; ni++ {
-		vl.Values[ni] = ly.Neurons[si+ni].ActM
+	nu, sis := ss.CenterPoolsIdxs(ly)
+	vl.SetShape([]int{len(sis) * nu}, nil, nil)
+	ti := 0
+	for _, si := range sis {
+		for ni := 0; ni < nu; ni++ {
+			vl.Values[ti] = ly.Neurons[si+ni].ActM
+			ti++
+		}
 	}
 }
 
@@ -1591,7 +1759,7 @@ func (ss *Sim) LogTrnRepTrl(dt *etable.Table) {
 	for _, lnm := range ss.HidLays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		lvt := ss.ValsTsr(lnm)
-		if ly.Is4D() && ly.Nm != "Output" {
+		if ly.Is4D() && ly.Nm != "Output" && !strings.HasPrefix(ly.Nm, "TE") {
 			ss.CopyCenterPools(ly, lvt)
 			dt.SetCellTensor(lnm, row, lvt)
 		} else {
@@ -1632,9 +1800,9 @@ func (ss *Sim) ConfigTrnTrlRepLog(dt *etable.Table) {
 	}
 	for _, lnm := range ss.HidLays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
-		if ly.Is4D() && ly.Nm != "Output" {
-			nu, _, _, _ := ss.CenterPoolsIdxs(ly)
-			sch = append(sch, etable.Column{lnm, etensor.FLOAT64, []int{2 * nu}, nil})
+		if ly.Is4D() && ly.Nm != "Output" && !strings.HasPrefix(ly.Nm, "TE") {
+			nu, sis := ss.CenterPoolsIdxs(ly)
+			sch = append(sch, etable.Column{lnm, etensor.FLOAT64, []int{len(sis) * nu}, nil})
 		} else {
 			sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
 		}
@@ -1758,20 +1926,23 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		reps := etable.NewIdxView(ss.TrnTrlRepLog)
+		if ss.UseMPI {
+			empi.GatherTableRows(ss.TrnTrlRepLogAll, ss.TrnTrlRepLog, ss.Comm)
+			reps = etable.NewIdxView(ss.TrnTrlRepLogAll)
+		}
 		reps.SortColName("Cat", true)
-		var pc pca.PCA
 		for _, lnm := range ss.HidLays {
-			pc.TableCol(reps, lnm, metric.Covariance64)
+			ss.PCA.TableCol(reps, lnm, metric.Covariance64)
 			var nstr float64
-			ln := len(pc.Values)
-			for i, v := range pc.Values {
+			ln := len(ss.PCA.Values)
+			for i, v := range ss.PCA.Values {
 				// fmt.Printf("%s\t\t %d  %g\n", lnm, i, v)
 				if v >= 0.01 {
 					nstr = float64(ln - i)
 					break
 				}
 			}
-			mn := norm.Mean64(pc.Values)
+			mn := norm.Mean64(ss.PCA.Values)
 			dt.SetCellFloat(lnm+"_PCA_NStrong", row, nstr)
 			dt.SetCellFloat(lnm+"_PCA_Mean", row, mn)
 		}

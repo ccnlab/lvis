@@ -13,12 +13,17 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/anthonynsimon/bild/transform"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/emergent/evec"
+	"github.com/emer/emergent/patgen"
 	"github.com/emer/empi/empi"
+	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
+	"github.com/emer/etable/metric"
 	"github.com/emer/etable/minmax"
 	"github.com/goki/gi/gi"
 	"github.com/goki/ki/ints"
@@ -29,36 +34,42 @@ import (
 
 // ImagesEnv provides the rendered results of the Obj3D + Saccade generator.
 type ImagesEnv struct {
-	Nm         string          `desc:"name of this environment"`
-	Dsc        string          `desc:"description of this environment"`
-	Test       bool            `desc:"present test items, else train"`
-	Sequential bool            `desc:"present items in sequential order -- else shuffled"`
-	Images     Images          `desc:"images list"`
-	TransMax   mat32.Vec2      `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
-	TransSigma float32         `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
-	ScaleRange minmax.F32      `desc:"def 0.5 - 1.1 range of scale"`
-	RotateMax  float32         `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
-	V1m16      Vis             `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1h16      Vis             `desc:"v1 16deg higher resolution filtering of image -- V1AllTsr has result"`
-	V1m8       Vis             `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1h8       Vis             `desc:"v1 8deg higher resolution filtering of image -- V1AllTsr has result"`
-	OutSize    int             `desc:"the output tensor size in number of cats is is Max(OutSize, number of cats)"`
-	NOutPer    int             `desc:"number of output units per category -- spiking benefits from replication"`
-	Output     etensor.Float32 `desc:"output category * NOutPer replicated units"`
-	StRow      int             `desc:"starting row, e.g., for mpi allocation across processors"`
-	EdRow      int             `desc:"ending row -- if 0 it is ignored"`
-	Shuffle    []int           `desc:"suffled list of entire set of images -- re-shuffle every time through imgidxs"`
-	ImgIdxs    []int           `desc:"indexs of images to present -- from StRow to EdRow"`
-	Run        env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
-	Epoch      env.Ctr         `view:"inline" desc:"arbitrary aggregation of trials, for stats etc"`
-	Trial      env.Ctr         `view:"inline" desc:"each object trajectory is one trial"`
-	Row        env.Ctr         `view:"inline" desc:"row of item list  -- this is actual counter driving everything"`
-	CurCat     string          `desc:"current category"`
-	CurCatIdx  int             `desc:"index of current category"`
-	CurImg     string          `desc:"current image"`
-	CurTrans   mat32.Vec2      `desc:"current translation"`
-	CurScale   float32         `desc:"current scaling"`
-	CurRot     float32         `desc:"current rotation"`
+	Nm         string       `desc:"name of this environment"`
+	Dsc        string       `desc:"description of this environment"`
+	Test       bool         `desc:"present test items, else train"`
+	Sequential bool         `desc:"present items in sequential order -- else shuffled"`
+	Images     Images       `desc:"images list"`
+	TransMax   mat32.Vec2   `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
+	TransSigma float32      `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
+	ScaleRange minmax.F32   `desc:"def 0.5 - 1.1 range of scale"`
+	RotateMax  float32      `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
+	V1m16      Vis          `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
+	V1h16      Vis          `desc:"v1 16deg higher resolution filtering of image -- V1AllTsr has result"`
+	V1m8       Vis          `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
+	V1h8       Vis          `desc:"v1 8deg higher resolution filtering of image -- V1AllTsr has result"`
+	MaxOut     int          `desc:"maximum number of output categories representable here"`
+	OutRandom  bool         `desc:"use random bit patterns instead of localist output units"`
+	RndPctOn   float32      `desc:"proportion activity for random patterns"`
+	RndMinDiff float32      `desc:"proportion minimum difference for random patterns"`
+	OutSize    evec.Vec2i   `desc:"the output tensor geometry -- must be >= number of cats"`
+	NOutPer    int          `desc:"number of output units per category -- spiking may benefit from replication -- is Y inner dim of output tensor"`
+	Pats       etable.Table `view:"no-inline" desc:"output patterns: either localist or random"`
+
+	Output    etensor.Float32 `desc:"output pattern for current item"`
+	StRow     int             `desc:"starting row, e.g., for mpi allocation across processors"`
+	EdRow     int             `desc:"ending row -- if 0 it is ignored"`
+	Shuffle   []int           `desc:"suffled list of entire set of images -- re-shuffle every time through imgidxs"`
+	ImgIdxs   []int           `desc:"indexs of images to present -- from StRow to EdRow"`
+	Run       env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
+	Epoch     env.Ctr         `view:"inline" desc:"arbitrary aggregation of trials, for stats etc"`
+	Trial     env.Ctr         `view:"inline" desc:"each object trajectory is one trial"`
+	Row       env.Ctr         `view:"inline" desc:"row of item list  -- this is actual counter driving everything"`
+	CurCat    string          `desc:"current category"`
+	CurCatIdx int             `desc:"index of current category"`
+	CurImg    string          `desc:"current image"`
+	CurTrans  mat32.Vec2      `desc:"current translation"`
+	CurScale  float32         `desc:"current scaling"`
+	CurRot    float32         `desc:"current rotation"`
 
 	Image image.Image `view:"-" desc:"rendered image as loaded"`
 }
@@ -75,6 +86,8 @@ func (ev *ImagesEnv) Defaults() {
 	ev.TransMax.Set(0.3, 0.3)
 	ev.ScaleRange.Set(0.8, 1.1)
 	ev.RotateMax = 8
+	ev.RndPctOn = 0.2
+	ev.RndMinDiff = 0.5
 	ev.NOutPer = 5
 	ev.V1m16.Defaults(0, 24, 8)
 	ev.V1h16.Defaults(0, 12, 4)
@@ -122,8 +135,8 @@ func (ev *ImagesEnv) Init(run int) {
 	ev.Shuffle = rand.Perm(nitm)
 	ev.Row.Max = len(ev.ImgIdxs)
 	nc := len(ev.Images.Cats)
-	os := ints.MaxInt(nc, ev.OutSize)
-	ev.Output.SetShape([]int{os * ev.NOutPer}, nil, nil)
+	ev.MaxOut = ints.MaxInt(nc, ev.MaxOut)
+	ev.ConfigPats()
 }
 
 // SaveListJSON saves flat string list to a JSON-formatted file.
@@ -199,6 +212,71 @@ func (ev *ImagesEnv) SaveConfig() {
 	SaveListJSON(ev.Images.Cats, cfnm)
 	SaveList2JSON(ev.Images.ImagesTest, tsfnm)
 	SaveList2JSON(ev.Images.ImagesTrain, trfnm)
+}
+
+// ConfigPats configures the output patterns
+func (ev *ImagesEnv) ConfigPats() {
+	if ev.OutRandom {
+		ev.ConfigPatsRandom()
+	} else {
+		ev.ConfigPatsLocalist()
+	}
+}
+
+// ConfigPatsName names the patterns
+func (ev *ImagesEnv) ConfigPatsName() {
+	for i := 0; i < ev.MaxOut; i++ {
+		nm := fmt.Sprintf("P%03d", i)
+		if i < len(ev.Images.Cats) {
+			nm = ev.Images.Cats[i]
+		}
+		ev.Pats.SetCellString("Name", i, nm)
+	}
+}
+
+// ConfigPatsLocalist configures the output patterns: localist case
+func (ev *ImagesEnv) ConfigPatsLocalist() {
+	oshp := []int{ev.OutSize.Y, ev.OutSize.X, ev.NOutPer, 1}
+	oshpnm := []string{"Y", "X", "NPer", "1"}
+	ev.Output.SetShape(oshp, nil, oshpnm)
+	sch := etable.Schema{
+		{"Name", etensor.STRING, nil, nil},
+		{"Output", etensor.FLOAT32, oshp, oshpnm},
+	}
+	ev.Pats.SetFromSchema(sch, ev.MaxOut)
+	for pi := 0; pi < ev.MaxOut; pi++ {
+		out := ev.Pats.CellTensor("Output", pi)
+		si := ev.NOutPer * pi
+		for i := 0; i < ev.NOutPer; i++ {
+			out.SetFloat1D(si+i, 1)
+		}
+	}
+	ev.ConfigPatsName()
+}
+
+// ConfigPatsRandom configures the output patterns: random case
+func (ev *ImagesEnv) ConfigPatsRandom() {
+	oshp := []int{ev.OutSize.Y, ev.OutSize.X}
+	oshpnm := []string{"Y", "X"}
+	ev.Output.SetShape(oshp, nil, oshpnm)
+	sch := etable.Schema{
+		{"Name", etensor.STRING, nil, nil},
+		{"Output", etensor.FLOAT32, oshp, oshpnm},
+	}
+	ev.Pats.SetFromSchema(sch, ev.MaxOut)
+	np := ev.OutSize.X * ev.OutSize.Y
+	nOn := patgen.NFmPct(ev.RndPctOn, np)
+	minDiff := patgen.NFmPct(ev.RndMinDiff, nOn)
+	fnm := fmt.Sprintf("rndpats_%dx%d_n%d_on%d_df%d.tsv", ev.OutSize.X, ev.OutSize.Y, ev.MaxOut, nOn, minDiff)
+	_, err := os.Stat(fnm)
+	if !os.IsNotExist(err) {
+		ev.Pats.OpenCSV(gi.FileName(fnm), etable.Tab)
+	} else {
+		out := ev.Pats.Col(1).(*etensor.Float32)
+		patgen.PermutedBinaryMinDiff(out, nOn, 1, 0, minDiff)
+		ev.ConfigPatsName()
+		ev.Pats.SaveCSV(gi.FileName(fnm), etable.Tab, etable.Headers)
+	}
 }
 
 // NewShuffle generates a new random order of items to present
@@ -298,52 +376,54 @@ func (ev *ImagesEnv) FilterImage() error {
 // SetOutput sets output by category
 func (ev *ImagesEnv) SetOutput(out int) {
 	ev.Output.SetZeros()
-	si := ev.NOutPer * out
-	for i := 0; i < ev.NOutPer; i++ {
-		ev.Output.SetFloat1D(si+i, 1)
+	ot := ev.Pats.CellTensor("Output", out)
+	ev.Output.CopyCellsFrom(ot, 0, 0, ev.Output.Len())
+}
+
+// FloatIdx32 contains a float32 value and its index
+type FloatIdx32 struct {
+	Val float32
+	Idx int
+}
+
+// ClosestRows32 returns the sorted list of distances from probe pattern
+// and patterns in an etensor.Float32 where the outer-most dimension is
+// assumed to be a row (e.g., as a column in an etable), using the given metric function,
+// *which must have the Increasing property* -- i.e., larger = further.
+// Col cell sizes must match size of probe (panics if not).
+func ClosestRows32(probe *etensor.Float32, col *etensor.Float32, mfun metric.Func32) []FloatIdx32 {
+	rows := col.Dim(0)
+	csz := col.Len() / rows
+	if csz != probe.Len() {
+		panic("metric.ClosestRows32: probe size != cell size of tensor column!\n")
 	}
+	dsts := make([]FloatIdx32, rows)
+	for ri := 0; ri < rows; ri++ {
+		st := ri * csz
+		rvals := col.Values[st : st+csz]
+		v := mfun(probe.Values, rvals)
+		dsts[ri].Val = v
+		dsts[ri].Idx = ri
+	}
+	sort.Slice(dsts, func(i, j int) bool {
+		return dsts[i].Val < dsts[j].Val
+	})
+	return dsts
 }
 
 // OutErr scores the output activity of network, returning the index of
-// item with max overall activity, and 1 if that is error, 0 if correct.
-// also returns a top-two error: if 2nd most active output was correct.
+// item with closest fit to given pattern, and 1 if that is error, 0 if correct.
+// also returns a top-two error: if 2nd closest pattern was correct.
 func (ev *ImagesEnv) OutErr(tsr *etensor.Float32) (maxi int, err, err2 float64) {
-	nc := ev.Output.Len() / ev.NOutPer
-	maxi = 0
-	maxv := 0.0
-	for i := 0; i < nc; i++ {
-		si := ev.NOutPer * i
-		sum := 0.0
-		for j := 0; j < ev.NOutPer; j++ {
-			sum += tsr.FloatVal1D(si + j)
-		}
-		if sum > maxv {
-			maxi = i
-			maxv = sum
-		}
-	}
+	ocol := ev.Pats.ColByName("Output").(*etensor.Float32)
+	dsts := ClosestRows32(tsr, ocol, metric.InvCorrelation32)
+	maxi = dsts[0].Idx
 	err = 1.0
 	if maxi == ev.CurCatIdx {
 		err = 0
 	}
-	maxv2 := 0.0
-	maxi2 := 0
-	for i := 0; i < nc; i++ {
-		if i == maxi { // skip top
-			continue
-		}
-		si := ev.NOutPer * i
-		sum := 0.0
-		for j := 0; j < ev.NOutPer; j++ {
-			sum += tsr.FloatVal1D(si + j)
-		}
-		if sum > maxv2 {
-			maxi2 = i
-			maxv2 = sum
-		}
-	}
 	err2 = err
-	if maxi2 == ev.CurCatIdx {
+	if dsts[1].Idx == ev.CurCatIdx {
 		err2 = 0
 	}
 	return

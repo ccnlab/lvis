@@ -107,7 +107,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Type":              "NoNoise", // no diff -- maybe tiny bit better
 					"Layer.Act.Clamp.Rate":              "180",     // 180 == 200 > 150 > 120 > 100 -- major effect on 100, 120
 					"Layer.Act.Clamp.ErrThr":            "0.5",     // 0.5 best
-					"Layer.Act.Dt.TrlAvgTau":            "20",      // not much diff here
+					"Layer.Act.Dt.TrlAvgTau":            "20",      // 20 > 50 > 100
 					"Layer.Act.GTarg.GeMax":             "1",       // 1 > .8 here
 					"Layer.Learn.SynScale.ErrLrate":     "0.02",    // .02 > .01 > .005 > .05
 					"Layer.Learn.SynScale.Rate":         "0.005",   // .002 >= .005 > .01
@@ -116,7 +116,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.WtScale.ScaleLrate": "0.01", // .1 > higher
+					"Prjn.WtScale.ScaleLrate": "0.02", // .1 > higher
 					"Prjn.WtScale.Init":       "1",
 					"Prjn.Learn.WtSig.Gain":   "6",
 					"Prjn.Learn.WtSig.Min":    "0.0",    // .2 ok but no diff from 0, .25 bad
@@ -136,11 +136,24 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Forward", Desc: "special forward-only params: com prob",
 				Params: params.Params{}},
+			{Sel: ".Inhib", Desc: "inhibitory projection",
+				Params: params.Params{
+					"Prjn.Learn.Lrate":   "0.01",
+					"Prjn.WtInit.Var":    "0.0",
+					"Prjn.WtInit.Mean":   "0.1",
+					"Prjn.WtScale.Init":  "0.0",
+					"Prjn.WtScale.Adapt": "false",
+					"Prjn.IncGain":       "0.5",
+				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true", // clamped, so not relevant, but just in case
-					"Layer.Inhib.ActAvg.Init": "0.1",
-					"Layer.Inhib.ActAvg.Targ": "0.1",
+					"Layer.Inhib.Layer.Gi":    "1.0",  //
+					"Layer.Inhib.Pool.Gi":     "1.0",  //
+					"Layer.Inhib.Pool.On":     "true", // key for soft clamped
+					"Layer.Inhib.ActAvg.Init": "0.06", // .1 for hard clamp, .06 for Ge clamp
+					"Layer.Inhib.ActAvg.Targ": "0.06",
+					"Layer.Act.Clamp.Type":    "GeClamp", // GeClamp better in every other case..
+					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 				}},
 			{Sel: "#V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -201,6 +214,30 @@ var ParamSets = params.Sets{
 	}},
 }
 
+// ErrLrateModParams are overall performance-based error learning rate modulation parameters.
+// Computed learning rate modulator is constrained to be <= 1
+type ErrLrateModParams struct {
+	Base float32 `min:"0" max:"1" desc:"baseline learning rate"`
+	Err  float32 `desc:"multiplier on error factor"`
+}
+
+func (em *ErrLrateModParams) Defaults() {
+	em.Base = 0.2
+	em.Err = 4
+}
+
+func (em *ErrLrateModParams) Update() {
+}
+
+// LrateMod returns the learning rate modulation as a function of any kind of normalized error measure
+func (em *ErrLrateModParams) LrateMod(err float32) float32 {
+	lrm := em.Base + em.Err*err
+	if lrm > 1 {
+		lrm = 1
+	}
+	return lrm
+}
+
 // Sim encapsulates the entire simulation model, and we define all the
 // functionality as methods on this struct.  This structure keeps all relevant
 // state information organized and available without having to pass everything around
@@ -217,6 +254,7 @@ type Sim struct {
 	ActRFs         actrf.RFs                     `view:"no-inline" desc:"activation-based receptive fields"`
 	RunLog         *etable.Table                 `view:"no-inline" desc:"summary log of each run"`
 	RunStats       *etable.Table                 `view:"no-inline" desc:"aggregate stats on all runs"`
+	ErrLrMod       ErrLrateModParams             `view:"inline" desc:"learning rate modulation as function of error"`
 	Params         params.Sets                   `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet       string                        `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
 	Tag            string                        `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
@@ -259,6 +297,7 @@ type Sim struct {
 	FirstZero     int     `inactive:"+" desc:"epoch at when UnitErr first went to zero"`
 	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero UnitErr"`
 	MiniBatchCtr  int     `inactive:"+" desc:"counter for mini-batch learning"`
+	PCA           pca.PCA `view:"-" desc:"pca obj"`
 
 	// internal state - view:"-"
 	Win          *gi.Window                    `view:"-" desc:"main GUI window"`
@@ -323,11 +362,12 @@ func (ss *Sim) New() {
 	ss.ActRFNms = []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}
 	ss.PNovel = 0
 	ss.MiniBatches = 1 // 1 > 16
-	ss.RepsInterval = 5
+	ss.RepsInterval = 10
 
 	ss.Time.Defaults()
 	ss.Time.CycPerQtr = 50
 	ss.Time.PlusCyc = 50 // ra25 shows strong effects of timing still
+	ss.ErrLrMod.Defaults()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -400,9 +440,21 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	it := net.AddLayer2D("IT", 16, 16, emer.Hidden)       // 16x16 == 20x20 > 10x10 (orig)
 	out := net.AddLayer4D("Output", 4, 5, ss.TrainEnv.NOutPer, 1, emer.Target)
 
+	full := prjn.NewFull()
+	_ = full
+	rndprjn := prjn.NewUnifRnd() // no advantage
+	rndprjn.PCon = 0.5           // 0.2 > .1
+	_ = rndprjn
+
+	pool1to1 := prjn.NewPoolOneToOne()
+	_ = pool1to1
+
 	net.ConnectLayers(v1, v4, ss.V1V4Prjn, emer.Forward)
-	v4IT, _ := net.BidirConnectLayers(v4, it, prjn.NewFull())
-	itOut, outIT := net.BidirConnectLayers(it, out, prjn.NewFull())
+	v4IT, _ := net.BidirConnectLayers(v4, it, rndprjn)
+	itOut, outIT := net.BidirConnectLayers(it, out, rndprjn)
+
+	// net.LateralConnectLayerPrjn(v4, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	// net.LateralConnectLayerPrjn(it, full, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
 	it.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "V4", YAlign: relpos.Front, Space: 2})
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "IT", YAlign: relpos.Front, Space: 2})
@@ -427,8 +479,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 func (ss *Sim) InitWts(net *axon.Network) {
 	net.InitTopoScales() //  sets all wt scales
+	net.LrateMult(1)     // restore initial learning rate value
 	net.InitWts()
-	net.LrateMult(1) // restore initial learning rate value
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -544,7 +596,10 @@ func (ss *Sim) AlphaCyc(train bool) {
 		}
 	}
 
+	ss.TrialStats(train)
+
 	if train {
+		ss.Net.LrateMult(ss.ErrLrMod.LrateMod(float32(1 - ss.TrlCosDiff)))
 		ss.Net.DWt()
 	}
 	if ss.ViewOn && viewUpdt == axon.AlphaCycle {
@@ -611,8 +666,8 @@ func (ss *Sim) TrainTrial() {
 	} else {
 		ss.ApplyInputs(&ss.TrainEnv)
 	}
-	ss.AlphaCyc(true)   // train
-	ss.TrialStats(true) // accumulate
+	ss.AlphaCyc(true) // train
+	// ss.TrialStats(true) // accumulate
 	ss.LogTrnTrl(ss.TrnTrlLog)
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		ss.LogTrnRepTrl(ss.TrnTrlRepLog)
@@ -807,8 +862,8 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// note: type must be in place before apply inputs
 	ss.Net.LayerByName("Output").SetType(emer.Compare)
 	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false)   // !train
-	ss.TrialStats(false) // !accumulate
+	ss.AlphaCyc(false) // !train
+	// ss.TrialStats(false) // !accumulate
 	ss.LogTstTrl(ss.TstTrlLog)
 }
 
@@ -818,8 +873,8 @@ func (ss *Sim) TestItem(idx int) {
 	ss.TestEnv.Trial.Cur = idx
 	ss.TestEnv.DoObject(idx)
 	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false)   // !train
-	ss.TrialStats(false) // !accumulate
+	ss.AlphaCyc(false) // !train
+	// ss.TrialStats(false) // !accumulate
 	ss.TestEnv.Trial.Cur = cur
 }
 
@@ -1298,19 +1353,18 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		reps := etable.NewIdxView(ss.TrnTrlRepLog)
 		reps.SortColName("Cat", true)
-		var pc pca.PCA
 		for _, lnm := range ss.LayStatNms {
-			pc.TableCol(reps, lnm, metric.Covariance64)
+			ss.PCA.TableCol(reps, lnm, metric.Covariance64)
 			var nstr float64
-			ln := len(pc.Values)
-			for i, v := range pc.Values {
+			ln := len(ss.PCA.Values)
+			for i, v := range ss.PCA.Values {
 				// fmt.Printf("%s\t\t %d  %g\n", lnm, i, v)
-				if v >= 0.01 {
+				if v >= 0.01 { // .01 gives appropriate number for output
 					nstr = float64(ln - i)
 					break
 				}
 			}
-			mn := norm.Mean64(pc.Values)
+			mn := norm.Mean64(ss.PCA.Values)
 			dt.SetCellFloat(lnm+"_PCA_NStrong", row, nstr)
 			dt.SetCellFloat(lnm+"_PCA_Mean", row, mn)
 		}
