@@ -130,29 +130,29 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",    // 1 >= 0 in lba
-					"Layer.Inhib.ActAvg.Init":    "0.04", // .04 >= .03 > .05
+					"Layer.Inhib.ActAvg.Init":    "0.04", // .03 init
 					"Layer.Inhib.ActAvg.Targ":    "0.04", // .04 >= .03 > .05
 					"Layer.Inhib.ActAvg.AdaptGi": "true", // adapt > not still better v34
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.ActAvg.Init":    "0.06", // .06 > .05 = .04
+					"Layer.Inhib.ActAvg.Init":    "0.06", // trying lower start
 					"Layer.Inhib.ActAvg.Targ":    "0.06", // .06 > .05 = .04
 					"Layer.Inhib.ActAvg.AdaptGi": "true", // this is probably essential
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.ActAvg.Init":    "0.06", // .06 > .05 = .04 (TEO)
+					"Layer.Inhib.ActAvg.Init":    "0.06", // trying lower start
 					"Layer.Inhib.ActAvg.Targ":    "0.06", // .06 > .05 = .04 (TEO)
 					"Layer.Inhib.ActAvg.AdaptGi": "true", // adapt > not -- reduces hoging
 				}},
-			{Sel: "#Output", Desc: "high inhib for one-hot output",
+			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.0", // 1.5 = 1.6 > 1.4
-					"Layer.Inhib.ActAvg.Init":    "0.15",
-					"Layer.Inhib.ActAvg.Targ":    "0.15",
+					"Layer.Inhib.Layer.Gi":       "1.5",   // 1.5 = 1.6 > 1.4 localist
+					"Layer.Inhib.ActAvg.Init":    "0.01",  // .01 def localist
+					"Layer.Inhib.ActAvg.Targ":    "0.01",  // .01 def
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
 					"Layer.Inhib.ActAvg.LoTol":   "0.8",
 					"Layer.Act.Init.Decay":       "0.5", // 0.5 > 1
@@ -173,6 +173,7 @@ var ParamSets = params.Sets{
 					"Prjn.WtScale.ScaleLrate": "0.02", // faster avg, lower lrate
 					"Prjn.WtScale.LoTol":      "0.8",  //
 					"Prjn.WtScale.Init":       "1",
+					"Prjn.WtScale.AvgTau":     "500",  // slower default
 					"Prjn.Learn.WtSig.Gain":   "6",    // 6 > 1 -- no combination of sig1 + lrate worked..
 					"Prjn.Learn.Lrate":        "0.01", // .01 > .04 must set initial lrate here when using schedule!
 					"Prjn.Learn.XCal.SubMean": "1",
@@ -194,13 +195,13 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
-					"Prjn.Learn.Learn":   "true", // learned decorrel is good
-					"Prjn.Learn.Lrate":   "0.0001",
+					"Prjn.Learn.Learn":   "true",   // learned decorrel is good
+					"Prjn.Learn.Lrate":   "0.0001", // .0001 > .001 -- slower better!
 					"Prjn.WtInit.Var":    "0.0",
 					"Prjn.WtInit.Mean":   "0.1",
-					"Prjn.WtScale.Init":  "0.2", // try diff vals
+					"Prjn.WtScale.Init":  "0.1", // .1 = .2, slower blowup
 					"Prjn.WtScale.Adapt": "false",
-					"Prjn.IncGain":       "0.5",
+					"Prjn.IncGain":       "1", // .5 def
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -215,17 +216,9 @@ var ParamSets = params.Sets{
 					// "Prjn.WtScale.Abs": "1.2", // trying bigger -- was low
 					"Prjn.WtScale.Rel": "0.5",
 				}},
-			{Sel: ".TEOTE", Desc: "weaker",
+			{Sel: ".V4Out", Desc: "NOT weaker",
 				Params: params.Params{
-					// "Prjn.WtScale.Abs": "0.5",
-				}},
-			{Sel: ".TEOOut", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Rel": "1", // 0.5 orig
-				}},
-			{Sel: ".V4Out", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.WtScale.Rel": "1", // 1 >= 0.5 > .2 -- no advantage to making weaker.
+					"Prjn.WtScale.Rel": "1", // 1 > 0.5 > .2 -- now sig diff
 				}},
 
 			// back projections
@@ -247,7 +240,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // now .2 > .3
+					"Prjn.WtScale.Rel": "0.3", // .3 > .2 -- major factor!  .2 much worse
 				}},
 			{Sel: ".OutV4", Desc: "weaker",
 				Params: params.Params{
@@ -255,7 +248,11 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2", //
+					"Prjn.WtScale.Rel": "0.3", // 0.3 == 0.2 so far..
+				}},
+			{Sel: "#TEToOutput", Desc: "weaker",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "1.0", // turn off for TE testing
 				}},
 
 			// shortcuts
@@ -274,6 +271,26 @@ var ParamSets = params.Sets{
 			{Sel: ".TEV4", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.05",
+				}},
+		},
+	}},
+	{Name: "RndOutPats", Desc: "random output pattern", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "#Output", Desc: "high inhib for one-hot output",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi":    "0.9", // 0.9 > 1.0
+					"Layer.Inhib.ActAvg.Init": "0.1", // 0.1 seems good
+					"Layer.Inhib.ActAvg.Targ": "0.1",
+				}},
+		},
+	}},
+	{Name: "LocalOutPats", Desc: "localist output pattern", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "#Output", Desc: "high inhib for one-hot output",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 = 1.6 > 1.4
+					"Layer.Inhib.ActAvg.Init": "0.01",
+					"Layer.Inhib.ActAvg.Targ": "0.01",
 				}},
 		},
 	}},
@@ -303,7 +320,7 @@ type ErrLrateModParams struct {
 }
 
 func (em *ErrLrateModParams) Defaults() {
-	em.Base = 0.1
+	em.Base = 0.05
 	em.Err = 4
 }
 
@@ -339,6 +356,7 @@ type Sim struct {
 	RunLog          *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	RunStats        *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
 	SubPools        bool              `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
+	RndOutPats      bool              `desc:"if true, use random output patterns -- else localist"`
 	ErrLrMod        ErrLrateModParams `view:"inline" desc:"learning rate modulation as function of error"`
 	Params          params.Sets       `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet        string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
@@ -464,6 +482,10 @@ func (ss *Sim) New() {
 	ss.Time.PlusCyc = 50
 	ss.RepsInterval = 10
 	ss.SubPools = true
+	ss.RndOutPats = false // change here
+	if ss.RndOutPats {
+		ss.ParamSet = "RndOutPats"
+	}
 	ss.ErrLrMod.Defaults()
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
@@ -621,7 +643,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.Images.NTestPerCat = 2
 	ss.TrainEnv.Images.SplitByItm = true
-	ss.TrainEnv.OutRandom = true
+	ss.TrainEnv.OutRandom = ss.RndOutPats
 	ss.TrainEnv.OutSize.Set(10, 10)
 	ss.TrainEnv.Images.SetPath(path, []string{".png"}, "_")
 	ss.TrainEnv.OpenConfig()
@@ -637,7 +659,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Defaults()
 	ss.TestEnv.Images.NTestPerCat = 2
 	ss.TestEnv.Images.SplitByItm = true
-	ss.TestEnv.OutRandom = true
+	ss.TestEnv.OutRandom = ss.RndOutPats
 	ss.TestEnv.OutSize.Set(10, 10)
 	ss.TestEnv.Test = true
 	ss.TestEnv.Images.SetPath(path, []string{".png"}, "_")
@@ -703,16 +725,21 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
-	// te := net.AddLayer4D("TE", 2, 2, 10, 10, emer.Hidden)
-	// out := net.AddLayer4D("Output", ss.TrainEnv.OutSize.Y, ss.TrainEnv.OutSize.X, ss.TrainEnv.NOutPer, 1, emer.Target)
-	out := net.AddLayer2D("Output", ss.TrainEnv.OutSize.Y, ss.TrainEnv.OutSize.X, emer.Target)
+	te := net.AddLayer4D("TE", 2, 2, 12, 12, emer.Hidden)
+
+	var out emer.Layer
+	if ss.RndOutPats {
+		out = net.AddLayer2D("Output", ss.TrainEnv.OutSize.Y, ss.TrainEnv.OutSize.X, emer.Target)
+	} else {
+		out = net.AddLayer4D("Output", ss.TrainEnv.OutSize.Y, ss.TrainEnv.OutSize.X, ss.TrainEnv.NOutPer, 1, emer.Target)
+	}
 
 	full := prjn.NewFull()
 	_ = full
 	rndcut := prjn.NewUnifRnd()
 	rndcut.PCon = 0.1 // 0.2 > .1
 	rndprjn := prjn.NewUnifRnd()
-	rndprjn.PCon = 0.8 // 0.2 > .1
+	rndprjn.PCon = 0.5 // 0.2 > .1
 	pool1to1 := prjn.NewPoolOneToOne()
 	_ = pool1to1
 
@@ -758,14 +785,14 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	// net.ConnectLayers(teo8, v2h8, full, emer.Back).SetClass("TEOV2")
 	// net.ConnectLayers(teo8, v2m8, full, emer.Back).SetClass("TEOV2")
 
-	// holding off on TE for now..
-	// teote, teteo := net.BidirConnectLayers(teo16, te, full)
-	// teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
-	// teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
-	// teote, teteo = net.BidirConnectLayers(teo8, te, full)
-	// teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
-	// teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
+	teote, teteo := net.BidirConnectLayers(teo16, te, full)
+	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
+	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
+	teote, teteo = net.BidirConnectLayers(teo8, te, full)
+	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
+	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
 
+	// full connections to output are key
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
 	teoout.SetClass("TEOOut")
 	outteo.SetClass("OutTEO")
@@ -774,17 +801,18 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teoout.SetClass("TEOOut")
 	outteo.SetClass("OutTEO")
 
-	// net.BidirConnectLayers(te, out, full)
+	net.BidirConnectLayers(te, out, full)
 
-	v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
+	v4out, outv4 := net.BidirConnectLayers(v4f16, out, rndprjn)
 	v4out.SetClass("V4Out")
 	outv4.SetClass("OutV4")
 
-	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
+	v4out, outv4 = net.BidirConnectLayers(v4f8, out, rndprjn)
 	v4out.SetClass("V4Out")
 	outv4.SetClass("OutV4")
 
 	// this extra inhibition prevents late decline at .2 lr0001: drives decorrelation
+	// v2 is worse at start but key for later, with full output prjns
 	net.LateralConnectLayerPrjn(v2h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(v2m16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(v2h8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
@@ -793,6 +821,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	net.LateralConnectLayerPrjn(v4f8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
 	// shortcuts:
 
@@ -828,8 +857,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
 	net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
 
-	// net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
-	// net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
+	net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
+	net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
+
+	// positioning
 
 	v1h8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1h16.Name(), YAlign: relpos.Front, Space: 4})
 
@@ -849,9 +880,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4f8.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2h8.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
 	teo8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f8.Name(), YAlign: relpos.Front, Space: 4})
 
-	// te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
+	te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
 
-	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
+	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
 
 	ss.InLays = []string{}
 	ss.OutLays = []string{}
@@ -876,7 +907,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	teo16.SetThread(1)
 	teo8.SetThread(1)
-	// te.SetThread(1)
+	te.SetThread(1)
 	out.SetThread(1)
 
 	net.Defaults()
@@ -1224,10 +1255,10 @@ func (ss *Sim) LrateSched(epc int) {
 	// case 50: // this does not work at all -- needs its shorts!!
 	// 	ss.SetParamsSet("WeakShorts", "Network", true)
 	// 	mpi.Printf("weaker shortcut cons at epoch: %d\n", epc)
-	case 100:
+	case 200: // these have no effect anymore -- with dopamine modulator!
 		ss.Net.LrateMult(0.5)
 		mpi.Printf("dropped lrate to 0.5 at epoch: %d\n", epc)
-	case 150:
+	case 400:
 		ss.Net.LrateMult(0.2)
 		mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
 	case 600:

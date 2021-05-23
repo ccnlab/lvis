@@ -111,13 +111,14 @@ var ParamSets = params.Sets{
 					"Layer.Act.GTarg.GeMax":             "1",       // 1 > .8 here
 					"Layer.Learn.SynScale.ErrLrate":     "0.02",    // .02 > .01 > .005 > .05
 					"Layer.Learn.SynScale.Rate":         "0.005",   // .002 >= .005 > .01
-					"Layer.Learn.SynScale.TrgRange.Min": "0.2",     // .2 > .1
+					"Layer.Learn.SynScale.TrgRange.Min": "0.2",     // .2 > .5 > .1
 					"Layer.Learn.SynScale.TrgRange.Max": "2.0",     // 2 > 2.5 > 1.8
 				}},
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
 					"Prjn.WtScale.ScaleLrate": "0.02", // .1 > higher
 					"Prjn.WtScale.Init":       "1",
+					"Prjn.WtScale.AvgTau":     "500", // slower default
 					"Prjn.Learn.WtSig.Gain":   "6",
 					"Prjn.Learn.WtSig.Min":    "0.0",    // .2 ok but no diff from 0, .25 bad
 					"Prjn.Learn.Lrate":        "0.04",   // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
@@ -450,8 +451,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	_ = pool1to1
 
 	net.ConnectLayers(v1, v4, ss.V1V4Prjn, emer.Forward)
-	v4IT, _ := net.BidirConnectLayers(v4, it, rndprjn)
-	itOut, outIT := net.BidirConnectLayers(it, out, rndprjn)
+	v4IT, _ := net.BidirConnectLayers(v4, it, full)
+	itOut, outIT := net.BidirConnectLayers(it, out, full)
 
 	// net.LateralConnectLayerPrjn(v4, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	// net.LateralConnectLayerPrjn(it, full, &axon.HebbPrjn{}).SetType(emer.Inhib)
