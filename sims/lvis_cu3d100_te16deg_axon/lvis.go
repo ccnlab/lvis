@@ -76,23 +76,23 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":              "1.1", // 1.1 > 1.0 > 1.2 -- all layers
-					"Layer.Inhib.Pool.Gi":               "1.1", // 1.1 > 1.0 -- universal for all layers
-					"Layer.Act.Gbar.L":                  "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Init.Decay":              "0.5", // 0.5 > 0.2
-					"Layer.Act.KNa.Fast.Max":            "0.1", // fm both .2 worse
-					"Layer.Act.KNa.Med.Max":             "0.2", // 0.2 > 0.1 def
-					"Layer.Act.KNa.Slow.Max":            "0.2", // 0.2 > higher
-					"Layer.Act.Noise.Dist":              "Gaussian",
-					"Layer.Act.Noise.Mean":              "0.0",     // .05 max for blowup
-					"Layer.Act.Noise.Var":               "0.01",    // .01 a bit worse
-					"Layer.Act.Noise.Type":              "NoNoise", // off for now
-					"Layer.Act.GTarg.GeMax":             "1",       // objrec 1 > .8
-					"Layer.Act.Dt.TrlAvgTau":            "20",      // 20 > 50 > 100
-					"Layer.Learn.SynScale.ErrLrate":     "0.01",    // 0.01 >= .005 > .02 maybe
-					"Layer.Learn.SynScale.Rate":         "0.005",
-					"Layer.Learn.SynScale.TrgRange.Min": "0.5", // .5 > .2 overall
-					"Layer.Learn.SynScale.TrgRange.Max": "2.0", // objrec 2 > 1.8
+					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
+					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
+					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
+					"Layer.Act.Init.Decay":               "0.5", // 0.5 > 0.2
+					"Layer.Act.KNa.Fast.Max":             "0.1", // fm both .2 worse
+					"Layer.Act.KNa.Med.Max":              "0.2", // 0.2 > 0.1 def
+					"Layer.Act.KNa.Slow.Max":             "0.2", // 0.2 > higher
+					"Layer.Act.Noise.Dist":               "Gaussian",
+					"Layer.Act.Noise.Mean":               "0.0",     // .05 max for blowup
+					"Layer.Act.Noise.Var":                "0.01",    // .01 a bit worse
+					"Layer.Act.Noise.Type":               "NoNoise", // off for now
+					"Layer.Act.GTarg.GeMax":              "1",       // objrec 1 > .8
+					"Layer.Act.Dt.TrlAvgTau":             "20",      // 20 > 50 > 100
+					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",    // 0.01 >= .005 > .02 maybe
+					"Layer.Learn.TrgAvgAct.Rate":         "0.005",
+					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5", // .5 > .2 overall
+					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0", // objrec 2 > 1.8
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -170,21 +170,29 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.WtScale.ScaleLrate": "0.02", // faster avg, lower lrate
-					"Prjn.WtScale.LoTol":      "0.8",  //
-					"Prjn.WtScale.Init":       "1",
-					"Prjn.WtScale.AvgTau":     "500",  // slower default
-					"Prjn.Learn.WtSig.Gain":   "6",    // 6 > 1 -- no combination of sig1 + lrate worked..
-					"Prjn.Learn.Lrate":        "0.01", // .01 > .04 must set initial lrate here when using schedule!
-					"Prjn.Learn.XCal.SubMean": "1",
-					"Prjn.Learn.XCal.DWtThr":  "0.0001", // 0.0001 > 0.001
-					"Prjn.Com.PFail":          "0.0",
-					"Prjn.Com.PFailWtMax":     "0.0",
+					"Prjn.PrjnScale.ScaleLrate": "0.02", // faster avg, lower lrate
+					"Prjn.PrjnScale.LoTol":      "0.8",  // 0.8 better -- not good to pump up early
+					"Prjn.PrjnScale.Init":       "1",
+					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
+					"Prjn.SWt.Adapt.Lrate":      "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
+					"Prjn.SWt.Adapt.SubNorm":    "true",  // not clear yet
+					"Prjn.SWt.Adapt.SigGain":    "6",
+					"Prjn.SWt.Adapt.Targ":       "true", // seems important
+					"Prjn.SWt.Init.SPct":        "1",    // 1 best on objrec
+					"Prjn.SWt.Init.TargSPct":    "1",    // todo: expt
+					"Prjn.SWt.Init.Mean":        "0.4",  // .4 better on pca, .5 starts faster
+					"Prjn.SWt.Limit.Min":        "0.2",  // .3-.7 better constraint, but not clear better than no SWt
+					"Prjn.SWt.Limit.Max":        "0.6",
+					"Prjn.Learn.Lrate":          "0.01", // .01 > .04 must set initial lrate here when using schedule!
+					"Prjn.Learn.XCal.SubMean":   "1",
+					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
+					"Prjn.Com.PFail":            "0.0",
+					"Prjn.Com.PFailWtMax":       "0.0",
 					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Prjn.PrjnScale.Rel": "0.2",
 					// "Prjn.Learn.Lrate": "0",
 				}},
 			{Sel: ".Forward", Desc: "use pfail only on forward cons?",
@@ -195,82 +203,83 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
-					"Prjn.Learn.Learn":   "true",   // learned decorrel is good
-					"Prjn.Learn.Lrate":   "0.0001", // .0001 > .001 -- slower better!
-					"Prjn.WtInit.Var":    "0.0",
-					"Prjn.WtInit.Mean":   "0.1",
-					"Prjn.WtScale.Init":  "0.1", // .1 = .2, slower blowup
-					"Prjn.WtScale.Adapt": "false",
-					"Prjn.IncGain":       "1", // .5 def
+					"Prjn.Learn.Learn":     "true",   // learned decorrel is good
+					"Prjn.Learn.Lrate":     "0.0001", // .0001 > .001 -- slower better!
+					"Prjn.SWt.Init.Var":    "0.0",
+					"Prjn.SWt.Init.Mean":   "0.1",
+					"Prjn.SWt.Adapt.On":    "false",
+					"Prjn.PrjnScale.Init":  "0.1", // .1 = .2, slower blowup
+					"Prjn.PrjnScale.Adapt": "false",
+					"Prjn.IncGain":         "1", // .5 def
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Prjn.PrjnScale.Rel": "0.2",
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					// "Prjn.WtScale.Abs": "1.2", // trying bigger -- was low
+					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
-					// "Prjn.WtScale.Abs": "1.2", // trying bigger -- was low
-					"Prjn.WtScale.Rel": "0.5",
+					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
+					"Prjn.PrjnScale.Rel": "0.5",
 				}},
 			{Sel: ".V4Out", Desc: "NOT weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "1", // 1 > 0.5 > .2 -- now sig diff
+					"Prjn.PrjnScale.Rel": "1", // 1 > 0.5 > .2 -- now sig diff
 				}},
 
 			// back projections
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.05", // .05 > .02 > .1
+					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1
 				}},
 			{Sel: ".TEOV2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.05", // .05 > .02 > .1
+					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1
 				}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 == .2
+					"Prjn.PrjnScale.Rel": "0.1", // .1 == .2
 				}},
 			{Sel: ".TETEO", Desc: "std",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 orig
+					"Prjn.PrjnScale.Rel": "0.1", // .1 orig
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // .3 > .2 -- major factor!  .2 much worse
+					"Prjn.PrjnScale.Rel": "0.3", // .3 > .2 -- major factor!  .2 much worse
 				}},
 			{Sel: ".OutV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 > higher now
+					"Prjn.PrjnScale.Rel": "0.1", // .1 > higher now
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3", // 0.3 == 0.2 so far..
+					"Prjn.PrjnScale.Rel": "0.3", // 0.3 == 0.2 so far..
 				}},
 			{Sel: "#TEToOutput", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "1.0", // turn off for TE testing
+					"Prjn.PrjnScale.Rel": "1.0", // turn off for TE testing
 				}},
 
 			// shortcuts
 			{Sel: ".V1V4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5", // .5 > .2 (v32 still) -- all tested together
+					"Prjn.PrjnScale.Rel": "0.5", // .5 > .2 (v32 still) -- all tested together
 				}},
 			{Sel: ".V2TEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5",
+					"Prjn.PrjnScale.Rel": "0.5",
 				}},
 			{Sel: ".V4TE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5",
+					"Prjn.PrjnScale.Rel": "0.5",
 				}},
 			{Sel: ".TEV4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.05",
+					"Prjn.PrjnScale.Rel": "0.05",
 				}},
 		},
 	}},
@@ -298,15 +307,15 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: ".V1V4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1",
+					"Prjn.PrjnScale.Rel": "0.1",
 				}},
 			{Sel: ".V2TEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1",
+					"Prjn.PrjnScale.Rel": "0.1",
 				}},
 			{Sel: ".V4TE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1",
+					"Prjn.PrjnScale.Rel": "0.1",
 				}},
 		},
 	}},
@@ -803,11 +812,11 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	net.BidirConnectLayers(te, out, full)
 
-	v4out, outv4 := net.BidirConnectLayers(v4f16, out, rndprjn)
+	v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
 	v4out.SetClass("V4Out")
 	outv4.SetClass("OutV4")
 
-	v4out, outv4 = net.BidirConnectLayers(v4f8, out, rndprjn)
+	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
 	v4out.SetClass("V4Out")
 	outv4.SetClass("OutV4")
 
@@ -928,8 +937,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 }
 
 func (ss *Sim) InitWts(net *axon.Network) {
-	net.InitTopoScales() //  sets all wt scales
-	net.LrateMult(1)     // restore initial learning rate value
+	net.LrateMult(1) // restore initial learning rate value
 	net.InitWts()
 }
 
@@ -1125,9 +1133,7 @@ func (ss *Sim) TrainTrial() {
 func (ss *Sim) RunEnd() {
 	ss.LogRun(ss.RunLog)
 	if ss.SaveWts {
-		fnm := ss.WeightsFileName()
-		mpi.Printf("Saving Weights to: %s\n", fnm)
-		ss.Net.SaveWtsJSON(gi.FileName(fnm))
+		ss.SaveWeights()
 	}
 }
 
@@ -1243,16 +1249,24 @@ func (ss *Sim) Stopped() {
 	}
 }
 
-// SaveWeights saves the network weights -- when called with giv.CallMethod
-// it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename gi.FileName) {
-	ss.Net.SaveWtsJSON(filename)
+// SaveWeights saves the network weights with the std wts filename
+func (ss *Sim) SaveWeights() {
+	fnm := ss.WeightsFileName()
+	mpi.Printf("Saving Weights to: %s\n", fnm)
+	ss.Net.SaveWtsJSON(gi.FileName(fnm))
 }
 
 // LrateSched implements the learning rate schedule
 func (ss *Sim) LrateSched(epc int) {
 	switch epc {
-	// case 50: // this does not work at all -- needs its shorts!!
+	case 25:
+		ss.SaveWeights()
+	case 50:
+		ss.SaveWeights()
+	case 100:
+		ss.SaveWeights()
+	case 150:
+		ss.SaveWeights()
 	// 	ss.SetParamsSet("WeakShorts", "Network", true)
 	// 	mpi.Printf("weaker shortcut cons at epoch: %d\n", epc)
 	case 200: // these have no effect anymore -- with dopamine modulator!
