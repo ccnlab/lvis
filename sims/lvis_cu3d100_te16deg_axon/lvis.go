@@ -89,16 +89,16 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Type":               "NoNoise", // off for now
 					"Layer.Act.GTarg.GeMax":              "1",       // objrec 1 > .8
 					"Layer.Act.Dt.TrlAvgTau":             "20",      // 20 > 50 > 100
-					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",    // 0.01 >= .005 > .02 maybe
-					"Layer.Learn.TrgAvgAct.Rate":         "0.005",
-					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5", // .5 > .2 overall
-					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0", // objrec 2 > 1.8
+					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",    // 0.01 orig > 0.005
+					"Layer.Learn.TrgAvgAct.Rate":         "0.005",   // 0.005 orig > 0.01
+					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",     // .5 > .2 overall
+					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // objrec 2 > 1.8
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06", // .06 for GeClamp
-					"Layer.Inhib.ActAvg.Targ": "0.06",
+					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1h8: .04, V1h16: .03
 					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
 					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 				}},
@@ -106,7 +106,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.ActAvg.Init": "0.06",
-					"Layer.Inhib.ActAvg.Targ": "0.06",
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: 0.06, V1m16: 0.05
 					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
 					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 				}},
@@ -125,6 +125,11 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":    "0.02",
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
+				}},
+			{Sel: "#V2m16", Desc: "this layer is too active, drives V4f16 too strongly",
+				Params: params.Params{
+					"Layer.Inhib.ActAvg.Init": "0.02", // not clear if needed now..
+					"Layer.Inhib.ActAvg.Targ": "0.02",
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -170,20 +175,18 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "0.02", // faster avg, lower lrate
+					"Prjn.PrjnScale.ScaleLrate": "0.02", // todo: try higher
 					"Prjn.PrjnScale.LoTol":      "0.8",  // 0.8 better -- not good to pump up early
 					"Prjn.PrjnScale.Init":       "1",
-					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
-					"Prjn.SWt.Adapt.Lrate":      "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
-					"Prjn.SWt.Adapt.SubNorm":    "true",  // not clear yet
+					"Prjn.PrjnScale.AvgTau":     "500",  // slower default
+					"Prjn.SWt.Adapt.On":         "true", //
+					"Prjn.SWt.Adapt.Lrate":      "0.01", // no diffs .02,.01,
 					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Adapt.Targ":       "true", // seems important
-					"Prjn.SWt.Init.SPct":        "1",    // 1 best on objrec
-					"Prjn.SWt.Init.TargSPct":    "1",    // todo: expt
-					"Prjn.SWt.Init.Mean":        "0.4",  // .4 better on pca, .5 starts faster
-					"Prjn.SWt.Limit.Min":        "0.2",  // .3-.7 better constraint, but not clear better than no SWt
-					"Prjn.SWt.Limit.Max":        "0.6",
-					"Prjn.Learn.Lrate":          "0.01", // .01 > .04 must set initial lrate here when using schedule!
+					"Prjn.SWt.Init.SPct":        "0.5",  // .2 > .5 > 1 -- shows up later
+					"Prjn.SWt.Init.Mean":        "0.5",  // .5 > .4 -- key, except v2?
+					"Prjn.SWt.Limit.Min":        "0.3",  // .3-.7
+					"Prjn.SWt.Limit.Max":        "0.7",  //
+					"Prjn.Learn.Lrate":          "0.01", // .02 > .01 maybe with SWt
 					"Prjn.Learn.XCal.SubMean":   "1",
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":            "0.0",
@@ -212,6 +215,12 @@ var ParamSets = params.Sets{
 					"Prjn.PrjnScale.Adapt": "false",
 					"Prjn.IncGain":         "1", // .5 def
 				}},
+			{Sel: ".V1V2", Desc: "special SWt params",
+				Params: params.Params{
+					"Prjn.SWt.Init.Mean": "0.4", // .5 > .4 -- key!!
+					"Prjn.SWt.Limit.Min": "0.1", // .3-.7
+					"Prjn.SWt.Limit.Max": "0.7", //
+				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.2",
@@ -234,6 +243,9 @@ var ParamSets = params.Sets{
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1
+					"Prjn.SWt.Init.Mean": "0.4",  // .5 > .4 -- key!!
+					"Prjn.SWt.Limit.Min": "0.1",  // .3-.7
+					"Prjn.SWt.Limit.Max": "0.7",  //
 				}},
 			{Sel: ".TEOV2", Desc: "weaker",
 				Params: params.Params{
@@ -752,15 +764,15 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	pool1to1 := prjn.NewPoolOneToOne()
 	_ = pool1to1
 
-	net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2h16")
-	net.ConnectLayers(v1m16, v2h16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2h16")
+	net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1m16, v2h16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-	net.ConnectLayers(v1m16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward)
+	net.ConnectLayers(v1m16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
 
-	net.ConnectLayers(v1h8, v2h8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2h8")
-	net.ConnectLayers(v1m8, v2h8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2h8")
+	net.ConnectLayers(v1h8, v2h8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1m8, v2h8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward)
+	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
 
 	v2v4, v4v2 := net.BidirConnectLayers(v2h16, v4f16, ss.Prjn4x4Skp2Sub2Send)
 	v2v4.SetClass("V2V4")
