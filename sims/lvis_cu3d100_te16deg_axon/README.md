@@ -42,20 +42,12 @@ The cemer versions used fairly standard params (because they determined these pa
 
 * Reduce Out->TEO on schedule
 
-* SynScale.TrgRange.Min = 0.5
-
-* Slower SynScale.ErrLrate
-
 * Slower lrate, lower contrast again.
 
-* Different params for top-down vs. forward prjns: less contrast, slower, etc: keep the error propagation channels open more to reduce positive feedback loops.
+* didn't work: More objects -- keep things more diverse.  random output patterns or go back to single units even.
 
-* exclude back from synscale
-
-* More objects -- keep things more diverse.  random output patterns or go back to single units even.
-
-* smaller topo-mapped pools that directly support combinatorial coding
+* done: smaller topo-mapped pools that directly support combinatorial coding -- not sure of effect
 
 * Experiment with just spacing out stimuli by some amount, instead of decay -- find equivalent delay -- decay still likely to be more efficient, but would be interesting.
 
-* 
+
