@@ -79,7 +79,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
 					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Init.Decay":               "0.5", // 0.5 > 0.2
+					"Layer.Act.Init.Decay":               "0",   // 0.5 > 0.2
+					"Layer.Act.Init.GlongDecay":          "1",   //
 					"Layer.Act.KNa.Fast.Max":             "0.1", // fm both .2 worse
 					"Layer.Act.KNa.Med.Max":              "0.2", // 0.2 > 0.1 def
 					"Layer.Act.KNa.Slow.Max":             "0.2", // 0.2 > higher
@@ -164,17 +165,17 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Targ":    "0.01",  // .01 def
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
 					"Layer.Inhib.ActAvg.LoTol":   "0.8",
-					"Layer.Act.Init.Decay":       "0.5", // 0.5 > 1
-					"Layer.Act.Clamp.Rate":       "180", // 180 best here too
-					"Layer.Act.Clamp.Type":       "GeClamp",
-					"Layer.Act.Clamp.Ge":         "0.6", // .6 = .7 > .5 (tiny diff)
-					"Layer.Act.Clamp.Burst":      "false",
-					"Layer.Act.Clamp.BurstThr":   "0.5",   //
-					"Layer.Act.Clamp.BurstGe":    "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same
-					"Layer.Act.Clamp.BurstCyc":   "20",    // 20 > 15 > 10 -- maybe refractory?
-					"Layer.Act.Spike.Tr":         "3",     // 2 >= 3 > 1 > 0
-					"Layer.Act.GABAB.Gbar":       "0.005", // .005 > .01 > .02 > .05 > .1 > .2
-					"Layer.Act.NMDA.Gbar":        "0.03",  // was .02
+					// "Layer.Act.Init.Decay":       "0.5", // 0.5 > 1
+					"Layer.Act.Clamp.Rate":     "180", // 180 best here too
+					"Layer.Act.Clamp.Type":     "GeClamp",
+					"Layer.Act.Clamp.Ge":       "0.6", // .6 = .7 > .5 (tiny diff)
+					"Layer.Act.Clamp.Burst":    "false",
+					"Layer.Act.Clamp.BurstThr": "0.5",   //
+					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same
+					"Layer.Act.Clamp.BurstCyc": "20",    // 20 > 15 > 10 -- maybe refractory?
+					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
+					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
+					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
 				}},
 			// projections
 			{Sel: "Prjn", Desc: "yes extra learning factors",
@@ -186,7 +187,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.On":         "true",  //
 					"Prjn.SWt.Adapt.Lrate":      "0.001", // .005 > .05 > .1 at end..
 					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Adapt.DreamVar":   "0.0",  // 0.01 max that works in small nets
+					"Prjn.SWt.Adapt.DreamVar":   "0.0",  // < 0.005 no effect 0.01 max that works in small nets
 					"Prjn.SWt.Init.SPct":        "1",    // 1 > lower
 					"Prjn.SWt.Init.Mean":        "0.5",  // .5 > .4 -- key, except v2?
 					"Prjn.SWt.Limit.Min":        "0.2",  // .2-.8 == .1-.9; .3-.7 not better
@@ -304,7 +305,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V4TE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2",
+					"Prjn.PrjnScale.Rel": "0.2", // cut these
 				}},
 			{Sel: ".TEV4", Desc: "weaker",
 				Params: params.Params{
@@ -421,32 +422,32 @@ type Sim struct {
 	SpikeRastGrids map[string]*etview.TensorGrid `desc:"spike raster plots for different layers"`
 
 	// statistics: note use float64 as that is best for etable.Table
-	TrlCatIdx     int       `inactive:"+" desc:"current category index"`
-	TrlCat        string    `inactive:"+" desc:"current category name"`
-	TrlRespIdx    int       `inactive:"+" desc:"output response index of the network"`
-	TrlResp       string    `inactive:"+" desc:"output response name of the network"`
-	TrlErr        float64   `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on max out unit"`
-	TrlErr2       float64   `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on whether target was among those active above .2 threshold"`
-	TrlUnitErr    float64   `inactive:"+" desc:"current trial's average sum squared error"`
-	TrlTrgAct     float64   `inactive:"+" desc:"activity of target output unit on this trial"`
-	TrlCosDiff    float64   `inactive:"+" desc:"current trial's cosine difference"`
-	TrlOutPeaks   []int     `view:"inline" desc:"output layer peak activation times"`
-	TrlOuts       []int     `view:"inline" desc:"output layer responses at each peak"`
-	TrlFirstErr   float64   `inactive:"+" desc:"error on first output response"`
-	TrlFirstErr2  float64   `inactive:"+" desc:"error2 on first output response"`
-	EpcUnitErr    float64   `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
-	EpcPctErr     float64   `inactive:"+" desc:"last epoch's average TrlErr"`
-	EpcPctCor     float64   `inactive:"+" desc:"1 - last epoch's average TrlErr"`
-	EpcPctErr2    float64   `inactive:"+" desc:"last epoch's average TrlErr2"`
-	EpcCosDiff    float64   `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
-	EpcErrTrgAct  float64   `inactive:"+" desc:"avg activity of target output unit on err trials"`
-	EpcCorTrgAct  float64   `inactive:"+" desc:"avg activity of target output unit on correct trials"`
-	EpcPerTrlMSec float64   `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
-	FirstZero     int       `inactive:"+" desc:"epoch at when Err first went to zero"`
-	NZero         int       `inactive:"+" desc:"number of epochs in a row with zero Err"`
-	PCA           pca.PCA   `view:"-" desc:"pca obj"`
-	GaussKernel   []float64 `view:"-" desc:"gaussian smoothing kernel"`
-	SmoothData    []float64 `view:"-" desc:"data for smoothing"`
+	TrlCatIdx      int       `inactive:"+" desc:"current category index"`
+	TrlCat         string    `inactive:"+" desc:"current category name"`
+	TrlRespIdx     int       `inactive:"+" desc:"output response index of the network"`
+	TrlResp        string    `inactive:"+" desc:"output response name of the network"`
+	TrlErr         float64   `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on max out unit"`
+	TrlErr2        float64   `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on whether target was among those active above .2 threshold"`
+	TrlUnitErr     float64   `inactive:"+" desc:"current trial's average sum squared error"`
+	TrlTrgAct      float64   `inactive:"+" desc:"activity of target output unit on this trial"`
+	TrlCosDiff     float64   `inactive:"+" desc:"current trial's cosine difference"`
+	TrlOutFirstCyc int       `inactive:"+" desc:"first activation cycle of output"`
+	TrlFirstResp   int       `inactive:"+" desc:"response at OutFirstCyc"`
+	TrlFirstErr    float64   `inactive:"+" desc:"error on first output response"`
+	TrlFirstErr2   float64   `inactive:"+" desc:"error2 on first output response"`
+	EpcUnitErr     float64   `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
+	EpcPctErr      float64   `inactive:"+" desc:"last epoch's average TrlErr"`
+	EpcPctCor      float64   `inactive:"+" desc:"1 - last epoch's average TrlErr"`
+	EpcPctErr2     float64   `inactive:"+" desc:"last epoch's average TrlErr2"`
+	EpcCosDiff     float64   `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
+	EpcErrTrgAct   float64   `inactive:"+" desc:"avg activity of target output unit on err trials"`
+	EpcCorTrgAct   float64   `inactive:"+" desc:"avg activity of target output unit on correct trials"`
+	EpcPerTrlMSec  float64   `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
+	FirstZero      int       `inactive:"+" desc:"epoch at when Err first went to zero"`
+	NZero          int       `inactive:"+" desc:"number of epochs in a row with zero Err"`
+	PCA            pca.PCA   `view:"-" desc:"pca obj"`
+	GaussKernel    []float64 `view:"-" desc:"gaussian smoothing kernel"`
+	SmoothData     []float64 `view:"-" desc:"data for smoothing"`
 
 	// internal state - view:"-"
 	Win          *gi.Window                    `view:"-" desc:"main GUI window"`
@@ -518,7 +519,7 @@ func (ss *Sim) New() {
 	ss.PostCycs = 0
 	ss.PostDecay = .5
 	ss.ErrLrMod.Defaults()
-	ss.ErrLrMod.Base = 0.05 // best -- todo retest!
+	ss.ErrLrMod.Base = 0.05 // best -- todo retest! -- ra25 .5, 2 is best
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
 	ss.Prjn4x4Skp2.Size.Set(4, 4)
@@ -884,16 +885,19 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	*/
 
 	// these shortcuts are essential!
-	net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1V4")
-	net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1V4")
+	/*
+		net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1V4")
+		net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1V4")
 
-	net.ConnectLayers(v2h16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
-	net.ConnectLayers(v2m16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
-	net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
-	net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
+		net.ConnectLayers(v2h16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
+		net.ConnectLayers(v2m16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
+		net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
+		net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
 
-	// net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
-	// net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
+		// not essential
+		// net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
+		// net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
+	*/
 
 	// positioning
 
@@ -1742,8 +1746,8 @@ func (ss *Sim) ConfigTrnCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 
 	for _, lnm := range ss.HidLays {
-		plt.SetColParams(lnm+"_ActAvg", eplot.On, eplot.FixMin, 0, eplot.FixMax, 0.15)
-		plt.SetColParams(lnm+"_ActMax", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.15)
+		plt.SetColParams(lnm+"_ActMax", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	}
 
 	return plt
@@ -1783,47 +1787,45 @@ func (ss *Sim) FindPeaks(data []float64) []int {
 	return peaks
 }
 
-// PeakStat returns cycles of first 2 peaks of given layer in given cycle log
-// based on ActAvg recorded in cycle log
-func (ss *Sim) PeakStat(cyclog *etable.Table, lnm string) (pk1, pk2 int) {
-	dc := cyclog.ColByName(lnm + "_ActAvg").(*etensor.Float64)
-	pks := ss.FindPeaks(dc.Values)
-	n := len(pks)
-	if n >= 1 {
-		pk1 = pks[0]
+// FirstActCycle returns the point at which max activity stops going up by more than .01
+// within minus phase.
+// must be passed max act data cycle-by-cycle
+func (ss *Sim) FindActCycle(data []float64) int {
+	mx := 3 * ss.Time.CycPerQtr
+	dt := data  // data is already smooth
+	start := 5  // give time for prior act to decay
+	thr := 0.01 // rise threshold
+	hit := false
+	cyc := mx
+	for i := start; i < mx; i++ {
+		del := dt[i] - dt[i-1]
+		if !hit {
+			if del > thr {
+				hit = true
+			}
+			continue
+		}
+		if del < thr {
+			cyc = i
+			break
+		}
 	}
-	if n >= 2 {
-		pk2 = pks[1]
-	}
-	return
+	return cyc
+}
+
+// FirstActStat returns first major activation of given layer
+func (ss *Sim) FirstActStat(cyclog *etable.Table, lnm string) int {
+	dc := cyclog.ColByName(lnm + "_ActMax").(*etensor.Float64)
+	return ss.FindActCycle(dc.Values)
 }
 
 // FirstOut returns first output response at first peak of output activity
 func (ss *Sim) FirstOut(cyclog *etable.Table) (resp int, err float64, err2 float64) {
-	dc := cyclog.ColByName("Output_ActAvg").(*etensor.Float64)
-	pks := ss.FindPeaks(dc.Values)
-	ss.TrlOutPeaks = pks
-	n := len(pks)
-	errs := make([]float64, n)
-	errs2 := make([]float64, n)
-	resps := make([]int, n)
-	for i, pk := range pks {
-		out := cyclog.CellTensor("Output_Acts", pk).(*etensor.Float32)
-		rsp, er, er2 := ss.TrainEnv.OutErr(out)
-		resps[i] = rsp
-		errs[i] = er
-		errs2[i] = er2
-	}
-	ss.TrlOuts = resps
-	if n >= 1 && pks[0] < ss.Time.CycPerQtr*3 {
-		resp = resps[0]
-		err = errs[0]
-		err2 = errs2[0]
-	} else {
-		resp = 0
-		err = 1
-		err2 = 1
-	}
+	fcyc := ss.FirstActStat(cyclog, "Output")
+	ss.TrlOutFirstCyc = fcyc
+	out := cyclog.CellTensor("Output_Acts", fcyc).(*etensor.Float32)
+	resp, err, err2 = ss.TrainEnv.OutErr(out)
+	ss.TrlFirstResp = resp
 	ss.TrlFirstErr = err
 	ss.TrlFirstErr2 = err2
 	return
@@ -1880,9 +1882,8 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 
 		dt.SetCellFloat(lnm+"_CosDiff", row, float64(1-ly.CosDiff.Cos))
 
-		pk1, pk2 := ss.PeakStat(cyclog, lnm)
-		dt.SetCellFloat(lnm+"_Peak1", row, float64(pk1))
-		dt.SetCellFloat(lnm+"_Peak2", row, float64(pk2))
+		fcyc := ss.FirstActStat(cyclog, lnm)
+		dt.SetCellFloat(lnm+"_FirstCyc", row, float64(fcyc))
 	}
 
 	if ss.TrnTrlFile != nil && (!ss.UseMPI || ss.SaveProcLog) { // otherwise written at end of epoch, integrated
@@ -1921,8 +1922,7 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_CosDiff", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActDif", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_Peak1", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_Peak2", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_FirstCyc", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1951,8 +1951,7 @@ func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 		plt.SetColParams(lnm+"_ActDif", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-		plt.SetColParams(lnm+"_Peak1", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_Peak2", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_FirstCyc", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
 	return plt
 }
@@ -2177,8 +2176,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	for _, lnm := range ss.HidLays {
 		split.Desc(spl, lnm+"_CosDiff")
 		split.Desc(spl, lnm+"_ActDif")
-		split.Desc(spl, lnm+"_Peak1")
-		split.Desc(spl, lnm+"_Peak2")
+		split.Desc(spl, lnm+"_FirstCyc")
 	}
 	ss.TrnErrStats = spl.AggsToTable(etable.AddAggName)
 
@@ -2290,8 +2288,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		if ss.EpcPctErr > 0 && ss.EpcPctErr < 1 {
 			dt.SetCellFloat(lnm+"_CorCosDiff", row, ss.TrnErrStats.CellFloat(lnm+"_CosDiff:Mean", 0))
 			dt.SetCellFloat(lnm+"_ErrCosDiff", row, ss.TrnErrStats.CellFloat(lnm+"_CosDiff:Mean", 1))
-			dt.SetCellFloat(lnm+"_CorPeak1", row, ss.TrnErrStats.CellFloat(lnm+"_Peak1:Mean", 0))
-			dt.SetCellFloat(lnm+"_ErrPeak1", row, ss.TrnErrStats.CellFloat(lnm+"_Peak1:Mean", 1))
+			dt.SetCellFloat(lnm+"_CorFirstCyc", row, ss.TrnErrStats.CellFloat(lnm+"_FirstCyc:Mean", 0))
+			dt.SetCellFloat(lnm+"_ErrFirstCyc", row, ss.TrnErrStats.CellFloat(lnm+"_FirstCyc:Mean", 1))
 		}
 	}
 
@@ -2359,8 +2357,8 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_CorCosDiff", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ErrCosDiff", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_CorPeak1", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_ErrPeak1", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_CorFirstCyc", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ErrFirstCyc", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_PCA_NStrong", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_PCA_Top5", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_PCA_Next5", etensor.FLOAT64, nil, nil})
@@ -2410,8 +2408,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_CorCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_ErrCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_CorPeak1", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_ErrPeak1", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_CorFirstCyc", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_ErrFirstCyc", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_PCA_NStrong", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_PCA_Top5", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_PCA_Next5", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)

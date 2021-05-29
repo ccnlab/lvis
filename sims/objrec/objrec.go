@@ -78,7 +78,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.Gi":               "1.0",
 					"Layer.Inhib.Layer.FBTau":            "1.4", // 1.4 def
 					"Layer.Inhib.Pool.FBTau":             "1.4",
-					"Layer.Act.Init.Decay":               "0.5",  // 0.5 > 0.8 > 1 > 0 -- 1, 0.8 start fast then dies, 0 never learns -- very sensitive
+					"Layer.Act.Init.Decay":               "0.0",  // 0.5 > 0.8 > 1 > 0 -- 1, 0.8 start fast then dies, 0 never learns -- very sensitive
+					"Layer.Act.Init.GlongDecay":          "1",    //
 					"Layer.Act.Init.KnaDecay":            "0.0",  // 0 > 0.5 interesting..
 					"Layer.Act.Gbar.L":                   "0.2",  // .2 > .1 @176
 					"Layer.Act.Gbar.E":                   "1.0",  // 1.2 maybe better % cor but not cosdiff
@@ -110,48 +111,9 @@ var ParamSets = params.Sets{
 					"Layer.Act.Dt.TrlAvgTau":             "20",      // 20 > 50 > 100
 					"Layer.Act.GTarg.GeMax":              "1",       // 1 > .8 here
 					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.02",    // .02 > .01 > .005 > .05
-					"Layer.Learn.TrgAvgAct.Rate":         "0.005",   // .002 >= .005 > .01
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005",   // .002 >= .005 > .01
 					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.2",     // .2 > .5 > .1
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // 2 > 2.5 > 1.8
-				}},
-			{Sel: "Prjn", Desc: "yes extra learning factors",
-				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "0.02", // .1 > higher
-					"Prjn.PrjnScale.Init":       "1",
-					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
-					"Prjn.Learn.Lrate":          "0.04",   // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
-					"Prjn.Learn.XCal.SubMean":   "1",      // 1 > .9
-					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
-					"Prjn.SWt.Adapt.Lrate":      "0.005",  // 0.005 > others maybe?  0.02 > 0.05 > .1
-					"Prjn.SWt.Adapt.SubNorm":    "false",  // divnorm seems better
-					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Adapt.Targ":       "false", // todo: try
-					"Prjn.SWt.Init.TargSPct":    "0",     // todo: try
-					"Prjn.SWt.Init.SPct":        "1",     // 1 >= lower
-					"Prjn.SWt.Init.Mean":        "0.4",   // .4 better on pca, .5 starts faster
-					"Prjn.SWt.Limit.Min":        "0.2",   // .3-.7 better constraint, but not clear better than no SWt
-					"Prjn.SWt.Limit.Max":        "0.6",
-					"Prjn.Com.PFail":            "0.0",
-					"Prjn.Com.PFailWtMax":       "0.0", // 0.8 default
-					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
-				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
-				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2",  // .2 >= .3 > .15 > .1 > .05 @176
-					"Prjn.Learn.Learn":   "true", // keep random weights to enable exploration
-					// "Prjn.Learn.Lrate":      "0.04", // lrate = 0 allows syn scaling still
-				}},
-			{Sel: ".Forward", Desc: "special forward-only params: com prob",
-				Params: params.Params{}},
-			{Sel: ".Inhib", Desc: "inhibitory projection",
-				Params: params.Params{
-					"Prjn.Learn.Lrate":     "0.01",
-					"Prjn.SWt.Adapt.On":    "false",
-					"Prjn.SWt.Init.Var":    "0.0",
-					"Prjn.SWt.Init.Mean":   "0.1",
-					"Prjn.PrjnScale.Init":  "0.0",
-					"Prjn.PrjnScale.Adapt": "false",
-					"Prjn.IncGain":         "0.5",
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -187,18 +149,54 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Targ":    "0.05",  // this has to be exact for adapt
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true >= false (small, only cosdif)
 					"Layer.Inhib.ActAvg.LoTol":   "0.8",   // essential to keep low
-					"Layer.Act.Init.Decay":       "1",     // 1 > .5 rate clamp + ge clamp
-					"Layer.Act.Clamp.Rate":       "180",   // 180 best here too
-					"Layer.Act.Clamp.Type":       "GeClamp",
-					"Layer.Act.Clamp.Ge":         "0.6",   // .6 generally = .5
-					"Layer.Act.Clamp.Burst":      "false", // effective for boosting errors but no overall effect
-					"Layer.Act.Clamp.BurstThr":   "0.5",   //
-					"Layer.Act.Clamp.BurstGe":    "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same; 2 = 1.5 = 1 more or less -- tiny bit of extra err diff progressively
-					"Layer.Act.Clamp.BurstCyc":   "20",    // 20 > 15 > 10 -- maybe refractory?  25, 30 = 20
-					"Layer.Act.Spike.Tr":         "3",     // 2 >= 3 > 1 > 0
-					"Layer.Act.GTarg.GeMax":      "0.8",   // 0.8 >= 1 -- tiny diff
-					"Layer.Act.GABAB.Gbar":       "0.005", // .005 > .01 > .02 > .05 > .1 > .2
-					"Layer.Act.NMDA.Gbar":        "0.03",  // .03 > .02 > .01 > .1
+					// "Layer.Act.Init.Decay":       "1",     // 1 > .5 rate clamp + ge clamp
+					"Layer.Act.Clamp.Rate":     "180", // 180 best here too
+					"Layer.Act.Clamp.Type":     "GeClamp",
+					"Layer.Act.Clamp.Ge":       "0.6",   // .6 generally = .5
+					"Layer.Act.Clamp.Burst":    "false", // effective for boosting errors but no overall effect
+					"Layer.Act.Clamp.BurstThr": "0.5",   //
+					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same; 2 = 1.5 = 1 more or less -- tiny bit of extra err diff progressively
+					"Layer.Act.Clamp.BurstCyc": "20",    // 20 > 15 > 10 -- maybe refractory?  25, 30 = 20
+					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
+					"Layer.Act.GTarg.GeMax":    "0.8",   // 0.8 >= 1 -- tiny diff
+					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
+					"Layer.Act.NMDA.Gbar":      "0.03",  // .03 > .02 > .01 > .1
+				}},
+			{Sel: "Prjn", Desc: "yes extra learning factors",
+				Params: params.Params{
+					"Prjn.PrjnScale.ScaleLrate": "0.02", // .1 > higher
+					"Prjn.PrjnScale.Init":       "1",
+					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
+					"Prjn.Learn.Lrate":          "0.04",   // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
+					"Prjn.Learn.XCal.SubMean":   "1",      // 1 > .9
+					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
+					"Prjn.SWt.Adapt.Lrate":      "0.005",  // 0.005 > others maybe?  0.02 > 0.05 > .1
+					"Prjn.SWt.Adapt.SigGain":    "6",
+					"Prjn.SWt.Init.SPct":        "1",   // 1 >= lower
+					"Prjn.SWt.Init.Mean":        "0.5", // .4 better on pca, .5 starts faster
+					"Prjn.SWt.Limit.Min":        "0.2", // .3-.7 better constraint, but not clear better than no SWt
+					"Prjn.SWt.Limit.Max":        "0.8",
+					"Prjn.Com.PFail":            "0.0",
+					"Prjn.Com.PFailWtMax":       "0.0", // 0.8 default
+					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
+				}},
+			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
+				Params: params.Params{
+					"Prjn.PrjnScale.Rel": "0.2",  // .2 >= .3 > .15 > .1 > .05 @176
+					"Prjn.Learn.Learn":   "true", // keep random weights to enable exploration
+					// "Prjn.Learn.Lrate":      "0.04", // lrate = 0 allows syn scaling still
+				}},
+			{Sel: ".Forward", Desc: "special forward-only params: com prob",
+				Params: params.Params{}},
+			{Sel: ".Inhib", Desc: "inhibitory projection",
+				Params: params.Params{
+					"Prjn.Learn.Lrate":     "0.01",
+					"Prjn.SWt.Adapt.On":    "false",
+					"Prjn.SWt.Init.Var":    "0.0",
+					"Prjn.SWt.Init.Mean":   "0.1",
+					"Prjn.PrjnScale.Init":  "0.0",
+					"Prjn.PrjnScale.Adapt": "false",
+					"Prjn.IncGain":         "0.5",
 				}},
 			{Sel: "#ITToOutput", Desc: "no random sampling here",
 				Params: params.Params{

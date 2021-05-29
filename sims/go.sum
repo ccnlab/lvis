@@ -56,8 +56,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dlclark/regexp2 v1.4.0 h1:F1rxgk7p4uKjwIQxBs9oAXe5CqrXlCduYEJvrF4u93E=
 github.com/dlclark/regexp2 v1.4.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
-github.com/emer/axon v1.2.57 h1:wSyGr4KmsI560b1Fd9Mhh0nYfWapau+B8ngFc51bWak=
-github.com/emer/axon v1.2.57/go.mod h1:9HPf26IZmk5ZGZ8DjzjBbCLwMvnydXpmZACcQP2hypM=
+github.com/emer/axon v1.2.58 h1:QXPID/q04a0YOPEgrl6mXJNpVKDXIQ+jFH066mKmWU4=
+github.com/emer/axon v1.2.58/go.mod h1:9HPf26IZmk5ZGZ8DjzjBbCLwMvnydXpmZACcQP2hypM=
 github.com/emer/emergent v1.1.26/go.mod h1:XhFMJgoZeOYplTDMDUcmGPuthfTqJPbBLmXEPN6uP8Y=
 github.com/emer/emergent v1.1.27/go.mod h1:XhFMJgoZeOYplTDMDUcmGPuthfTqJPbBLmXEPN6uP8Y=
 github.com/emer/emergent v1.1.31 h1:pSrNP7k5MiqlZyurUaYD0vvu13heMOVB9zBHCZjRvpI=
