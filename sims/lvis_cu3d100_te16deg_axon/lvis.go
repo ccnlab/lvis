@@ -80,7 +80,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
 					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
 					"Layer.Act.Init.Decay":               "0",   // 0.5 > 0.2
-					"Layer.Act.Init.GlongDecay":          "1",   //
+					"Layer.Act.Init.GlongDecay":          "0.7", //
 					"Layer.Act.KNa.Fast.Max":             "0.1", // fm both .2 worse
 					"Layer.Act.KNa.Med.Max":              "0.2", // 0.2 > 0.1 def
 					"Layer.Act.KNa.Slow.Max":             "0.2", // 0.2 > higher
@@ -279,7 +279,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2", // .3 > .2 v53 in long run
+					"Prjn.PrjnScale.Rel": "0.3", // .3 > .2 v53 in long run
 				}},
 			{Sel: ".OutV4", Desc: "weaker",
 				Params: params.Params{
@@ -287,7 +287,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2", // 0.3 > .2 v53 in long run
+					"Prjn.PrjnScale.Rel": "0.3", // 0.3 > .2 v53 in long run
 				}},
 			{Sel: "#TEToOutput", Desc: "weaker",
 				Params: params.Params{
@@ -295,17 +295,22 @@ var ParamSets = params.Sets{
 				}},
 
 			// shortcuts -- .5 > .2 (v32 still) -- all tested together
+			{Sel: ".V1SC", Desc: "v1 shortcut",
+				Params: params.Params{
+					"Prjn.PrjnScale.Rel": "0.5", // .5 > .8 > 1 > .4 > .3 etc
+				}},
+
 			{Sel: ".V1V4", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2", // .5 is causing full bypass of V2..  V2 needs to be faster tho
+					"Prjn.PrjnScale.Rel": "0.5", // .5 is causing full bypass of V2..  V2 needs to be faster tho
 				}},
 			{Sel: ".V2TEO", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2",
+					"Prjn.PrjnScale.Rel": "0.5",
 				}},
 			{Sel: ".V4TE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2", // cut these
+					"Prjn.PrjnScale.Rel": "0.5", // can cut these
 				}},
 			{Sel: ".TEV4", Desc: "weaker",
 				Params: params.Params{
@@ -884,20 +889,28 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		tev4.SetClass("TEV4")
 	*/
 
-	// these shortcuts are essential!
-	/*
-		net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1V4")
-		net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1V4")
+	/* previous shortcuts
+	net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1V4")
+	net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1V4")
 
-		net.ConnectLayers(v2h16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
-		net.ConnectLayers(v2m16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
-		net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
-		net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
+	net.ConnectLayers(v2h16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
+	net.ConnectLayers(v2m16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
+	net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
+	net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
 
-		// not essential
-		// net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
-		// net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
+	// not essential
+	net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
+	net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
 	*/
+
+	net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m16, teo16, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m16, teo16, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m16, te, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1m8, te, rndcut, emer.Forward).SetClass("V1SC")
 
 	// positioning
 
@@ -1793,7 +1806,7 @@ func (ss *Sim) FindPeaks(data []float64) []int {
 func (ss *Sim) FindActCycle(data []float64) int {
 	mx := 3 * ss.Time.CycPerQtr
 	dt := data  // data is already smooth
-	start := 5  // give time for prior act to decay
+	start := 25 // give time for prior act to decay
 	thr := 0.01 // rise threshold
 	hit := false
 	cyc := mx
