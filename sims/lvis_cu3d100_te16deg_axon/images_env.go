@@ -21,6 +21,7 @@ import (
 	"github.com/emer/emergent/evec"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/empi/empi"
+	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/metric"
@@ -105,7 +106,8 @@ func (ev *ImagesEnv) ImageList() []string {
 
 // MPIAlloc allocate objects based on mpi processor number
 func (ev *ImagesEnv) MPIAlloc() {
-	nim := len(ev.ImageList())
+	ws := mpi.WorldSize()
+	nim := ws * (len(ev.ImageList()) / ws) // even multiple of size -- few at end are lost..
 	ev.StRow, ev.EdRow, _ = empi.AllocN(nim)
 	// mpi.PrintAllProcs = true
 	// mpi.Printf("allocated images: n: %d st: %d ed: %d\n", nim, ev.StRow, ev.EdRow)

@@ -40,14 +40,16 @@ The cemer versions used fairly standard params (because they determined these pa
 
 # TODO:
 
-* Reduce Out->TEO on schedule
+* narrower variation in translation
 
-* Slower lrate, lower contrast again.
+* shorter cycles
 
-* didn't work: More objects -- keep things more diverse.  random output patterns or go back to single units even.
+* faster lrate
 
-* done: smaller topo-mapped pools that directly support combinatorial coding -- not sure of effect
+* glong params
 
-* Experiment with just spacing out stimuli by some amount, instead of decay -- find equivalent delay -- decay still likely to be more efficient, but would be interesting.
+* swt params
 
+* input and output decay -- not relevant
 
+* new errlrmod: min / max range for err measure, plus base
