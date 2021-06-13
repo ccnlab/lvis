@@ -77,6 +77,8 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
+					"Layer.Inhib.FBAct.RiseTau":          "1",
+					"Layer.Inhib.FBAct.DecayTau":         "20",
 					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
 					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
@@ -90,11 +92,13 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Var":                "0.01",    // .01 a bit worse
 					"Layer.Act.Noise.Type":               "NoNoise", // off for now
 					"Layer.Act.GTarg.GeMax":              "1.0",     // 1 > .8 -- rescaling not very useful.
-					"Layer.Act.Dt.TrlAvgTau":             "20",      // 20 > 50 > 100
-					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",    // 0.01 orig > 0.005
-					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005",   // 0.005 orig > 0.01
-					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",     // .5 > .2 overall
-					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // objrec 2 > 1.8
+					"Layer.Act.Dt.LongAvgTau":            "20",      // 50 > 20 in terms of stability, but weird effect late
+					"Layer.Learn.ActAvg.MinLrn":          "0.02",    // sig improves "top5" hogging in pca strength
+					"Layer.Learn.ActAvg.SSTau":           "40",
+					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // 0.01 orig > 0.005
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005", // 0.005 orig > 0.01
+					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .5 > .2 overall
+					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
 				}},
 			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -184,14 +188,14 @@ var ParamSets = params.Sets{
 				}},
 			///////////////////////////////
 			// projections
-			{Sel: "Prjn", Desc: "yes extra learning factors",
+			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
 					"Prjn.PrjnScale.ScaleLrate": "2",   // 2 = fast response, effective
 					"Prjn.PrjnScale.LoTol":      "0.8", // good now...
 					"Prjn.PrjnScale.Init":       "1",
 					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
 					"Prjn.SWt.Adapt.On":         "true",  // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":      "0.001", // .01 == .001 == .1 459
+					"Prjn.SWt.Adapt.Lrate":      "0.001", // .001 > .01 > .1 after 250epc in NStrong
 					"Prjn.SWt.Adapt.SigGain":    "6",
 					"Prjn.SWt.Adapt.DreamVar":   "0.02", // 0.02 good overall, no ToOut
 					"Prjn.SWt.Init.SPct":        "1",    // 1 > lower
@@ -223,6 +227,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
+					"Prjn.PrjnScale.LoTol":    "0.2",   // start low here then increase in ToOutTol on schedule
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
@@ -338,6 +343,14 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
+	{Name: "ToOutTol", Desc: "delayed enforcement of low tolerance on .ToOut", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: ".ToOut", Desc: "to output -- some things should be different..",
+				Params: params.Params{
+					"Prjn.PrjnScale.LoTol": "0.8", // activation dropping off a cliff there at the end..
+				}},
+		},
+	}},
 }
 
 // Sim encapsulates the entire simulation model, and we define all the
@@ -360,6 +373,8 @@ type Sim struct {
 	ActRFs          actrf.RFs     `view:"no-inline" desc:"activation-based receptive fields"`
 	RunLog          *etable.Table `view:"no-inline" desc:"summary log of each run"`
 	RunStats        *etable.Table `view:"no-inline" desc:"aggregate stats on all runs"`
+	MinusCycles     int           `desc:"number of minus-phase cycles"`
+	PlusCycles      int           `desc:"number of plus-phase cycles"`
 	SubPools        bool          `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
 	RndOutPats      bool          `desc:"if true, use random output patterns -- else localist"`
 	PostCycs        int           `desc:"number of cycles to run after main alphacyc cycles, between stimuli"`
@@ -503,8 +518,8 @@ func (ss *Sim) New() {
 	ss.TestInterval = 0 // maybe causing issues?
 
 	ss.Time.Defaults()
-	ss.Time.CycPerQtr = 60 // 60/50 best still v60 -- 70 better early
-	ss.Time.PlusCyc = 50
+	ss.MinusCycles = 180
+	ss.PlusCycles = 50
 	ss.RepsInterval = 10
 	ss.SubPools = true
 	ss.RndOutPats = false // change here
@@ -514,7 +529,7 @@ func (ss *Sim) New() {
 	ss.PostCycs = 0
 	ss.PostDecay = .5
 	ss.ErrLrMod.Defaults()
-	ss.ErrLrMod.Base = 0.05 // testing new range-based mode
+	ss.ErrLrMod.Base = 0.02 // 0.05 > .1 in long-term output layer health
 	ss.ErrLrMod.Range.Set(0.2, 0.8)
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
@@ -629,7 +644,7 @@ func (ss *Sim) New() {
 	}
 	ss.ViewOn = true
 	ss.TrainUpdt = axon.AlphaCycle
-	ss.TestUpdt = axon.Quarter
+	ss.TestUpdt = axon.GammaCycle
 	ss.ActRFNms = []string{"V4f16:Image", "V4f8:Output", "TEO8:Image", "TEO8:Output", "TEO16:Image", "TEO16:Output"}
 	ss.SpikeRastNms = []string{"V1m16", "V2m16", "V4f16", "TEOf16", "TE", "Output"}
 	ss.GaussKernel = convolve.GaussianKernel64(3, .5)
@@ -703,21 +718,23 @@ func (ss *Sim) ConfigEnv() {
 
 	/*
 		// Delete to 60
-		last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
-		next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
-		last40 := append(last20, next20...)
-		ss.TrainEnv.Images.DeleteCats(last40)
-		ss.TestEnv.Images.DeleteCats(last40)
+			last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
+			next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
+			last40 := append(last20, next20...)
+			ss.TrainEnv.Images.DeleteCats(last40)
+			ss.TestEnv.Images.DeleteCats(last40)
 	*/
 
-	objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
+	/*
+		objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
 
-	objsnxt20 := []string{"submarine", "synthesizer", "tank", "telephone", "television", "toaster", "toilet", "trafficlight", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht", "pedestalsink", "pliers", "sectionalcouch", "skull"}
+		objsnxt20 := []string{"submarine", "synthesizer", "tank", "telephone", "television", "toaster", "toilet", "trafficlight", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht", "pedestalsink", "pliers", "sectionalcouch", "skull"}
 
-	objs40 := append(objs20, objsnxt20...)
+		objs40 := append(objs20, objsnxt20...)
 
-	ss.TrainEnv.Images.SelectCats(objs40)
-	ss.TestEnv.Images.SelectCats(objs40)
+		ss.TrainEnv.Images.SelectCats(objs40)
+		ss.TestEnv.Images.SelectCats(objs40)
+	*/
 
 	if ss.UseMPI {
 		ss.TrainEnv.MPIAlloc()
@@ -739,26 +756,26 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v1m16.SetClass("V1m")
 	v1m8.SetClass("V1m")
 
-	v2h16 := net.AddLayer4D("V2h16", 16, 16, 6, 6, emer.Hidden)
-	v2m16 := net.AddLayer4D("V2m16", 8, 8, 6, 6, emer.Hidden)
-	v2h8 := net.AddLayer4D("V2h8", 16, 16, 6, 6, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", 8, 8, 6, 6, emer.Hidden)
+	v2h16 := net.AddLayer4D("V2h16", 16, 16, 7, 7, emer.Hidden)
+	v2m16 := net.AddLayer4D("V2m16", 8, 8, 7, 7, emer.Hidden)
+	v2h8 := net.AddLayer4D("V2h8", 16, 16, 7, 7, emer.Hidden)
+	v2m8 := net.AddLayer4D("V2m8", 8, 8, 7, 7, emer.Hidden)
 	v2h16.SetClass("V2h")
 	v2h8.SetClass("V2h")
 	v2m16.SetClass("V2m")
 	v2m8.SetClass("V2m")
 
-	v4f16 := net.AddLayer4D("V4f16", 8, 8, 6, 6, emer.Hidden)
-	v4f8 := net.AddLayer4D("V4f8", 8, 8, 6, 6, emer.Hidden)
+	v4f16 := net.AddLayer4D("V4f16", 8, 8, 7, 7, emer.Hidden)
+	v4f8 := net.AddLayer4D("V4f8", 8, 8, 7, 7, emer.Hidden)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
-	teo16 := net.AddLayer4D("TEOf16", 2, 2, 12, 12, emer.Hidden)
-	teo8 := net.AddLayer4D("TEOf8", 2, 2, 12, 12, emer.Hidden)
+	teo16 := net.AddLayer4D("TEOf16", 2, 2, 15, 15, emer.Hidden)
+	teo8 := net.AddLayer4D("TEOf8", 2, 2, 15, 15, emer.Hidden)
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
-	te := net.AddLayer4D("TE", 2, 2, 12, 12, emer.Hidden)
+	te := net.AddLayer4D("TE", 2, 2, 15, 15, emer.Hidden)
 
 	var out emer.Layer
 	if ss.RndOutPats {
@@ -971,7 +988,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	// layers := []emer.Layer{teo16, teo8, out}
 	// layers := []emer.Layer{teo16, teo8}
 	ss.Decoder.InitLayer(len(ss.TrainEnv.Images.Cats), layers)
-	ss.Decoder.Lrate = 0.1 // 0.1 > 0.2 > 0.05
+	ss.Decoder.Lrate = 0.05 // 0.05 > 0.1 > 0.2 for larger number of objs!
 }
 
 func (ss *Sim) InitWts(net *axon.Network) {
@@ -1029,15 +1046,34 @@ func (ss *Sim) UpdateView(train bool) {
 	}
 }
 
+func (ss *Sim) UpdateViewTime(train bool, viewUpdt axon.TimeScales) {
+	switch viewUpdt {
+	case axon.Cycle:
+		ss.UpdateView(train)
+	case axon.FastSpike:
+		if ss.Time.Cycle%10 == 0 {
+			ss.UpdateView(train)
+		}
+	case axon.GammaCycle:
+		if ss.Time.Cycle%25 == 0 {
+			ss.UpdateView(train)
+		}
+	case axon.AlphaCycle:
+		if ss.Time.Cycle%100 == 0 {
+			ss.UpdateView(train)
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 	    Running the Network, starting bottom-up..
 
-// AlphaCyc runs one alpha-cycle (100 msec, 4 quarters) of processing.
+// ThetaCyc runs one theta cycle (200 msec) of processing.
 // External inputs must have already been applied prior to calling,
 // using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
 // If train is true, then learning DWt or WtFmDWt calls are made.
-// Handles netview updating within scope of AlphaCycle
-func (ss *Sim) AlphaCyc(train bool) {
+// Handles netview updating within scope, and calls TrainStats()
+func (ss *Sim) ThetaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
 	viewUpdt := ss.TrainUpdt
 	if !train {
@@ -1052,42 +1088,59 @@ func (ss *Sim) AlphaCyc(train bool) {
 		ss.MPIWtFmDWt()
 	}
 
-	ss.Net.AlphaCycInit()
-	ss.Time.AlphaCycStart()
-	for qtr := 0; qtr < 4; qtr++ {
-		mxcyc := ss.Time.CurCycles()
-		for cyc := 0; cyc < mxcyc; cyc++ {
-			ss.Net.Cycle(&ss.Time)
-			if !ss.NoGui {
-				ss.RecSpikes(ss.Time.Cycle)
-			}
-			ss.LogTrnCyc(ss.TrnCycLog, ss.Time.Cycle)
-			ss.Time.CycleInc()
-			if ss.ViewOn {
-				switch viewUpdt {
-				case axon.Cycle:
-					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
-						ss.UpdateView(train)
-					}
-				case axon.FastSpike:
-					if (cyc+1)%10 == 0 {
-						ss.UpdateView(train)
-					}
-				}
-			}
+	minusCyc := ss.MinusCycles
+	plusCyc := ss.PlusCycles
+
+	ss.Net.NewState()
+	ss.Time.NewState()
+	for cyc := 0; cyc < minusCyc; cyc++ { // do the minus phase
+		ss.Net.Cycle(&ss.Time)
+		ss.LogTrnCyc(ss.TrnCycLog, ss.Time.Cycle)
+		if !ss.NoGui {
+			ss.RecSpikes(ss.Time.Cycle)
 		}
-		ss.Net.QuarterFinal(&ss.Time)
-		ss.Time.QuarterInc()
+		ss.Time.CycleInc()
+		switch ss.Time.Cycle { // save states at beta-frequency -- not used computationally
+		case 75:
+			ss.Net.ActSt1(&ss.Time)
+			// if erand.BoolProb(float64(ss.PAlphaPlus), -1) {
+			// 	ss.Net.TargToExt()
+			// 	ss.Time.PlusPhase = true
+			// }
+		case 100:
+			ss.Net.ActSt2(&ss.Time)
+			ss.Net.ClearTargExt()
+			ss.Time.PlusPhase = false
+		}
+
+		if cyc == minusCyc-1 { // do before view update
+			ss.Net.MinusPhase(&ss.Time)
+		}
 		if ss.ViewOn {
-			switch {
-			case viewUpdt <= axon.Quarter:
-				ss.UpdateView(train)
-			case viewUpdt == axon.Phase:
-				if qtr >= 2 {
-					ss.UpdateView(train)
-				}
-			}
+			ss.UpdateViewTime(train, viewUpdt)
 		}
+	}
+	ss.Time.NewPhase()
+	if viewUpdt == axon.Phase {
+		ss.UpdateView(train)
+	}
+	for cyc := 0; cyc < plusCyc; cyc++ { // do the plus phase
+		ss.Net.Cycle(&ss.Time)
+		ss.LogTrnCyc(ss.TrnCycLog, ss.Time.Cycle)
+		if !ss.NoGui {
+			ss.RecSpikes(ss.Time.Cycle)
+		}
+		ss.Time.CycleInc()
+
+		if cyc == plusCyc-1 { // do before view update
+			ss.Net.PlusPhase(&ss.Time)
+		}
+		if ss.ViewOn {
+			ss.UpdateViewTime(train, viewUpdt)
+		}
+	}
+	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
+		ss.UpdateView(train)
 	}
 
 	ss.TrialStats(train)
@@ -1109,16 +1162,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.Cycle(&ss.Time)
 			ss.Time.CycleInc()
 			if ss.ViewOn {
-				switch viewUpdt {
-				case axon.Cycle:
-					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
-						ss.UpdateView(train)
-					}
-				case axon.FastSpike:
-					if (cyc+1)%10 == 0 {
-						ss.UpdateView(train)
-					}
-				}
+				ss.UpdateViewTime(train, viewUpdt)
 			}
 		}
 	}
@@ -1156,7 +1200,7 @@ func (ss *Sim) TrainTrial() {
 	epc, _, chg := ss.TrainEnv.Counter(env.Epoch)
 	if chg {
 		ss.LogTrnEpc(ss.TrnEpcLog)
-		ss.LrateSched(epc)
+		ss.EpochSched(epc)
 		if ss.ViewOn && ss.TrainUpdt > axon.AlphaCycle {
 			ss.UpdateView(true)
 		}
@@ -1179,8 +1223,7 @@ func (ss *Sim) TrainTrial() {
 	// note: type must be in place before apply inputs
 	ss.Net.LayerByName("Output").SetType(emer.Target)
 	ss.ApplyInputs(&ss.TrainEnv)
-	ss.AlphaCyc(true) // train
-	// ss.TrialStats(true) // in AlphaCyc
+	ss.ThetaCyc(true) // train
 	ss.LogTrnTrl(ss.TrnTrlLog)
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		ss.LogTrnRepTrl(ss.TrnTrlRepLog)
@@ -1336,8 +1379,8 @@ func (ss *Sim) SaveWeights() {
 	ss.Net.SaveWtsJSON(gi.FileName(fnm))
 }
 
-// LrateSched implements the learning rate schedule
-func (ss *Sim) LrateSched(epc int) {
+// EpochSched implements epoch-wise scheduling of things..
+func (ss *Sim) EpochSched(epc int) {
 	switch epc {
 	case 25:
 		// ss.SaveWeights()
@@ -1352,21 +1395,28 @@ func (ss *Sim) LrateSched(epc int) {
 		// 	ss.SetParamsSet("WeakShorts", "Network", true)
 		// 	mpi.Printf("weaker shortcut cons at epoch: %d\n", epc)
 		// case 200: // these have no effect anymore -- with dopamine modulator!
-		ss.Net.LrateSched(0.5)
-		mpi.Printf("dropped lrate to 0.5 at epoch: %d\n", epc)
-	case 400:
-		ss.Net.LrateSched(0.2)
-		mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
+		// ss.Net.LrateSched(0.5)
+		// mpi.Printf("dropped lrate to 0.5 at epoch: %d\n", epc)
+	case 500:
+		ss.SaveWeights()
+		// ss.Net.LrateSched(0.2)
+		// mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
+		ss.SetParamsSet("ToOutTol", "Network", true) // increase LoTol
 	case 600:
-		ss.Net.LrateSched(0.1)
-		mpi.Printf("dropped lrate to 0.1 at epoch: %d\n", epc)
+		// ss.Net.LrateSched(0.1)
+		// mpi.Printf("dropped lrate to 0.1 at epoch: %d\n", epc)
 	case 800:
-		ss.Net.LrateSched(0.05)
-		mpi.Printf("dropped lrate to 0.05 at epoch: %d\n", epc)
+		// ss.Net.LrateSched(0.05)
+		// mpi.Printf("dropped lrate to 0.05 at epoch: %d\n", epc)
 	case 900:
-		ss.TrainEnv.TransSigma = 0
-		ss.TestEnv.TransSigma = 0
-		mpi.Printf("reset TransSigma to 0 at epoch: %d\n", epc)
+		ss.SaveWeights()
+		// ss.TrainEnv.TransSigma = 0
+		// ss.TestEnv.TransSigma = 0
+		// mpi.Printf("reset TransSigma to 0 at epoch: %d\n", epc)
+	case 1000:
+		ss.SaveWeights()
+	case 1500:
+		ss.SaveWeights()
 	}
 }
 
@@ -1402,8 +1452,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// note: type must be in place before apply inputs
 	ss.Net.LayerByName("Output").SetType(emer.Compare)
 	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false) // !train
-	// ss.TrialStats(false) // !accumulate
+	ss.ThetaCyc(false) // !train
 	ss.LogTstTrl(ss.TstTrlLog)
 }
 
@@ -1564,7 +1613,7 @@ func (ss *Sim) ConfigSpikeGrid(tg *etview.TensorGrid, sr *etensor.Float32) {
 
 // ConfigSpikeRasts configures spike rasters
 func (ss *Sim) ConfigSpikeRasts() {
-	ncy := ss.Time.TotalCycles()
+	ncy := ss.MinusCycles + ss.PlusCycles
 	// spike rast
 	for _, lnm := range ss.SpikeRastNms {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
@@ -1752,7 +1801,7 @@ func (ss *Sim) ConfigTrnCycLog(dt *etable.Table) {
 	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
 	sch = append(sch, etable.Column{"Output_Acts", etensor.FLOAT32, out.Shp.Shp, out.Shp.Nms})
 
-	ncy := ss.Time.TotalCycles()
+	ncy := ss.MinusCycles + ss.PlusCycles
 	dt.SetFromSchema(sch, ncy)
 }
 
@@ -1814,7 +1863,7 @@ func (ss *Sim) FindPeaks(data []float64) []int {
 // within minus phase.
 // must be passed max act data cycle-by-cycle
 func (ss *Sim) FindActCycle(data []float64) int {
-	mx := 3 * ss.Time.CycPerQtr
+	mx := ss.MinusCycles
 	dt := data  // data is already smooth
 	start := 25 // give time for prior act to decay
 	thr := 0.01 // rise threshold

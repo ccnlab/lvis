@@ -84,7 +84,7 @@ func (ev *ImagesEnv) Validate() error {
 
 func (ev *ImagesEnv) Defaults() {
 	ev.TransSigma = 0
-	ev.TransMax.Set(0.3, 0.3)
+	ev.TransMax.Set(0.2, 0.2)
 	ev.ScaleRange.Set(0.8, 1.1)
 	ev.RotateMax = 8
 	ev.RndPctOn = 0.2

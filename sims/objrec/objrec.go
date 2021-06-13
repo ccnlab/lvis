@@ -75,11 +75,13 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
+					"Layer.Inhib.FBAct.RiseTau":          "1",
+					"Layer.Inhib.FBAct.DecayTau":         "20",
 					"Layer.Inhib.Layer.Gi":               "1.0",
 					"Layer.Inhib.Layer.FBTau":            "1.4", // 1.4 def
 					"Layer.Inhib.Pool.FBTau":             "1.4",
-					"Layer.Act.Decay.Act":                "0.2",  // 0.2 with glong .6
-					"Layer.Act.Decay.Glong":              "0.6",  // 0.6 best in lvis
+					"Layer.Act.Decay.Act":                "0.0",  // 0.2 with glong .6
+					"Layer.Act.Decay.Glong":              "1",    // 0.6 best in lvis
 					"Layer.Act.Decay.KNa":                "0.0",  // 0 > 0.5 interesting..
 					"Layer.Act.Gbar.L":                   "0.2",  // .2 > .1 @176
 					"Layer.Act.Gbar.E":                   "1.0",  // 1.2 maybe better % cor but not cosdiff
@@ -96,8 +98,9 @@ var ParamSets = params.Sets{
 					"Layer.Learn.ActAvg.SSTau":           "40",   // 40 > 35 def > 30
 					"Layer.Learn.ActAvg.STau":            "10",   // 10 >= 8 def (10 better early) > 6
 					"Layer.Learn.ActAvg.MTau":            "40",   // for 50 cyc qtr: SS = 40, 50, 45 faster then die
+					"Layer.Learn.ActAvg.MinLrn":          "0.0",  // sig improves "top5" hogging in pca strength
 					"Layer.Act.Dt.GeTau":                 "5",    // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.MTau":                  "20",   // for 50 cyc qtr, 20 -- no maj diffs +-5 > 10
+					"Layer.Act.Dt.IntTau":                "20",   // for 50 cyc qtr, 20 -- no maj diffs +-5 > 10
 					"Layer.Act.KNa.On":                   "true", // true > false @176
 					"Layer.Act.KNa.Fast.Max":             "0.1",  // 0.1 > 0.1 -- 122 best
 					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
@@ -108,7 +111,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Type":               "NoNoise", // no diff -- maybe tiny bit better
 					"Layer.Act.Clamp.Rate":               "180",     // 180 == 200 > 150 > 120 > 100 -- major effect on 100, 120
 					"Layer.Act.Clamp.ErrThr":             "0.5",     // 0.5 best
-					"Layer.Act.Dt.TrlAvgTau":             "20",      // 20 > 50 > 100
+					"Layer.Act.Dt.LongAvgTau":            "20",      // 20 > 50 > 100
 					"Layer.Act.GTarg.GeMax":              "1",       // 1 > .8 here
 					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.02",    // .02 > .01 > .005 > .05
 					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005",   // .002 >= .005 > .01
@@ -337,8 +340,8 @@ func (ss *Sim) New() {
 		ss.RndSeeds[i] = int64(i) + 1 // exclude 0
 	}
 	ss.ViewOn = true
-	ss.TrainUpdt = axon.Quarter
-	ss.TestUpdt = axon.Quarter
+	ss.TrainUpdt = axon.GammaCycle
+	ss.TestUpdt = axon.GammaCycle
 	ss.LayStatNms = []string{"V4", "IT", "Output"}
 	ss.ActRFNms = []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}
 	ss.PNovel = 0
@@ -346,8 +349,6 @@ func (ss *Sim) New() {
 	ss.RepsInterval = 10
 
 	ss.Time.Defaults()
-	ss.Time.CycPerQtr = 50
-	ss.Time.PlusCyc = 50 // ra25 shows strong effects of timing still
 	ss.ErrLrMod.Defaults()
 	ss.ErrLrMod.Base = 0.05 // testing new range-based mode
 	ss.ErrLrMod.Range.Set(0.2, 0.8)
@@ -513,15 +514,34 @@ func (ss *Sim) UpdateView(train bool) {
 	}
 }
 
+func (ss *Sim) UpdateViewTime(train bool, viewUpdt axon.TimeScales) {
+	switch viewUpdt {
+	case axon.Cycle:
+		ss.UpdateView(train)
+	case axon.FastSpike:
+		if ss.Time.Cycle%10 == 0 {
+			ss.UpdateView(train)
+		}
+	case axon.GammaCycle:
+		if ss.Time.Cycle%25 == 0 {
+			ss.UpdateView(train)
+		}
+	case axon.AlphaCycle:
+		if ss.Time.Cycle%100 == 0 {
+			ss.UpdateView(train)
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 	    Running the Network, starting bottom-up..
 
-// AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
+// ThetaCyc runs one theta cycle (200 msec) of processing.
 // External inputs must have already been applied prior to calling,
 // using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
 // If train is true, then learning DWt or WtFmDWt calls are made.
-// Handles netview updating within scope of AlphaCycle
-func (ss *Sim) AlphaCyc(train bool) {
+// Handles netview updating within scope, and calls TrainStats()
+func (ss *Sim) ThetaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
 	viewUpdt := ss.TrainUpdt
 	if !train {
@@ -540,41 +560,63 @@ func (ss *Sim) AlphaCyc(train bool) {
 		}
 	}
 
-	ss.Net.AlphaCycInit()
-	ss.Time.AlphaCycStart()
-	for qtr := 0; qtr < 4; qtr++ {
-		mxcyc := ss.Time.CurCycles()
-		for cyc := 0; cyc < mxcyc; cyc++ {
-			ss.Net.Cycle(&ss.Time)
-			if !ss.NoGui {
-				ss.RecSpikes(ss.Time.Cycle)
-			}
-			ss.Time.CycleInc()
-			if ss.ViewOn {
-				switch viewUpdt {
-				case axon.Cycle:
-					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
-						ss.UpdateView(train)
-					}
-				case axon.FastSpike:
-					if (cyc+1)%10 == 0 {
-						ss.UpdateView(train)
-					}
-				}
-			}
+	minusCyc := 150
+	plusCyc := 50
+
+	ss.Net.NewState()
+	ss.Time.NewState()
+	for cyc := 0; cyc < minusCyc; cyc++ { // do the minus phase
+		ss.Net.Cycle(&ss.Time)
+		// if !train {
+		// 	ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
+		// }
+		if !ss.NoGui {
+			ss.RecSpikes(ss.Time.Cycle)
 		}
-		ss.Net.QuarterFinal(&ss.Time)
-		ss.Time.QuarterInc()
+		ss.Time.CycleInc()
+		switch ss.Time.Cycle { // save states at beta-frequency -- not used computationally
+		case 75:
+			ss.Net.ActSt1(&ss.Time)
+			// if erand.BoolProb(float64(ss.PAlphaPlus), -1) {
+			// 	ss.Net.TargToExt()
+			// 	ss.Time.PlusPhase = true
+			// }
+		case 100:
+			ss.Net.ActSt2(&ss.Time)
+			ss.Net.ClearTargExt()
+			ss.Time.PlusPhase = false
+		}
+
+		if cyc == minusCyc-1 { // do before view update
+			ss.Net.MinusPhase(&ss.Time)
+		}
 		if ss.ViewOn {
-			switch {
-			case viewUpdt <= axon.Quarter:
-				ss.UpdateView(train)
-			case viewUpdt == axon.Phase:
-				if qtr >= 2 {
-					ss.UpdateView(train)
-				}
-			}
+			ss.UpdateViewTime(train, viewUpdt)
 		}
+	}
+	ss.Time.NewPhase()
+	if viewUpdt == axon.Phase {
+		ss.UpdateView(train)
+	}
+	for cyc := 0; cyc < plusCyc; cyc++ { // do the plus phase
+		ss.Net.Cycle(&ss.Time)
+		// if !train {
+		// 	ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
+		// }
+		if !ss.NoGui {
+			ss.RecSpikes(ss.Time.Cycle)
+		}
+		ss.Time.CycleInc()
+
+		if cyc == plusCyc-1 { // do before view update
+			ss.Net.PlusPhase(&ss.Time)
+		}
+		if ss.ViewOn {
+			ss.UpdateViewTime(train, viewUpdt)
+		}
+	}
+	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
+		ss.UpdateView(train)
 	}
 
 	ss.TrialStats(train)
@@ -586,6 +628,10 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if ss.ViewOn && viewUpdt == axon.AlphaCycle {
 		ss.UpdateView(train)
 	}
+
+	// if ss.TstCycPlot != nil && !train {
+	// 	ss.TstCycPlot.GoUpdate() // make sure up-to-date at end
+	// }
 }
 
 // ApplyInputs applies input patterns from given envirbonment.
@@ -647,8 +693,7 @@ func (ss *Sim) TrainTrial() {
 	} else {
 		ss.ApplyInputs(&ss.TrainEnv)
 	}
-	ss.AlphaCyc(true) // train
-	// ss.TrialStats(true) // accumulate
+	ss.ThetaCyc(true) // train
 	ss.LogTrnTrl(ss.TrnTrlLog)
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		ss.LogTrnRepTrl(ss.TrnTrlRepLog)
@@ -843,8 +888,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// note: type must be in place before apply inputs
 	ss.Net.LayerByName("Output").SetType(emer.Compare)
 	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false) // !train
-	// ss.TrialStats(false) // !accumulate
+	ss.ThetaCyc(false) // !train
 	ss.LogTstTrl(ss.TstTrlLog)
 }
 
@@ -854,8 +898,7 @@ func (ss *Sim) TestItem(idx int) {
 	ss.TestEnv.Trial.Cur = idx
 	ss.TestEnv.DoObject(idx)
 	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false) // !train
-	// ss.TrialStats(false) // !accumulate
+	ss.ThetaCyc(false) // !train
 	ss.TestEnv.Trial.Cur = cur
 }
 
