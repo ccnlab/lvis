@@ -77,8 +77,8 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.FBAct.RiseTau":          "1",
-					"Layer.Inhib.FBAct.DecayTau":         "20",
+					"Layer.Inhib.FBAct.Tau":              "20",  // 20 > 1 definitively
+					"Layer.Act.Dt.IntTau":                "40",  // 20 def
 					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
 					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
@@ -150,6 +150,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":    "0.04", // .03 init
 					"Layer.Inhib.ActAvg.Targ":    "0.04", // .04 >= .03 > .05
 					"Layer.Inhib.ActAvg.AdaptGi": "true", // adapt > not still better v34
+					"Layer.Inhib.Layer.Gi":       "1.1",  // was 1.1
+					"Layer.Inhib.Pool.Gi":        "1.1",  // was 1.1
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
@@ -169,7 +171,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.5",   // 1.5 = 1.6 > 1.4 localist
+					"Layer.Inhib.Layer.Gi":       "1.3",   // new tau inhib: 1.3 > 1.2 > 1.4 > 1.5
 					"Layer.Inhib.ActAvg.Init":    "0.01",  // .01 def localist
 					"Layer.Inhib.ActAvg.Targ":    "0.01",  // .01 def
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
@@ -227,7 +229,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
-					"Prjn.PrjnScale.LoTol":    "0.2",   // start low here then increase in ToOutTol on schedule
+					"Prjn.PrjnScale.LoTol":    "0.5",   // .8 = start low here then increase in ToOutTol on schedule
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
@@ -347,7 +349,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: ".ToOut", Desc: "to output -- some things should be different..",
 				Params: params.Params{
-					"Prjn.PrjnScale.LoTol": "0.8", // activation dropping off a cliff there at the end..
+					"Prjn.PrjnScale.LoTol": "0.5", // activation dropping off a cliff there at the end..
 				}},
 		},
 	}},
@@ -529,7 +531,7 @@ func (ss *Sim) New() {
 	ss.PostCycs = 0
 	ss.PostDecay = .5
 	ss.ErrLrMod.Defaults()
-	ss.ErrLrMod.Base = 0.02 // 0.05 > .1 in long-term output layer health
+	ss.ErrLrMod.Base = 0.05 // 0.05 > .02? > .1 in long-term output layer health
 	ss.ErrLrMod.Range.Set(0.2, 0.8)
 
 	ss.Prjn4x4Skp2 = prjn.NewPoolTile()
@@ -1381,6 +1383,9 @@ func (ss *Sim) SaveWeights() {
 
 // EpochSched implements epoch-wise scheduling of things..
 func (ss *Sim) EpochSched(epc int) {
+	if ss.UseMPI {
+		empi.RandCheck(ss.Comm) // prints error message
+	}
 	switch epc {
 	case 25:
 		// ss.SaveWeights()
@@ -1945,18 +1950,9 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	for _, lnm := range ss.HidLays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		dt.SetCellFloat(lnm+"_MaxGeM", row, float64(ly.Pools[0].GeM.Max))
-
-		// lvt := ss.ValsTsr(lnm)
-		// ly.UnitValsTensor(lvt, "ActDif")
-		// mad := 0.0
-		// for i := range lvt.Values {
-		// 	mad += math.Abs(float64(lvt.Values[i]))
-		// }
-		// mad /= float64(len(lvt.Values))
-		// dt.SetCellFloat(lnm+"_ActDif", row, mad)
-
+		dt.SetCellFloat(lnm+"_ActDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
+		dt.SetCellFloat(lnm+"_ActDifMax", row, float64(ly.Pools[0].AvgDif.Max))
 		dt.SetCellFloat(lnm+"_CosDiff", row, float64(1-ly.CosDiff.Cos))
-
 		fcyc := ss.FirstActStat(cyclog, lnm)
 		dt.SetCellFloat(lnm+"_FirstCyc", row, float64(fcyc))
 	}
@@ -2000,7 +1996,8 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 	for _, lnm := range ss.HidLays {
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_CosDiff", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_ActDif", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActDifAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActDifMax", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_FirstCyc", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
@@ -2031,7 +2028,8 @@ func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	for _, lnm := range ss.HidLays {
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-		plt.SetColParams(lnm+"_ActDif", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+		plt.SetColParams(lnm+"_ActDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+		plt.SetColParams(lnm+"_ActDifMax", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 		plt.SetColParams(lnm+"_FirstCyc", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	}
 	return plt
@@ -2262,7 +2260,6 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	split.Desc(spl, "TrgAct")
 	for _, lnm := range ss.HidLays {
 		split.Desc(spl, lnm+"_CosDiff")
-		split.Desc(spl, lnm+"_ActDif")
 		split.Desc(spl, lnm+"_FirstCyc")
 	}
 	ss.TrnErrStats = spl.AggsToTable(etable.AddAggName)
@@ -2371,8 +2368,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		dt.SetCellFloat(lnm+"_MaxGeM", row, float64(ly.ActAvg.AvgMaxGeM))
 		dt.SetCellFloat(lnm+"_ActAvg", row, float64(ly.ActAvg.ActMAvg))
 		dt.SetCellFloat(lnm+"_GiMult", row, float64(ly.ActAvg.GiMult))
-		dt.SetCellFloat(lnm+"_AvgDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
-		dt.SetCellFloat(lnm+"_AvgDifMax", row, float64(ly.Pools[0].AvgDif.Max))
+		dt.SetCellFloat(lnm+"_ActDifAvg", row, agg.Mean(tix, lnm+"_ActDifAvg")[0])
+		dt.SetCellFloat(lnm+"_ActDifMax", row, agg.Max(tix, lnm+"_ActDifMax")[0])
 		if ss.EpcPctErr > 0 && ss.EpcPctErr < 1 {
 			dt.SetCellFloat(lnm+"_CorCosDiff", row, ss.TrnErrStats.CellFloat(lnm+"_CosDiff:Mean", 0))
 			dt.SetCellFloat(lnm+"_ErrCosDiff", row, ss.TrnErrStats.CellFloat(lnm+"_CosDiff:Mean", 1))
@@ -2443,8 +2440,8 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_AvgDifAvg", etensor.FLOAT64, nil, nil})
-		sch = append(sch, etable.Column{lnm + "_AvgDifMax", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActDifAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActDifMax", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_CorCosDiff", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ErrCosDiff", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_CorFirstCyc", etensor.FLOAT64, nil, nil})
@@ -2496,8 +2493,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0.5)
 		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_AvgDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-		plt.SetColParams(lnm+"_AvgDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_ActDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_ActDifMax", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_CorCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_ErrCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_CorFirstCyc", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)

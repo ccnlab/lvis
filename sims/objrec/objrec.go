@@ -75,13 +75,14 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.FBAct.RiseTau":          "1",
+					"Layer.Inhib.FBAct.RiseTau":          "20",
 					"Layer.Inhib.FBAct.DecayTau":         "20",
+					"Layer.Act.Dt.IntTau":                "60", // 40 > 30 > 20 > 10
 					"Layer.Inhib.Layer.Gi":               "1.0",
 					"Layer.Inhib.Layer.FBTau":            "1.4", // 1.4 def
 					"Layer.Inhib.Pool.FBTau":             "1.4",
-					"Layer.Act.Decay.Act":                "0.0",  // 0.2 with glong .6
-					"Layer.Act.Decay.Glong":              "1",    // 0.6 best in lvis
+					"Layer.Act.Decay.Act":                "0.0",  // 0.2 with glong .6 best in lvis, slows learning here
+					"Layer.Act.Decay.Glong":              "1",    // 0, 1 best here
 					"Layer.Act.Decay.KNa":                "0.0",  // 0 > 0.5 interesting..
 					"Layer.Act.Gbar.L":                   "0.2",  // .2 > .1 @176
 					"Layer.Act.Gbar.E":                   "1.0",  // 1.2 maybe better % cor but not cosdiff
@@ -98,9 +99,8 @@ var ParamSets = params.Sets{
 					"Layer.Learn.ActAvg.SSTau":           "40",   // 40 > 35 def > 30
 					"Layer.Learn.ActAvg.STau":            "10",   // 10 >= 8 def (10 better early) > 6
 					"Layer.Learn.ActAvg.MTau":            "40",   // for 50 cyc qtr: SS = 40, 50, 45 faster then die
-					"Layer.Learn.ActAvg.MinLrn":          "0.0",  // sig improves "top5" hogging in pca strength
+					"Layer.Learn.ActAvg.MinLrn":          "0.02", // lvis: sig improves "top5" hogging in pca strength -- slower start here but same asymp.
 					"Layer.Act.Dt.GeTau":                 "5",    // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.IntTau":                "20",   // for 50 cyc qtr, 20 -- no maj diffs +-5 > 10
 					"Layer.Act.KNa.On":                   "true", // true > false @176
 					"Layer.Act.KNa.Fast.Max":             "0.1",  // 0.1 > 0.1 -- 122 best
 					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
@@ -192,7 +192,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
-					"Prjn.Learn.Lrate.Base": "0.0001", // 0.0001 best for lvis
+					"Prjn.Learn.Lrate.Base": "0.01", // 0.0001 best for lvis
 					"Prjn.SWt.Adapt.On":     "false",
 					"Prjn.SWt.Init.Var":     "0.0",
 					"Prjn.SWt.Init.Mean":    "0.1",
@@ -350,7 +350,7 @@ func (ss *Sim) New() {
 
 	ss.Time.Defaults()
 	ss.ErrLrMod.Defaults()
-	ss.ErrLrMod.Base = 0.05 // testing new range-based mode
+	ss.ErrLrMod.Base = 0.5 // .5 > .2 > .1 > .05 (not good at end)
 	ss.ErrLrMod.Range.Set(0.2, 0.8)
 }
 

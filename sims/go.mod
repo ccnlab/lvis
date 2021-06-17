@@ -4,9 +4,9 @@ go 1.15
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.2.68
+	github.com/emer/axon v1.2.69
 	github.com/emer/emergent v1.1.32
-	github.com/emer/empi v1.0.10
+	github.com/emer/empi v1.0.12
 	github.com/emer/etable v1.0.28
 	github.com/emer/leabra v1.1.34
 	github.com/emer/vision v1.1.9
