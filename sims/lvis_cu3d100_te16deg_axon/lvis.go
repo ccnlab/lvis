@@ -77,8 +77,8 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.FBAct.Tau":              "20",  // 20 > 1 definitively
-					"Layer.Act.Dt.IntTau":                "40",  // 20 def
+					"Layer.Inhib.FBAct.Tau":              "20",  // 20 >=30 > 1 definitively
+					"Layer.Act.Dt.IntTau":                "40",  // 40 > 20
 					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
 					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
@@ -100,25 +100,58 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .5 > .2 overall
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
 				}},
-			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
+			{Sel: ".V1m", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1h8: .04, V1h16: .03
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
 					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
 					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 					"Layer.Act.Decay.Act":     "1",       // these make no diff
 					"Layer.Act.Decay.Glong":   "1",
 				}},
-			{Sel: ".V1m", Desc: "pool inhib (not used), initial activity",
+			{Sel: ".V1l", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.ActAvg.Init": "0.06",
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: 0.06, V1m16: 0.05
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1l8: 0.06, V1l16: 0.05
 					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
 					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
 					"Layer.Act.Decay.Act":     "1",
 					"Layer.Act.Decay.Glong":   "1",
+				}},
+			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
+				Params: params.Params{
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
+					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
+					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
+					"Layer.Act.Decay.Act":     "1",       // these make no diff
+					"Layer.Act.Decay.Glong":   "1",
+				}},
+			{Sel: ".V2m", Desc: "pool inhib, sparse activity",
+				Params: params.Params{
+					"Layer.Inhib.Pool.On":        "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
+					"Layer.Inhib.ActAvg.Init":    "0.02",
+					"Layer.Inhib.ActAvg.Targ":    "0.02",
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
+				}},
+			{Sel: ".V2l", Desc: "pool inhib, sparse activity",
+				Params: params.Params{
+					"Layer.Inhib.Pool.On":        "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":       "1",
+					"Layer.Inhib.ActAvg.Init":    "0.02",
+					"Layer.Inhib.ActAvg.Targ":    "0.02",
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
+				}},
+			{Sel: "#V2l16", Desc: "this layer is too active, drives V4f16 too strongly",
+				Params: params.Params{
+					"Layer.Inhib.ActAvg.Init": "0.02", // not clear if needed now..
+					"Layer.Inhib.ActAvg.Targ": "0.02",
 				}},
 			{Sel: ".V2h", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -129,19 +162,14 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
 					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
 				}},
-			{Sel: ".V2m", Desc: "pool inhib, sparse activity",
+			{Sel: ".V3h", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",
+					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
 					"Layer.Inhib.ActAvg.Init":    "0.02",
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
 					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
-				}},
-			{Sel: "#V2m16", Desc: "this layer is too active, drives V4f16 too strongly",
-				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.02", // not clear if needed now..
-					"Layer.Inhib.ActAvg.Targ": "0.02",
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -648,7 +676,7 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = axon.AlphaCycle
 	ss.TestUpdt = axon.GammaCycle
 	ss.ActRFNms = []string{"V4f16:Image", "V4f8:Output", "TEO8:Image", "TEO8:Output", "TEO16:Image", "TEO16:Output"}
-	ss.SpikeRastNms = []string{"V1m16", "V2m16", "V4f16", "TEOf16", "TE", "Output"}
+	ss.SpikeRastNms = []string{"V1l16", "V2l16", "V4f16", "TEOf16", "TE", "Output"}
 	ss.GaussKernel = convolve.GaussianKernel64(3, .5)
 	// fmt.Printf("%v\n", ss.GaussKernel)
 }
@@ -690,6 +718,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Nm = "cu3d100plus"
 	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.Defaults()
+	ss.TrainEnv.High16 = false
 	ss.TrainEnv.Images.NTestPerCat = 2
 	ss.TrainEnv.Images.SplitByItm = true
 	ss.TrainEnv.OutRandom = ss.RndOutPats
@@ -706,6 +735,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Nm = "cu3d100plus"
 	ss.TestEnv.Dsc = "testing params and state"
 	ss.TestEnv.Defaults()
+	ss.TestEnv.High16 = false
 	ss.TestEnv.Images.NTestPerCat = 2
 	ss.TestEnv.Images.SplitByItm = true
 	ss.TestEnv.OutRandom = ss.RndOutPats
@@ -748,26 +778,41 @@ func (ss *Sim) ConfigEnv() {
 }
 
 func (ss *Sim) ConfigNet(net *axon.Network) {
+
+	hi16 := ss.TrainEnv.High16
+
 	net.InitName(net, "Lvis")
-	v1h16 := net.AddLayer4D("V1h16", 16, 16, 5, 4, emer.Input)
-	v1m16 := net.AddLayer4D("V1m16", 8, 8, 5, 4, emer.Input)
-	v1h8 := net.AddLayer4D("V1h8", 16, 16, 5, 4, emer.Input)
-	v1m8 := net.AddLayer4D("V1m8", 8, 8, 5, 4, emer.Input)
-	v1h16.SetClass("V1h")
-	v1h8.SetClass("V1h")
+	v1m16 := net.AddLayer4D("V1m16", 16, 16, 5, 4, emer.Input)
+	v1l16 := net.AddLayer4D("V1l16", 8, 8, 5, 4, emer.Input)
+	v1m8 := net.AddLayer4D("V1m8", 16, 16, 5, 4, emer.Input)
+	v1l8 := net.AddLayer4D("V1l8", 8, 8, 5, 4, emer.Input)
 	v1m16.SetClass("V1m")
 	v1m8.SetClass("V1m")
+	v1l16.SetClass("V1l")
+	v1l8.SetClass("V1l")
 
-	v2h16 := net.AddLayer4D("V2h16", 16, 16, 7, 7, emer.Hidden)
-	v2m16 := net.AddLayer4D("V2m16", 8, 8, 7, 7, emer.Hidden)
-	v2h8 := net.AddLayer4D("V2h8", 16, 16, 7, 7, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", 8, 8, 7, 7, emer.Hidden)
-	v2h16.SetClass("V2h")
-	v2h8.SetClass("V2h")
+	v2m16 := net.AddLayer4D("V2m16", 16, 16, 6, 6, emer.Hidden)
+	v2l16 := net.AddLayer4D("V2l16", 8, 8, 6, 6, emer.Hidden)
+	v2m8 := net.AddLayer4D("V2m8", 16, 16, 6, 6, emer.Hidden)
+	v2l8 := net.AddLayer4D("V2l8", 8, 8, 6, 6, emer.Hidden)
 	v2m16.SetClass("V2m")
 	v2m8.SetClass("V2m")
+	v2l16.SetClass("V2l")
+	v2l8.SetClass("V2l")
 
-	v4f16 := net.AddLayer4D("V4f16", 8, 8, 7, 7, emer.Hidden)
+	var v1h16 emer.Layer
+	var v2h16 emer.Layer
+	var v3h16 emer.Layer
+	if hi16 {
+		v1h16 = net.AddLayer4D("V1h16", 32, 32, 5, 4, emer.Input)
+		v2h16 = net.AddLayer4D("V2h16", 32, 32, 6, 6, emer.Hidden)
+		v3h16 = net.AddLayer4D("V3h16", 16, 16, 6, 6, emer.Hidden)
+		v1h16.SetClass("V1h")
+		v2h16.SetClass("V2h")
+		v3h16.SetClass("V3h")
+	}
+
+	v4f16 := net.AddLayer4D("V4f16", 8, 8, 8, 8, emer.Hidden)
 	v4f8 := net.AddLayer4D("V4f8", 8, 8, 7, 7, emer.Hidden)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
@@ -795,31 +840,41 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	pool1to1 := prjn.NewPoolOneToOne()
 	_ = pool1to1
 
-	net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-	net.ConnectLayers(v1m16, v2h16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
-
 	net.ConnectLayers(v1m16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l16, v2m16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-	net.ConnectLayers(v1h8, v2h8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-	net.ConnectLayers(v1m8, v2h8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+	net.ConnectLayers(v1l16, v2l16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
 
 	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l8, v2m8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-	v2v4, v4v2 := net.BidirConnectLayers(v2h16, v4f16, ss.Prjn4x4Skp2Sub2Send)
+	net.ConnectLayers(v1l8, v2l8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+
+	v2v4, v4v2 := net.BidirConnectLayers(v2m16, v4f16, ss.Prjn4x4Skp2Sub2Send)
 	v2v4.SetClass("V2V4")
 	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2m16, v4f16, ss.Prjn2x2Skp1Sub2Send)
+	v2v4, v4v2 = net.BidirConnectLayers(v2l16, v4f16, ss.Prjn2x2Skp1Sub2Send)
 	v2v4.SetClass("V2V4sm")
 	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Sub2SendRecip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2h8, v4f8, ss.Prjn4x4Skp2Sub2Send)
+	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, ss.Prjn4x4Skp2Sub2Send)
 	v2v4.SetClass("V2V4")
 	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, ss.Prjn2x2Skp1Sub2Send)
+	v2v4, v4v2 = net.BidirConnectLayers(v2l8, v4f8, ss.Prjn2x2Skp1Sub2Send)
 	v2v4.SetClass("V2V4sm")
 	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Sub2SendRecip)
+
+	if hi16 {
+		net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+		v2v3, v3v2 := net.BidirConnectLayers(v2h16, v3h16, ss.Prjn4x4Skp2Sub2Send)
+		v2v3.SetClass("V2V3")
+		v3v2.SetClass("V3V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
+		v3v4, v4v3 := net.BidirConnectLayers(v3h16, v4f16, ss.Prjn4x4Skp2Sub2Send)
+		v3v4.SetClass("V3V4")
+		v4v3.SetClass("V4V3").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
+	}
 
 	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, ss.Prjn4x4Skp0Sub2)
 	v4teo.SetClass("V4TEO")
@@ -860,83 +915,61 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	outv4.SetClass("OutV4")
 
 	// this extra inhibition drives decorrelation, produces significant learning benefits
-	net.LateralConnectLayerPrjn(v2h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(v2m16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2h8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2l16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(v2m8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2l8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(v4f16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(v4f8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
+	if hi16 {
+		net.LateralConnectLayerPrjn(v2h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+		net.LateralConnectLayerPrjn(v3h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	}
+
 	// shortcuts:
 
-	/*
-		// bidir shortcuts
-		v2teo, teov2 := net.BidirConnectLayers(v2h16, teo16, rndcut)
-		v2teo.SetClass("V2TEO")
-		teov2.SetClass("TEOV2")
-		v2teo, teov2 = net.BidirConnectLayers(v2m16, teo16, rndcut)
-		v2teo.SetClass("V2TEO")
-		teov2.SetClass("TEOV2")
-		v2teo, teov2 = net.BidirConnectLayers(v2h8, teo8, rndcut)
-		v2teo.SetClass("V2TEO")
-		teov2.SetClass("TEOV2")
-		v2teo, teov2 = net.BidirConnectLayers(v2m8, teo8, rndcut)
-		v2teo.SetClass("V2TEO")
-		teov2.SetClass("TEOV2")
-
-		v4te, tev4 := net.BidirConnectLayers(v4f16, te, rndcut)
-		v4te.SetClass("V4TE")
-		tev4.SetClass("TEV4")
-		v4te, tev4 = net.BidirConnectLayers(v4f8, te, rndcut)
-		v4te.SetClass("V4TE")
-		tev4.SetClass("TEV4")
-	*/
-
-	/* previous shortcuts
-	net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1V4")
-	net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1V4")
-
-	net.ConnectLayers(v2h16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
-	net.ConnectLayers(v2m16, teo16, rndcut, emer.Forward).SetClass("V2TEO")
-	net.ConnectLayers(v2h8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
-	net.ConnectLayers(v2m8, teo8, rndcut, emer.Forward).SetClass("V2TEO")
-
-	// not essential
-	net.ConnectLayers(v4f16, te, rndcut, emer.Forward).SetClass("V4TE")
-	net.ConnectLayers(v4f8, te, rndcut, emer.Forward).SetClass("V4TE")
-	*/
-
 	// V1 shortcuts best for syncing all layers -- like the pulvinar basically
-	net.ConnectLayers(v1m16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m8, teo8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m8, teo8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m16, te, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1m8, te, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, te, rndcut, emer.Forward).SetClass("V1SC")
+
+	if hi16 {
+		net.ConnectLayers(v1l16, v3h16, rndcut, emer.Forward).SetClass("V1SC")
+	}
 
 	// positioning
 
-	v1h8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1h16.Name(), YAlign: relpos.Front, Space: 4})
+	v1m8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m16.Name(), YAlign: relpos.Front, Space: 4})
 
-	v1m16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1h16.Name(), XAlign: relpos.Left, Space: 4})
-	v1m8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1h8.Name(), XAlign: relpos.Left, Space: 4})
+	v1l16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m16.Name(), XAlign: relpos.Left, Space: 4})
+	v1l8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m8.Name(), XAlign: relpos.Left, Space: 4})
 
-	v2h16.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v1h16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
+	if hi16 {
+		v1h16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m8.Name(), YAlign: relpos.Front, Space: 4})
+		v2h16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v2m8.Name(), YAlign: relpos.Front, Space: 4})
+		v3h16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v4f16.Name(), XAlign: relpos.Left, Space: 4})
+	}
 
-	v2h8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v2h16.Name(), YAlign: relpos.Front, Space: 4})
+	v2m16.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v1m16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
 
-	v2m16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v2h16.Name(), XAlign: relpos.Left, Space: 4})
-	v2m8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v2h8.Name(), XAlign: relpos.Left, Space: 4})
+	v2m8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v2m16.Name(), YAlign: relpos.Front, Space: 4})
 
-	v4f16.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2h16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
+	v2l16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v2m16.Name(), XAlign: relpos.Left, Space: 4})
+	v2l8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v2m8.Name(), XAlign: relpos.Left, Space: 4})
+
+	v4f16.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2m16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
 	teo16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f16.Name(), YAlign: relpos.Front, Space: 4})
 
-	v4f8.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2h8.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
+	v4f8.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2m8.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
 	teo8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f8.Name(), YAlign: relpos.Front, Space: 4})
 
 	te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
@@ -959,6 +992,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		case emer.Hidden:
 			ss.HidLays = append(ss.HidLays, ly.Name())
 		}
+	}
+
+	if hi16 {
+		v3h16.SetThread(1)
 	}
 
 	v4f16.SetThread(1)
@@ -1178,7 +1215,10 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	lays := []string{"V1h16", "V1m16", "V1h8", "V1m8", "Output"}
+	lays := []string{"V1m16", "V1l16", "V1m8", "V1l8", "Output"}
+	if ss.TrainEnv.High16 {
+		lays = append(lays, "V1h16")
+	}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		pats := en.State(ly.Nm)
@@ -1510,7 +1550,7 @@ func (ss *Sim) UpdtActRFs() {
 	ovt := ss.ValsTsr("Output")
 	oly.UnitValsTensor(ovt, "ActM")
 	if _, ok := ss.ValsTsrs["Image"]; !ok {
-		ss.ValsTsrs["Image"] = &ss.TestEnv.V1h16.ImgTsr
+		ss.ValsTsrs["Image"] = &ss.TestEnv.V1m16.ImgTsr
 	}
 	naf := len(ss.ActRFNms)
 	if len(ss.ActRFs.RFs) != naf {
@@ -2828,9 +2868,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	tg := tv.AddNewTab(etview.KiT_TensorGrid, "Image").(*etview.TensorGrid)
 	tg.SetStretchMax()
 	ss.CurImgGrid = tg
-	ss.TrainEnv.V1h16.ImgTsr.SetMetaData("colormap", "DarkLight")
-	ss.TrainEnv.V1h16.ImgTsr.SetMetaData("grid-fill", "1")
-	tg.SetTensor(&ss.TrainEnv.V1h16.ImgTsr)
+	ss.TrainEnv.V1m16.ImgTsr.SetMetaData("colormap", "DarkLight")
+	ss.TrainEnv.V1m16.ImgTsr.SetMetaData("grid-fill", "1")
+	tg.SetTensor(&ss.TrainEnv.V1m16.ImgTsr)
 
 	stb := tv.AddNewTab(gi.KiT_Layout, "Spike Rasters").(*gi.Layout)
 	stb.Lay = gi.LayoutVert

@@ -39,15 +39,17 @@ type ImagesEnv struct {
 	Dsc        string       `desc:"description of this environment"`
 	Test       bool         `desc:"present test items, else train"`
 	Sequential bool         `desc:"present items in sequential order -- else shuffled"`
+	High16     bool         `desc:"compute high-res full field filtering"`
 	Images     Images       `desc:"images list"`
 	TransMax   mat32.Vec2   `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
 	TransSigma float32      `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
 	ScaleRange minmax.F32   `desc:"def 0.5 - 1.1 range of scale"`
 	RotateMax  float32      `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
+	V1l16      Vis          `desc:"v1 16deg low resolution filtering of image -- V1AllTsr has result"`
 	V1m16      Vis          `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1h16      Vis          `desc:"v1 16deg higher resolution filtering of image -- V1AllTsr has result"`
+	V1h16      Vis          `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
+	V1l8       Vis          `desc:"v1 8deg low resolution filtering of image -- V1AllTsr has result"`
 	V1m8       Vis          `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1h8       Vis          `desc:"v1 8deg higher resolution filtering of image -- V1AllTsr has result"`
 	MaxOut     int          `desc:"maximum number of output categories representable here"`
 	OutRandom  bool         `desc:"use random bit patterns instead of localist output units"`
 	RndPctOn   float32      `desc:"proportion activity for random patterns"`
@@ -90,10 +92,11 @@ func (ev *ImagesEnv) Defaults() {
 	ev.RndPctOn = 0.2
 	ev.RndMinDiff = 0.5
 	ev.NOutPer = 5
-	ev.V1m16.Defaults(0, 24, 8)
-	ev.V1h16.Defaults(0, 12, 4)
-	ev.V1m8.Defaults(32, 12, 4)
-	ev.V1h8.Defaults(32, 6, 2)
+	ev.V1l16.Defaults(0, 24, 8)
+	ev.V1m16.Defaults(0, 12, 4)
+	ev.V1h16.Defaults(0, 6, 2)
+	ev.V1l8.Defaults(32, 12, 4)
+	ev.V1m8.Defaults(32, 6, 2)
 }
 
 // ImageList returns the list of images -- train or test
@@ -363,15 +366,18 @@ func (ev *ImagesEnv) FilterImage() error {
 		return err
 	}
 	ev.TransformImage()
-	tsz := ev.V1m16.ImgSize
+	tsz := ev.V1l16.ImgSize
 	isz := ev.Image.Bounds().Size()
 	if isz != tsz {
 		ev.Image = transform.Resize(ev.Image, tsz.X, tsz.Y, transform.Linear)
 	}
+	ev.V1l16.Filter(ev.Image)
 	ev.V1m16.Filter(ev.Image)
-	ev.V1h16.Filter(ev.Image)
+	ev.V1l8.Filter(ev.Image)
 	ev.V1m8.Filter(ev.Image)
-	ev.V1h8.Filter(ev.Image)
+	if ev.High16 {
+		ev.V1h16.Filter(ev.Image)
+	}
 	return nil
 }
 
@@ -463,14 +469,16 @@ func (ev *ImagesEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
 
 func (ev *ImagesEnv) State(element string) etensor.Tensor {
 	switch element {
+	case "V1l16":
+		return &ev.V1l16.V1AllTsr
 	case "V1m16":
 		return &ev.V1m16.V1AllTsr
 	case "V1h16":
 		return &ev.V1h16.V1AllTsr
+	case "V1l8":
+		return &ev.V1l8.V1AllTsr
 	case "V1m8":
 		return &ev.V1m8.V1AllTsr
-	case "V1h8":
-		return &ev.V1h8.V1AllTsr
 	case "Output":
 		return &ev.Output
 	}
