@@ -22,6 +22,7 @@ import (
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/actrf"
+	"github.com/emer/emergent/confusion"
 	"github.com/emer/emergent/decoder"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/env"
@@ -77,7 +78,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.FBAct.Tau":              "20",  // 20 >=30 > 1 definitively
+					"Layer.Inhib.FBAct.Tau":              "30",  // 30 > 20 >> 1 definitively
 					"Layer.Act.Dt.IntTau":                "40",  // 40 > 20
 					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
@@ -166,7 +167,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
-					"Layer.Inhib.ActAvg.Init":    "0.02",
+					"Layer.Inhib.ActAvg.Init":    "0.02", // .02 > .04
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
 					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
@@ -200,10 +201,10 @@ var ParamSets = params.Sets{
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":       "1.3",   // new tau inhib: 1.3 > 1.2 > 1.4 > 1.5
-					"Layer.Inhib.ActAvg.Init":    "0.01",  // .01 def localist
-					"Layer.Inhib.ActAvg.Targ":    "0.01",  // .01 def
+					"Layer.Inhib.ActAvg.Init":    "0.005", // .01 def localist
+					"Layer.Inhib.ActAvg.Targ":    "0.005", // .01 def
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
-					"Layer.Inhib.ActAvg.LoTol":   "0.8",
+					"Layer.Inhib.ActAvg.LoTol":   "1.1",
 					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
 					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
 					"Layer.Act.Clamp.Type":     "GeClamp",
@@ -381,6 +382,14 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
+	{Name: "OutAdapt", Desc: "delayed enforcement of output adaptation", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
+				Params: params.Params{
+					"Layer.Inhib.ActAvg.AdaptGi": "true", // true = definitely worse
+				}},
+		},
+	}},
 }
 
 // Sim encapsulates the entire simulation model, and we define all the
@@ -389,30 +398,32 @@ var ParamSets = params.Sets{
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net             *axon.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	TrnTrlLog       *etable.Table `view:"no-inline" desc:"training trial-level log data"`
-	TrnCycLog       *etable.Table `view:"no-inline" desc:"training cycle-level log data"`
-	TrnTrlLogAll    *etable.Table `view:"no-inline" desc:"all training trial-level log data (aggregated from MPI)"`
-	TrnTrlRepLog    *etable.Table `view:"no-inline" desc:"training trial-level reps log data"`
-	TrnTrlRepLogAll *etable.Table `view:"no-inline" desc:"training trial-level reps log data"`
-	TrnEpcLog       *etable.Table `view:"no-inline" desc:"training epoch-level log data"`
-	TstEpcLog       *etable.Table `view:"no-inline" desc:"testing epoch-level log data"`
-	TstTrlLog       *etable.Table `view:"no-inline" desc:"testing trial-level log data"`
-	TstTrlLogAll    *etable.Table `view:"no-inline" desc:"all testing trial-level log data (aggregated from MPI)"`
-	TrnErrStats     *etable.Table `view:"no-inline" desc:"training error stats"`
-	ActRFs          actrf.RFs     `view:"no-inline" desc:"activation-based receptive fields"`
-	RunLog          *etable.Table `view:"no-inline" desc:"summary log of each run"`
-	RunStats        *etable.Table `view:"no-inline" desc:"aggregate stats on all runs"`
-	MinusCycles     int           `desc:"number of minus-phase cycles"`
-	PlusCycles      int           `desc:"number of plus-phase cycles"`
-	SubPools        bool          `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
-	RndOutPats      bool          `desc:"if true, use random output patterns -- else localist"`
-	PostCycs        int           `desc:"number of cycles to run after main alphacyc cycles, between stimuli"`
-	PostDecay       float32       `desc:"decay to apply at start of PostCycs"`
-	ErrLrMod        axon.LrateMod `view:"inline" desc:"learning rate modulation as function of error"`
-	Params          params.Sets   `view:"no-inline" desc:"full collection of param sets"`
-	ParamSet        string        `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
-	Tag             string        `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Net             *axon.Network    `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	TrnTrlLog       *etable.Table    `view:"no-inline" desc:"training trial-level log data"`
+	TrnCycLog       *etable.Table    `view:"no-inline" desc:"training cycle-level log data"`
+	TrnTrlLogAll    *etable.Table    `view:"no-inline" desc:"all training trial-level log data (aggregated from MPI)"`
+	TrnTrlRepLog    *etable.Table    `view:"no-inline" desc:"training trial-level reps log data"`
+	TrnTrlRepLogAll *etable.Table    `view:"no-inline" desc:"training trial-level reps log data"`
+	TrnEpcLog       *etable.Table    `view:"no-inline" desc:"training epoch-level log data"`
+	TstEpcLog       *etable.Table    `view:"no-inline" desc:"testing epoch-level log data"`
+	TstTrlLog       *etable.Table    `view:"no-inline" desc:"testing trial-level log data"`
+	TstTrlLogAll    *etable.Table    `view:"no-inline" desc:"all testing trial-level log data (aggregated from MPI)"`
+	TrnErrStats     *etable.Table    `view:"no-inline" desc:"training error stats"`
+	ActRFs          actrf.RFs        `view:"no-inline" desc:"activation-based receptive fields"`
+	RunLog          *etable.Table    `view:"no-inline" desc:"summary log of each run"`
+	RunStats        *etable.Table    `view:"no-inline" desc:"aggregate stats on all runs"`
+	Confusion       confusion.Matrix `view:"inline" desc:"confusion matrix"`
+	ConfusionEpc    int              `desc:"epoch to start recording confusion matrix"`
+	MinusCycles     int              `desc:"number of minus-phase cycles"`
+	PlusCycles      int              `desc:"number of plus-phase cycles"`
+	SubPools        bool             `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
+	RndOutPats      bool             `desc:"if true, use random output patterns -- else localist"`
+	PostCycs        int              `desc:"number of cycles to run after main alphacyc cycles, between stimuli"`
+	PostDecay       float32          `desc:"decay to apply at start of PostCycs"`
+	ErrLrMod        axon.LrateMod    `view:"inline" desc:"learning rate modulation as function of error"`
+	Params          params.Sets      `view:"no-inline" desc:"full collection of param sets"`
+	ParamSet        string           `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
+	Tag             string           `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
 
 	Prjn4x4Skp2              *prjn.PoolTile    `view:"-" desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
 	Prjn4x4Skp2Recip         *prjn.PoolTile    `view:"-" desc:"Reciprocal"`
@@ -812,8 +823,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v3h16.SetClass("V3h")
 	}
 
-	v4f16 := net.AddLayer4D("V4f16", 8, 8, 8, 8, emer.Hidden)
-	v4f8 := net.AddLayer4D("V4f8", 8, 8, 7, 7, emer.Hidden)
+	v4f16 := net.AddLayer4D("V4f16", 8, 8, 10, 10, emer.Hidden)
+	v4f8 := net.AddLayer4D("V4f8", 8, 8, 8, 8, emer.Hidden)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
@@ -1317,6 +1328,9 @@ func (ss *Sim) InitStats() {
 	ss.EpcCosDiff = 0
 	ss.EpcErrTrgAct = 0
 	ss.EpcCorTrgAct = 0
+	ncat := len(ss.TrainEnv.Images.Cats)
+	ss.Confusion.Init(ncat)
+	ss.ConfusionEpc = 500
 }
 
 // TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
@@ -1340,6 +1354,11 @@ func (ss *Sim) TrialStats(accum bool) {
 	}
 	ss.TrlCatIdx = ss.TrainEnv.CurCatIdx
 	ss.TrlCat = ss.TrainEnv.CurCat
+
+	epc := ss.TrainEnv.Epoch.Cur
+	if epc > ss.ConfusionEpc {
+		ss.Confusion.Incr(ss.TrlCatIdx, ss.TrlRespIdx)
+	}
 
 	ss.TrlTrgAct = float64(out.Pools[0].ActP.Avg / 0.01)
 
@@ -1447,6 +1466,7 @@ func (ss *Sim) EpochSched(epc int) {
 		// ss.Net.LrateSched(0.2)
 		// mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
 		ss.SetParamsSet("ToOutTol", "Network", true) // increase LoTol
+		ss.SetParamsSet("OutAdapt", "Network", true) // increase LoTol
 	case 600:
 		// ss.Net.LrateSched(0.1)
 		// mpi.Printf("dropped lrate to 0.1 at epoch: %d\n", epc)
@@ -2431,6 +2451,11 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
 		}
 		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
+		if epc > ss.ConfusionEpc {
+			ss.Confusion.Probs()
+			fnm := ss.LogFileName("trn_conf")
+			ss.Confusion.SaveCSV(gi.FileName(fnm))
+		}
 	}
 
 	if ss.TrnTrlFile != nil && !(!ss.UseMPI || ss.SaveProcLog) { // saved at trial level otherwise
