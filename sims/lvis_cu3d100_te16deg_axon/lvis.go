@@ -201,8 +201,8 @@ var ParamSets = params.Sets{
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":       "1.3",   // new tau inhib: 1.3 > 1.2 > 1.4 > 1.5
-					"Layer.Inhib.ActAvg.Init":    "0.005", // .01 def localist
-					"Layer.Inhib.ActAvg.Targ":    "0.005", // .01 def
+					"Layer.Inhib.ActAvg.Init":    "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
+					"Layer.Inhib.ActAvg.Targ":    "0.01",  // .005, .008 too low -- maybe not nec?
 					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
 					"Layer.Inhib.ActAvg.LoTol":   "1.1",
 					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
@@ -258,7 +258,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
-					"Prjn.PrjnScale.LoTol":    "0.5",   // .8 = start low here then increase in ToOutTol on schedule
+					"Prjn.PrjnScale.LoTol":    "0.5",   // .5 > .8 -- needs extra kick at start!
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
@@ -412,7 +412,7 @@ type Sim struct {
 	ActRFs          actrf.RFs        `view:"no-inline" desc:"activation-based receptive fields"`
 	RunLog          *etable.Table    `view:"no-inline" desc:"summary log of each run"`
 	RunStats        *etable.Table    `view:"no-inline" desc:"aggregate stats on all runs"`
-	Confusion       confusion.Matrix `view:"inline" desc:"confusion matrix"`
+	Confusion       confusion.Matrix `view:"no-inline" desc:"confusion matrix"`
 	ConfusionEpc    int              `desc:"epoch to start recording confusion matrix"`
 	MinusCycles     int              `desc:"number of minus-phase cycles"`
 	PlusCycles      int              `desc:"number of plus-phase cycles"`
@@ -724,9 +724,10 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxTrls = 512 / mpi.WorldSize()
 	}
 
-	path := "images/CU3D_100_plus_renders"
+	// path := "images/CU3D_100_plus_renders"
+	path := "images/CU3D_100_renders_lr20_u30_nb"
 
-	ss.TrainEnv.Nm = "cu3d100plus"
+	ss.TrainEnv.Nm = "cu3d100old" // "cu3d100plus"
 	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.High16 = false
@@ -743,7 +744,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
 
-	ss.TestEnv.Nm = "cu3d100plus"
+	ss.TestEnv.Nm = "cu3d100old" // "cu3d100plus"
 	ss.TestEnv.Dsc = "testing params and state"
 	ss.TestEnv.Defaults()
 	ss.TestEnv.High16 = false
@@ -778,6 +779,11 @@ func (ss *Sim) ConfigEnv() {
 		ss.TrainEnv.Images.SelectCats(objs40)
 		ss.TestEnv.Images.SelectCats(objs40)
 	*/
+
+	// remove most confusable items
+	confuse := []string{"blade", "flashlight", "pckeyboard", "scissors", "screwdriver", "submarine"}
+	ss.TrainEnv.Images.DeleteCats(confuse)
+	ss.TestEnv.Images.DeleteCats(confuse)
 
 	if ss.UseMPI {
 		ss.TrainEnv.MPIAlloc()
@@ -823,8 +829,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v3h16.SetClass("V3h")
 	}
 
-	v4f16 := net.AddLayer4D("V4f16", 8, 8, 10, 10, emer.Hidden)
-	v4f8 := net.AddLayer4D("V4f8", 8, 8, 8, 8, emer.Hidden)
+	v4f16 := net.AddLayer4D("V4f16", 8, 8, 7, 7, emer.Hidden)
+	v4f8 := net.AddLayer4D("V4f8", 8, 8, 7, 7, emer.Hidden)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
@@ -1331,6 +1337,9 @@ func (ss *Sim) InitStats() {
 	ncat := len(ss.TrainEnv.Images.Cats)
 	ss.Confusion.Init(ncat)
 	ss.ConfusionEpc = 500
+	ss.Confusion.SetLabels(ss.TrainEnv.Images.Cats)
+	ss.Confusion.Prob.SetMetaData("font-size", "12")
+	// ss.Confusion.Prob.SetMetaData("grid-fill", "1") // not good for tracing rows /cols
 }
 
 // TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
@@ -1466,7 +1475,7 @@ func (ss *Sim) EpochSched(epc int) {
 		// ss.Net.LrateSched(0.2)
 		// mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
 		ss.SetParamsSet("ToOutTol", "Network", true) // increase LoTol
-		ss.SetParamsSet("OutAdapt", "Network", true) // increase LoTol
+		// ss.SetParamsSet("OutAdapt", "Network", true) // increase LoTol
 	case 600:
 		// ss.Net.LrateSched(0.1)
 		// mpi.Printf("dropped lrate to 0.1 at epoch: %d\n", epc)
@@ -1538,6 +1547,33 @@ func (ss *Sim) RunTestAll() {
 	ss.StopNow = false
 	ss.TestAll()
 	ss.Stopped()
+}
+
+// ConfusionTstPlot plots the current confusion probability values.
+// if cat is empty then it is the diagonal accuracy across all cats
+// otherwise it is the confusion row for given category.
+// data goes in the TrlErr = Err column.
+func (ss *Sim) ConfusionTstPlot(cat string) {
+	ss.TstTrlLog.SetNumRows(0)
+	nc := ss.Confusion.N.Len()
+	ti := -1
+	if cat != "" {
+		ti = ss.TrainEnv.Images.CatMap[cat]
+	}
+	for i := 0; i < nc; i++ {
+		ss.TestEnv.Trial.Cur = i
+		ss.TestEnv.CurCat = ss.TrainEnv.Images.Cats[i]
+		if ti >= 0 {
+			ss.TrlErr = ss.Confusion.Prob.Value([]int{ti, i})
+		} else {
+			ss.TrlErr = ss.Confusion.Prob.Value([]int{i, i})
+		}
+		ss.LogTstTrl(ss.TstTrlLog)
+	}
+	ss.TstTrlPlot.Params.XAxisCol = "Cat"
+	ss.TstTrlPlot.Params.Type = eplot.Bar
+	ss.TstTrlPlot.Params.XAxisRot = 45
+	ss.TstTrlPlot.GoUpdate()
 }
 
 // TestRFs runs test for receptive fields
@@ -2654,8 +2690,8 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("Trial", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Cat", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Err", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
 	for _, lnm := range ss.HidLays {
@@ -3015,6 +3051,12 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		}
 	})
 
+	tbar.AddAction(gi.ActOpts{Label: "Conf To Test", Icon: "fast-fwd", Tooltip: "Plots accuracy from current confusion probs to test trial log for each category (diagonal of confusion matrix).", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		giv.CallMethod(ss, "ConfusionTstPlot", vp)
+	})
+
 	tbar.AddSeparator("log")
 
 	tbar.AddAction(gi.ActOpts{Label: "Reset RunLog", Icon: "update", Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used"}, win.This(),
@@ -3118,6 +3160,15 @@ var SimProps = ki.Props{
 			"Args": ki.PropSlice{
 				{"File Name", ki.Props{
 					"ext": ".wts,.wts.gz",
+				}},
+			},
+		}},
+		{"ConfusionTstPlot", ki.Props{
+			"desc": "plot current confusion matrix probs in TstTrlPlot -- enter Cat for confusion row for that category, else if blank, diagonal accuracy for all categories",
+			"icon": "file-sheet",
+			"Args": ki.PropSlice{
+				{"Cat", ki.Props{
+					"desc": "category name to show",
 				}},
 			},
 		}},
