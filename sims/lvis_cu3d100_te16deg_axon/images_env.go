@@ -40,6 +40,7 @@ type ImagesEnv struct {
 	Test       bool         `desc:"present test items, else train"`
 	Sequential bool         `desc:"present items in sequential order -- else shuffled"`
 	High16     bool         `desc:"compute high-res full field filtering"`
+	ColorDoG   bool         `desc:"compute color DoG (blob) filtering"`
 	Images     Images       `desc:"images list"`
 	TransMax   mat32.Vec2   `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
 	TransSigma float32      `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
@@ -50,6 +51,10 @@ type ImagesEnv struct {
 	V1h16      Vis          `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
 	V1l8       Vis          `desc:"v1 8deg low resolution filtering of image -- V1AllTsr has result"`
 	V1m8       Vis          `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
+	V1Cl16     ColorVis     `desc:"v1 color 16deg low resolution filtering of image -- OutAll has result"`
+	V1Cm16     ColorVis     `desc:"v1 color 16deg medium resolution filtering of image -- OutAll has result"`
+	V1Cl8      ColorVis     `desc:"v1 color 8deg low resolution filtering of image -- OutAll has result"`
+	V1Cm8      ColorVis     `desc:"v1 color 8deg medium resolution filtering of image -- OutAll has result"`
 	MaxOut     int          `desc:"maximum number of output categories representable here"`
 	OutRandom  bool         `desc:"use random bit patterns instead of localist output units"`
 	RndPctOn   float32      `desc:"proportion activity for random patterns"`
@@ -97,6 +102,11 @@ func (ev *ImagesEnv) Defaults() {
 	ev.V1h16.Defaults(0, 6, 2)
 	ev.V1l8.Defaults(32, 12, 4)
 	ev.V1m8.Defaults(32, 6, 2)
+
+	ev.V1Cl16.Defaults(0, 16, 16)
+	ev.V1Cm16.Defaults(0, 8, 8)
+	ev.V1Cl8.Defaults(32, 8, 8)
+	ev.V1Cm8.Defaults(32, 4, 4)
 }
 
 // ImageList returns the list of images -- train or test
@@ -371,12 +381,27 @@ func (ev *ImagesEnv) FilterImage() error {
 	if isz != tsz {
 		ev.Image = transform.Resize(ev.Image, tsz.X, tsz.Y, transform.Linear)
 	}
-	ev.V1l16.Filter(ev.Image)
-	ev.V1m16.Filter(ev.Image)
-	ev.V1l8.Filter(ev.Image)
-	ev.V1m8.Filter(ev.Image)
+	ev.V1l16.SetImage(ev.Image)
+	ev.V1l16.Filter()
+	ev.V1m16.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
+	ev.V1m16.Filter()
+	ev.V1l8.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
+	ev.V1l8.Filter()
+	ev.V1m8.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
+	ev.V1m8.Filter()
 	if ev.High16 {
-		ev.V1h16.Filter(ev.Image)
+		ev.V1h16.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
+		ev.V1h16.Filter()
+	}
+	if ev.ColorDoG {
+		ev.V1Cl16.SetImage(ev.Image)
+		ev.V1Cl16.Filter()
+		ev.V1Cm16.SetImageTsr(ev.Image, ev.V1Cl16.ImgTsr, ev.V1Cl16.ImgLMS)
+		ev.V1Cm16.Filter()
+		ev.V1Cl8.SetImageTsr(ev.Image, ev.V1Cl16.ImgTsr, ev.V1Cl16.ImgLMS)
+		ev.V1Cl8.Filter()
+		ev.V1Cm8.SetImageTsr(ev.Image, ev.V1Cl16.ImgTsr, ev.V1Cl16.ImgLMS)
+		ev.V1Cm8.Filter()
 	}
 	return nil
 }
@@ -479,6 +504,14 @@ func (ev *ImagesEnv) State(element string) etensor.Tensor {
 		return &ev.V1l8.V1AllTsr
 	case "V1m8":
 		return &ev.V1m8.V1AllTsr
+	case "V1Cl16":
+		return &ev.V1Cl16.KwtaTsr
+	case "V1Cm16":
+		return &ev.V1Cm16.KwtaTsr
+	case "V1Cl8":
+		return &ev.V1Cl8.KwtaTsr
+	case "V1Cm8":
+		return &ev.V1Cm8.KwtaTsr
 	case "Output":
 		return &ev.Output
 	}

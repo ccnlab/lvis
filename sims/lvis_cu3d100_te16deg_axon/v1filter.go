@@ -19,25 +19,25 @@ import (
 
 // Vis encapsulates specific visual processing pipeline for V1 filtering
 type Vis struct {
-	V1sGabor      gabor.Filter    `view:"inline" desc:"V1 simple gabor filter parameters"`
-	V1sGeom       vfilter.Geom    `inactive:"+" view:"inline" desc:"geometry of input, output for V1 simple-cell processing"`
-	V1sNeighInhib kwta.NeighInhib `desc:"neighborhood inhibition for V1s -- each unit gets inhibition from same feature in nearest orthogonal neighbors -- reduces redundancy of feature code"`
-	V1sKWTA       kwta.KWTA       `desc:"kwta parameters for V1s"`
-	ImgSize       image.Point     `desc:"target image size to use -- images will be rescaled to this size"`
-	V1sGaborTsr   etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter tensor"`
-	ImgTsr        etensor.Float32 `view:"no-inline" desc:"input image as tensor"`
-	Img           image.Image     `view:"-" desc:"current input image"`
-	V1sTsr        etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter output tensor"`
-	V1sExtGiTsr   etensor.Float32 `view:"no-inline" desc:"V1 simple extra Gi from neighbor inhibition tensor"`
-	V1sKwtaTsr    etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter output, kwta output tensor"`
-	V1sPoolTsr    etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter output, max-pooled 2x2 of V1sKwta tensor"`
-	V1sUnPoolTsr  etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter output, un-max-pooled 2x2 of V1sPool tensor"`
-	V1sAngOnlyTsr etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter output, angle-only features tensor"`
-	V1sAngPoolTsr etensor.Float32 `view:"no-inline" desc:"V1 simple gabor filter output, max-pooled 2x2 of AngOnly tensor"`
-	V1cLenSumTsr  etensor.Float32 `view:"no-inline" desc:"V1 complex length sum filter output tensor"`
-	V1cEndStopTsr etensor.Float32 `view:"no-inline" desc:"V1 complex end stop filter output tensor"`
-	V1AllTsr      etensor.Float32 `view:"no-inline" desc:"Combined V1 output tensor with V1s simple as first two rows, then length sum, then end stops = 5 rows total"`
-	V1sInhibs     fffb.Inhibs     `view:"no-inline" desc:"inhibition values for V1s KWTA"`
+	V1sGabor      gabor.Filter     `view:"inline" desc:"V1 simple gabor filter parameters"`
+	V1sGeom       vfilter.Geom     `inactive:"+" view:"inline" desc:"geometry of input, output for V1 simple-cell processing"`
+	V1sNeighInhib kwta.NeighInhib  `desc:"neighborhood inhibition for V1s -- each unit gets inhibition from same feature in nearest orthogonal neighbors -- reduces redundancy of feature code"`
+	V1sKWTA       kwta.KWTA        `desc:"kwta parameters for V1s"`
+	ImgSize       image.Point      `desc:"target image size to use -- images will be rescaled to this size"`
+	V1sGaborTsr   etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter tensor"`
+	ImgTsr        *etensor.Float32 `view:"no-inline" desc:"input image as greyscale tensor"`
+	Img           image.Image      `view:"-" desc:"current input image"`
+	V1sTsr        etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter output tensor"`
+	V1sExtGiTsr   etensor.Float32  `view:"no-inline" desc:"V1 simple extra Gi from neighbor inhibition tensor"`
+	V1sKwtaTsr    etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter output, kwta output tensor"`
+	V1sPoolTsr    etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter output, max-pooled 2x2 of V1sKwta tensor"`
+	V1sUnPoolTsr  etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter output, un-max-pooled 2x2 of V1sPool tensor"`
+	V1sAngOnlyTsr etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter output, angle-only features tensor"`
+	V1sAngPoolTsr etensor.Float32  `view:"no-inline" desc:"V1 simple gabor filter output, max-pooled 2x2 of AngOnly tensor"`
+	V1cLenSumTsr  etensor.Float32  `view:"no-inline" desc:"V1 complex length sum filter output tensor"`
+	V1cEndStopTsr etensor.Float32  `view:"no-inline" desc:"V1 complex end stop filter output tensor"`
+	V1AllTsr      etensor.Float32  `view:"no-inline" desc:"Combined V1 output tensor with V1s simple as first two rows, then length sum, then end stops = 5 rows total"`
+	V1sInhibs     fffb.Inhibs      `view:"no-inline" desc:"inhibition values for V1s KWTA"`
 }
 
 var KiT_Vis = kit.Types.AddType(&Vis{}, nil)
@@ -57,8 +57,6 @@ func (vi *Vis) Defaults(bord_ex, sz, spc int) { // high: sz = 12, spc = 4, med: 
 	vi.V1sKWTA.XX1.NVar = 0.01
 	vi.ImgSize = image.Point{128, 128}
 	vi.V1sGabor.ToTensor(&vi.V1sGaborTsr)
-	// vi.ImgTsr.SetMetaData("image", "+")
-	vi.ImgTsr.SetMetaData("grid-fill", "1")
 }
 
 // SetImage sets current image for processing
@@ -68,15 +66,26 @@ func (vi *Vis) SetImage(img image.Image) {
 	if isz != vi.ImgSize {
 		vi.Img = transform.Resize(vi.Img, vi.ImgSize.X, vi.ImgSize.Y, transform.Linear)
 	}
-	vfilter.RGBToGrey(vi.Img, &vi.ImgTsr, vi.V1sGeom.FiltRt.X, false) // pad for filt, bot zero
-	vfilter.WrapPad(&vi.ImgTsr, vi.V1sGeom.FiltRt.X)
+	tsr := etensor.Float32{}
+	vi.ImgTsr = &tsr
+	vfilter.RGBToGrey(vi.Img, &tsr, vi.V1sGeom.FiltRt.X, false) // pad for filt, bot zero
+	vfilter.WrapPad(&tsr, vi.V1sGeom.FiltRt.X)
+	tsr.SetMetaData("colormap", "DarkLight")
+	tsr.SetMetaData("grid-fill", "1")
+	// tsr.SetMetaData("image", "+")
+}
+
+// SetImageTsr sets current image and tensor for processing -- from other Vis
+func (vi *Vis) SetImageTsr(img image.Image, tsr *etensor.Float32) {
+	vi.Img = img
+	vi.ImgTsr = tsr
 }
 
 // V1Simple runs V1Simple Gabor filtering on input image
 // must have valid Img in place to start.
 // Runs kwta and pool steps after gabor filter.
 func (vi *Vis) V1Simple() {
-	vfilter.Conv(&vi.V1sGeom, &vi.V1sGaborTsr, &vi.ImgTsr, &vi.V1sTsr, vi.V1sGabor.Gain)
+	vfilter.Conv(&vi.V1sGeom, &vi.V1sGaborTsr, vi.ImgTsr, &vi.V1sTsr, vi.V1sGabor.Gain)
 	if vi.V1sNeighInhib.On {
 		vi.V1sNeighInhib.Inhib4(&vi.V1sTsr, &vi.V1sExtGiTsr)
 	} else {
@@ -117,9 +126,8 @@ func (vi *Vis) V1All() {
 	vfilter.FeatAgg([]int{0, 1}, 3, &vi.V1sPoolTsr, &vi.V1AllTsr)
 }
 
-// Filter is overall method to run filters on given image
-func (vi *Vis) Filter(img image.Image) {
-	vi.SetImage(img)
+// Filter is overall method to run filters on image set by SetImage*
+func (vi *Vis) Filter() {
 	vi.V1Simple()
 	vi.V1Complex()
 	vi.V1All()

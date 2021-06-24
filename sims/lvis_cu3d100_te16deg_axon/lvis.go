@@ -101,7 +101,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .5 > .2 overall
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
 				}},
-			{Sel: ".V1m", Desc: "pool inhib (not used), initial activity",
+			{Sel: ".V1m", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
@@ -111,7 +111,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Decay.Act":     "1",       // these make no diff
 					"Layer.Act.Decay.Glong":   "1",
 				}},
-			{Sel: ".V1l", Desc: "pool inhib (not used), initial activity",
+			{Sel: ".V1l", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.ActAvg.Init": "0.06",
@@ -121,7 +121,27 @@ var ParamSets = params.Sets{
 					"Layer.Act.Decay.Act":     "1",
 					"Layer.Act.Decay.Glong":   "1",
 				}},
-			{Sel: ".V1h", Desc: "pool inhib (not used), initial activity",
+			{Sel: ".V1Cm", Desc: "pool inhib KwtaTsr, initial activity",
+				Params: params.Params{
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
+					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
+					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
+					"Layer.Act.Decay.Act":     "1",       // these make no diff
+					"Layer.Act.Decay.Glong":   "1",
+				}},
+			{Sel: ".V1Cl", Desc: "pool inhib KwtaTsr, initial activity",
+				Params: params.Params{
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.ActAvg.Init": "0.06",
+					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1l8: 0.06, V1l16: 0.05
+					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
+					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
+					"Layer.Act.Decay.Act":     "1",
+					"Layer.Act.Decay.Glong":   "1",
+				}},
+			{Sel: ".V1h", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
@@ -730,7 +750,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Nm = "cu3d100old" // "cu3d100plus"
 	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.Defaults()
-	ss.TrainEnv.High16 = false
+	ss.TrainEnv.High16 = false // not useful -- may need more tuning?
+	ss.TrainEnv.ColorDoG = true
 	ss.TrainEnv.Images.NTestPerCat = 2
 	ss.TrainEnv.Images.SplitByItm = true
 	ss.TrainEnv.OutRandom = ss.RndOutPats
@@ -747,7 +768,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Nm = "cu3d100old" // "cu3d100plus"
 	ss.TestEnv.Dsc = "testing params and state"
 	ss.TestEnv.Defaults()
-	ss.TestEnv.High16 = false
+	ss.TestEnv.High16 = ss.TrainEnv.High16
+	ss.TestEnv.ColorDoG = ss.TrainEnv.ColorDoG
 	ss.TestEnv.Images.NTestPerCat = 2
 	ss.TestEnv.Images.SplitByItm = true
 	ss.TestEnv.OutRandom = ss.RndOutPats
@@ -797,6 +819,7 @@ func (ss *Sim) ConfigEnv() {
 func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	hi16 := ss.TrainEnv.High16
+	cdog := ss.TrainEnv.ColorDoG
 
 	net.InitName(net, "Lvis")
 	v1m16 := net.AddLayer4D("V1m16", 16, 16, 5, 4, emer.Input)
@@ -808,6 +831,18 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v1l16.SetClass("V1l")
 	v1l8.SetClass("V1l")
 
+	var v1cm16, v1cl16, v1cm8, v1cl8 emer.Layer
+	if cdog {
+		v1cm16 = net.AddLayer4D("V1Cm16", 16, 16, 2, 2, emer.Input)
+		v1cl16 = net.AddLayer4D("V1Cl16", 8, 8, 2, 2, emer.Input)
+		v1cm8 = net.AddLayer4D("V1Cm8", 16, 16, 2, 2, emer.Input)
+		v1cl8 = net.AddLayer4D("V1Cl8", 8, 8, 2, 2, emer.Input)
+		v1cm16.SetClass("V1Cm")
+		v1cm8.SetClass("V1Cm")
+		v1cl16.SetClass("V1Cl")
+		v1cl8.SetClass("V1Cl")
+	}
+
 	v2m16 := net.AddLayer4D("V2m16", 16, 16, 6, 6, emer.Hidden)
 	v2l16 := net.AddLayer4D("V2l16", 8, 8, 6, 6, emer.Hidden)
 	v2m8 := net.AddLayer4D("V2m8", 16, 16, 6, 6, emer.Hidden)
@@ -817,9 +852,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v2l16.SetClass("V2l")
 	v2l8.SetClass("V2l")
 
-	var v1h16 emer.Layer
-	var v2h16 emer.Layer
-	var v3h16 emer.Layer
+	var v1h16, v2h16, v3h16 emer.Layer
 	if hi16 {
 		v1h16 = net.AddLayer4D("V1h16", 32, 32, 5, 4, emer.Input)
 		v2h16 = net.AddLayer4D("V2h16", 32, 32, 6, 6, emer.Hidden)
@@ -866,6 +899,18 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	net.ConnectLayers(v1l8, v2m8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
 
 	net.ConnectLayers(v1l8, v2l8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+
+	if cdog {
+		net.ConnectLayers(v1cm16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl16, v2m16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+
+		net.ConnectLayers(v1cl16, v2l16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+
+		net.ConnectLayers(v1cm8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl8, v2m8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+
+		net.ConnectLayers(v1cl8, v2l8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	}
 
 	v2v4, v4v2 := net.BidirConnectLayers(v2m16, v4f16, ss.Prjn4x4Skp2Sub2Send)
 	v2v4.SetClass("V2V4")
@@ -969,6 +1014,13 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	v1l16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m16.Name(), XAlign: relpos.Left, Space: 4})
 	v1l8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m8.Name(), XAlign: relpos.Left, Space: 4})
+
+	if cdog {
+		v1cm16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m8.Name(), YAlign: relpos.Front, Space: 4})
+		v1cm8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1cm16.Name(), YAlign: relpos.Front, Space: 4})
+		v1cl16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1cm16.Name(), XAlign: relpos.Left, Space: 4})
+		v1cl8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1cm8.Name(), XAlign: relpos.Left, Space: 4})
+	}
 
 	if hi16 {
 		v1h16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m8.Name(), YAlign: relpos.Front, Space: 4})
@@ -1236,12 +1288,19 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	if ss.TrainEnv.High16 {
 		lays = append(lays, "V1h16")
 	}
+	if ss.TrainEnv.ColorDoG {
+		lays = append(lays, []string{"V1Cm16", "V1Cl16", "V1Cm8", "V1Cl8"}...)
+	}
+
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		pats := en.State(ly.Nm)
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
+	}
+	if ss.CurImgGrid != nil {
+		ss.CurImgGrid.SetTensor(ss.TrainEnv.V1m16.ImgTsr)
 	}
 }
 
@@ -1606,7 +1665,7 @@ func (ss *Sim) UpdtActRFs() {
 	ovt := ss.ValsTsr("Output")
 	oly.UnitValsTensor(ovt, "ActM")
 	if _, ok := ss.ValsTsrs["Image"]; !ok {
-		ss.ValsTsrs["Image"] = &ss.TestEnv.V1m16.ImgTsr
+		ss.ValsTsrs["Image"] = ss.TestEnv.V1m16.ImgTsr
 	}
 	naf := len(ss.ActRFNms)
 	if len(ss.ActRFs.RFs) != naf {
@@ -2929,9 +2988,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	tg := tv.AddNewTab(etview.KiT_TensorGrid, "Image").(*etview.TensorGrid)
 	tg.SetStretchMax()
 	ss.CurImgGrid = tg
-	ss.TrainEnv.V1m16.ImgTsr.SetMetaData("colormap", "DarkLight")
-	ss.TrainEnv.V1m16.ImgTsr.SetMetaData("grid-fill", "1")
-	tg.SetTensor(&ss.TrainEnv.V1m16.ImgTsr)
 
 	stb := tv.AddNewTab(gi.KiT_Layout, "Spike Rasters").(*gi.Layout)
 	stb.Lay = gi.LayoutVert
