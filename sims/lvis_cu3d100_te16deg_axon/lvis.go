@@ -296,7 +296,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Mean":  "0.4", // .4 here is key!
 					"Prjn.SWt.Limit.Min":  "0.1", // .1-.7
 					"Prjn.SWt.Limit.Max":  "0.7", //
-					"Prjn.PrjnScale.Init": "1.4", // extra boost to get more v2 early on, compensate for lower mean
+					"Prjn.PrjnScale.Init": "2.0", // 1.4 for no color, 2.0 for color -- extra boost to get more v2 early on, compensate for lower mean
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -843,10 +843,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v1cl8.SetClass("V1Cl")
 	}
 
-	v2m16 := net.AddLayer4D("V2m16", 16, 16, 6, 6, emer.Hidden)
-	v2l16 := net.AddLayer4D("V2l16", 8, 8, 6, 6, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", 16, 16, 6, 6, emer.Hidden)
-	v2l8 := net.AddLayer4D("V2l8", 8, 8, 6, 6, emer.Hidden)
+	v2m16 := net.AddLayer4D("V2m16", 16, 16, 7, 7, emer.Hidden)
+	v2l16 := net.AddLayer4D("V2l16", 8, 8, 7, 7, emer.Hidden)
+	v2m8 := net.AddLayer4D("V2m8", 16, 16, 7, 7, emer.Hidden)
+	v2l8 := net.AddLayer4D("V2l8", 8, 8, 7, 7, emer.Hidden)
 	v2m16.SetClass("V2m")
 	v2m8.SetClass("V2m")
 	v2l16.SetClass("V2l")
