@@ -7,7 +7,6 @@ package main
 import (
 	"image"
 
-	"github.com/anthonynsimon/bild/transform"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/fffb"
@@ -20,25 +19,23 @@ import (
 // ColorVis encapsulates specific visual processing pipeline in
 // use in a given case -- can add / modify this as needed
 type ColorVis struct {
+	Img        *V1Img                      `desc:"image that we operate upon -- one image often shared among multiple filters"`
 	DoG        dog.Filter                  `desc:"LGN DoG filter parameters"`
 	DoGNames   []string                    `desc:"names of the dog gain sets -- for naming output data"`
 	DoGGains   []float32                   `desc:"overall gain factors, to compensate for diffs in OnGains"`
 	DoGOnGains []float32                   `desc:"OnGain factors -- 1 = perfect balance, otherwise has relative imbalance for capturing main effects"`
 	Geom       vfilter.Geom                `inactive:"+" view:"inline" desc:"geometry of input, output"`
-	ImgSize    image.Point                 `desc:"target image size to use -- images will be rescaled to this size"`
 	KWTA       kwta.KWTA                   `desc:"kwta parameters"`
 	DoGTsr     etensor.Float32             `view:"no-inline" desc:"DoG filter tensor -- has 3 filters (on, off, net)"`
 	DoGTab     etable.Table                `view:"no-inline" desc:"DoG filter table (view only)"`
-	Img        image.Image                 `view:"-" desc:"current input image"`
-	ImgTsr     *etensor.Float32            `view:"no-inline" desc:"input image as RGB tensor"`
-	ImgLMS     *etensor.Float32            `view:"no-inline" desc:"LMS components + opponents tensor version of image"`
 	KwtaTsr    etensor.Float32             `view:"no-inline" desc:"kwta output tensor"`
 	OutAll     etensor.Float32             `view:"no-inline" desc:"output from 3 dogs with different tuning -- this is what goes into input layer"`
 	OutTsrs    map[string]*etensor.Float32 `view:"no-inline" desc:"DoG filter output tensors"`
 	Inhibs     fffb.Inhibs                 `view:"no-inline" desc:"inhibition values for KWTA"`
 }
 
-func (vi *ColorVis) Defaults(bord_ex, sz, spc int) {
+func (vi *ColorVis) Defaults(bord_ex, sz, spc int, img *V1Img) {
+	vi.Img = img
 	vi.DoGNames = []string{"Bal"} // , "On", "Off"} // balanced, gain toward On, gain toward Off
 	vi.DoGGains = []float32{8, 4.1, 4.4}
 	vi.DoGOnGains = []float32{1, 1.2, 0.833}
@@ -58,7 +55,6 @@ func (vi *ColorVis) Defaults(bord_ex, sz, spc int) {
 	// to set border to .5 * filter size
 	// any further border sizes on same image need to add Geom.FiltRt!
 	vi.Geom.Set(image.Point{sz/2 + bord_ex, sz/2 + bord_ex}, image.Point{spc, spc}, image.Point{sz, sz})
-	vi.ImgSize = image.Point{128, 128}
 	vi.DoG.ToTensor(&vi.DoGTsr)
 	vi.DoG.ToTable(&vi.DoGTab) // note: view only, testing
 	vi.DoGTab.Cols[1].SetMetaData("max", "0.2")
@@ -80,44 +76,18 @@ func (vi *ColorVis) OutTsr(name string) *etensor.Float32 {
 	return tsr
 }
 
-// SetImage sets current image for processing
-func (vi *ColorVis) SetImage(img image.Image) {
-	vi.Img = img
-	isz := vi.Img.Bounds().Size()
-	if isz != vi.ImgSize {
-		vi.Img = transform.Resize(vi.Img, vi.ImgSize.X, vi.ImgSize.Y, transform.Linear)
-	}
-	tsr := etensor.Float32{}
-	lms := etensor.Float32{}
-	vi.ImgTsr = &tsr
-	vi.ImgLMS = &lms
-	vfilter.RGBToTensor(vi.Img, &tsr, vi.Geom.FiltRt.X, false) // pad for filt, bot zero
-	vfilter.WrapPadRGB(&tsr, vi.Geom.FiltRt.X)
-	colorspace.RGBTensorToLMSComps(&lms, &tsr)
-	// tsr.SetMetaData("image", "+")
-	tsr.SetMetaData("colormap", "DarkLight")
-	tsr.SetMetaData("grid-fill", "1")
-}
-
-// SetImageTsr sets current image tensors
-func (vi *ColorVis) SetImageTsr(img image.Image, tsr, lms *etensor.Float32) {
-	vi.Img = img
-	vi.ImgTsr = tsr
-	vi.ImgLMS = lms
-}
-
 // ColorDoG runs color contrast DoG filtering on input image
 // must have valid Img in place to start.
 func (vi *ColorVis) ColorDoG() {
-	rimg := vi.ImgLMS.SubSpace([]int{int(colorspace.LC)}).(*etensor.Float32)
-	gimg := vi.ImgLMS.SubSpace([]int{int(colorspace.MC)}).(*etensor.Float32)
+	rimg := vi.Img.LMS.SubSpace([]int{int(colorspace.LC)}).(*etensor.Float32)
+	gimg := vi.Img.LMS.SubSpace([]int{int(colorspace.MC)}).(*etensor.Float32)
 	rimg.SetMetaData("grid-fill", "1")
 	gimg.SetMetaData("grid-fill", "1")
 	vi.OutTsrs["Red"] = rimg
 	vi.OutTsrs["Green"] = gimg
 
-	bimg := vi.ImgLMS.SubSpace([]int{int(colorspace.SC)}).(*etensor.Float32)
-	yimg := vi.ImgLMS.SubSpace([]int{int(colorspace.LMC)}).(*etensor.Float32)
+	bimg := vi.Img.LMS.SubSpace([]int{int(colorspace.SC)}).(*etensor.Float32)
+	yimg := vi.Img.LMS.SubSpace([]int{int(colorspace.LMC)}).(*etensor.Float32)
 	bimg.SetMetaData("grid-fill", "1")
 	yimg.SetMetaData("grid-fill", "1")
 	vi.OutTsrs["Blue"] = bimg

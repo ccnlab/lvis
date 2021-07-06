@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/anthonynsimon/bild/transform"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/evec"
@@ -46,6 +45,7 @@ type ImagesEnv struct {
 	TransSigma float32      `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
 	ScaleRange minmax.F32   `desc:"def 0.5 - 1.1 range of scale"`
 	RotateMax  float32      `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
+	Img        V1Img        `desc:"image that we operate upon -- one image shared among all filters"`
 	V1l16      Vis          `desc:"v1 16deg low resolution filtering of image -- V1AllTsr has result"`
 	V1m16      Vis          `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
 	V1h16      Vis          `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
@@ -97,16 +97,17 @@ func (ev *ImagesEnv) Defaults() {
 	ev.RndPctOn = 0.2
 	ev.RndMinDiff = 0.5
 	ev.NOutPer = 5
-	ev.V1l16.Defaults(0, 24, 8)
-	ev.V1m16.Defaults(0, 12, 4)
-	ev.V1h16.Defaults(0, 6, 2)
-	ev.V1l8.Defaults(32, 12, 4)
-	ev.V1m8.Defaults(32, 6, 2)
+	ev.Img.Defaults()
+	ev.V1l16.Defaults(0, 24, 8, &ev.Img)
+	ev.V1m16.Defaults(0, 12, 4, &ev.Img)
+	ev.V1h16.Defaults(0, 6, 2, &ev.Img)
+	ev.V1l8.Defaults(32, 12, 4, &ev.Img)
+	ev.V1m8.Defaults(32, 6, 2, &ev.Img)
 
-	ev.V1Cl16.Defaults(0, 16, 16)
-	ev.V1Cm16.Defaults(0, 8, 8)
-	ev.V1Cl8.Defaults(32, 8, 8)
-	ev.V1Cm8.Defaults(32, 4, 4)
+	ev.V1Cl16.Defaults(0, 16, 16, &ev.Img)
+	ev.V1Cm16.Defaults(0, 8, 8, &ev.Img)
+	ev.V1Cl8.Defaults(32, 8, 8, &ev.Img)
+	ev.V1Cm8.Defaults(32, 4, 4, &ev.Img)
 }
 
 // ImageList returns the list of images -- train or test
@@ -376,31 +377,18 @@ func (ev *ImagesEnv) FilterImage() error {
 		return err
 	}
 	ev.TransformImage()
-	tsz := ev.V1l16.ImgSize
-	isz := ev.Image.Bounds().Size()
-	if isz != tsz {
-		ev.Image = transform.Resize(ev.Image, tsz.X, tsz.Y, transform.Linear)
-	}
-	ev.V1l16.SetImage(ev.Image)
+	ev.Img.SetImage(ev.Image, ev.V1l16.V1sGeom.FiltRt.X)
 	ev.V1l16.Filter()
-	ev.V1m16.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
 	ev.V1m16.Filter()
-	ev.V1l8.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
 	ev.V1l8.Filter()
-	ev.V1m8.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
 	ev.V1m8.Filter()
 	if ev.High16 {
-		ev.V1h16.SetImageTsr(ev.Image, ev.V1l16.ImgTsr)
 		ev.V1h16.Filter()
 	}
 	if ev.ColorDoG {
-		ev.V1Cl16.SetImage(ev.Image)
 		ev.V1Cl16.Filter()
-		ev.V1Cm16.SetImageTsr(ev.Image, ev.V1Cl16.ImgTsr, ev.V1Cl16.ImgLMS)
 		ev.V1Cm16.Filter()
-		ev.V1Cl8.SetImageTsr(ev.Image, ev.V1Cl16.ImgTsr, ev.V1Cl16.ImgLMS)
 		ev.V1Cl8.Filter()
-		ev.V1Cm8.SetImageTsr(ev.Image, ev.V1Cl16.ImgTsr, ev.V1Cl16.ImgLMS)
 		ev.V1Cm8.Filter()
 	}
 	return nil

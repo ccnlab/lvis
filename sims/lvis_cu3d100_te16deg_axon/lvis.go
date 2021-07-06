@@ -104,7 +104,7 @@ var ParamSets = params.Sets{
 			{Sel: ".V1m", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
+					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor
 					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
 					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
 					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
@@ -114,7 +114,7 @@ var ParamSets = params.Sets{
 			{Sel: ".V1l", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",
+					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor
 					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1l8: 0.06, V1l16: 0.05
 					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
 					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
@@ -296,7 +296,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Mean":  "0.4", // .4 here is key!
 					"Prjn.SWt.Limit.Min":  "0.1", // .1-.7
 					"Prjn.SWt.Limit.Max":  "0.7", //
-					"Prjn.PrjnScale.Init": "2.0", // 1.4 for no color, 2.0 for color -- extra boost to get more v2 early on, compensate for lower mean
+					"Prjn.PrjnScale.Init": "1.4", // 1.4 > 2.0 for color -- extra boost to get more v2 early on
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -576,7 +576,7 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.Params = ParamSets
-	ss.TestInterval = 0 // maybe causing issues?
+	ss.TestInterval = 20 // maybe causing issues?
 
 	ss.Time.Defaults()
 	ss.MinusCycles = 180
@@ -744,10 +744,17 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxTrls = 512 / mpi.WorldSize()
 	}
 
-	// path := "images/CU3D_100_plus_renders"
-	path := "images/CU3D_100_renders_lr20_u30_nb"
+	plus := false // plus images are a bit worse overall -- stranger objects etc.
 
-	ss.TrainEnv.Nm = "cu3d100old" // "cu3d100plus"
+	var path string
+	if plus {
+		path = "images/CU3D_100_plus_renders"
+		ss.TrainEnv.Nm = "cu3d100plus"
+	} else {
+		path = "images/CU3D_100_renders_lr20_u30_nb"
+		ss.TrainEnv.Nm = "cu3d100old"
+	}
+
 	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.High16 = false // not useful -- may need more tuning?
@@ -765,7 +772,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
 
-	ss.TestEnv.Nm = "cu3d100old" // "cu3d100plus"
+	ss.TestEnv.Nm = ss.TrainEnv.Nm
 	ss.TestEnv.Dsc = "testing params and state"
 	ss.TestEnv.Defaults()
 	ss.TestEnv.High16 = ss.TrainEnv.High16
@@ -822,10 +829,14 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	cdog := ss.TrainEnv.ColorDoG
 
 	net.InitName(net, "Lvis")
-	v1m16 := net.AddLayer4D("V1m16", 16, 16, 5, 4, emer.Input)
-	v1l16 := net.AddLayer4D("V1l16", 8, 8, 5, 4, emer.Input)
-	v1m8 := net.AddLayer4D("V1m8", 16, 16, 5, 4, emer.Input)
-	v1l8 := net.AddLayer4D("V1l8", 8, 8, 5, 4, emer.Input)
+	v1nrows := 5
+	if ss.TrainEnv.V1m16.SepColor {
+		v1nrows += 4
+	}
+	v1m16 := net.AddLayer4D("V1m16", 16, 16, v1nrows, 4, emer.Input)
+	v1l16 := net.AddLayer4D("V1l16", 8, 8, v1nrows, 4, emer.Input)
+	v1m8 := net.AddLayer4D("V1m8", 16, 16, v1nrows, 4, emer.Input)
+	v1l8 := net.AddLayer4D("V1l8", 8, 8, v1nrows, 4, emer.Input)
 	v1m16.SetClass("V1m")
 	v1m8.SetClass("V1m")
 	v1l16.SetClass("V1l")
@@ -843,10 +854,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v1cl8.SetClass("V1Cl")
 	}
 
-	v2m16 := net.AddLayer4D("V2m16", 16, 16, 7, 7, emer.Hidden)
-	v2l16 := net.AddLayer4D("V2l16", 8, 8, 7, 7, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", 16, 16, 7, 7, emer.Hidden)
-	v2l8 := net.AddLayer4D("V2l8", 8, 8, 7, 7, emer.Hidden)
+	v2m16 := net.AddLayer4D("V2m16", 16, 16, 6, 6, emer.Hidden)
+	v2l16 := net.AddLayer4D("V2l16", 8, 8, 6, 6, emer.Hidden)
+	v2m8 := net.AddLayer4D("V2m8", 16, 16, 6, 6, emer.Hidden)
+	v2l8 := net.AddLayer4D("V2l8", 8, 8, 6, 6, emer.Hidden)
 	v2m16.SetClass("V2m")
 	v2m8.SetClass("V2m")
 	v2l16.SetClass("V2l")
@@ -1247,9 +1258,6 @@ func (ss *Sim) ThetaCyc(train bool) {
 			ss.UpdateViewTime(train, viewUpdt)
 		}
 	}
-	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
-		ss.UpdateView(train)
-	}
 
 	ss.TrialStats(train)
 
@@ -1257,7 +1265,8 @@ func (ss *Sim) ThetaCyc(train bool) {
 		ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
 		ss.Net.DWt()
 	}
-	if ss.ViewOn && viewUpdt == axon.AlphaCycle {
+
+	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
 		ss.UpdateView(train)
 	}
 
@@ -1298,9 +1307,6 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
-	}
-	if ss.CurImgGrid != nil {
-		ss.CurImgGrid.SetTensor(ss.TrainEnv.V1m16.ImgTsr)
 	}
 }
 
@@ -1401,12 +1407,16 @@ func (ss *Sim) InitStats() {
 	// ss.Confusion.Prob.SetMetaData("grid-fill", "1") // not good for tracing rows /cols
 }
 
-// TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
-// accum is true.  Note that we're accumulating stats here on the Sim side so the
-// core algorithm side remains as simple as possible, and doesn't need to worry about
-// different time-scales over which stats could be accumulated etc.
-// You can also aggregate directly from log data, as is done for testing stats
-func (ss *Sim) TrialStats(accum bool) {
+// TrialStats computes the trial-level statistics, using the train or test env.
+func (ss *Sim) TrialStats(train bool) {
+
+	var env *ImagesEnv
+	if train {
+		env = &ss.TrainEnv
+	} else {
+		env = &ss.TestEnv
+	}
+
 	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
 	ss.TrlCosDiff = float64(out.CosDiff.Cos)
 	ss.TrlUnitErr = out.PctUnitErr()
@@ -1414,16 +1424,16 @@ func (ss *Sim) TrialStats(accum bool) {
 	ovt := ss.ValsTsr("Output")
 	out.UnitValsTensor(ovt, "ActM")
 
-	ncats := len(ss.TrainEnv.Images.Cats)
+	ncats := len(env.Images.Cats)
 
-	ss.TrlRespIdx, ss.TrlErr, ss.TrlErr2 = ss.TrainEnv.OutErr(ovt)
+	ss.TrlRespIdx, ss.TrlErr, ss.TrlErr2 = env.OutErr(ovt)
 	if ss.TrlRespIdx >= 0 && ss.TrlRespIdx < ncats {
-		ss.TrlResp = ss.TrainEnv.Images.Cats[ss.TrlRespIdx]
+		ss.TrlResp = env.Images.Cats[ss.TrlRespIdx]
 	}
-	ss.TrlCatIdx = ss.TrainEnv.CurCatIdx
-	ss.TrlCat = ss.TrainEnv.CurCat
+	ss.TrlCatIdx = env.CurCatIdx
+	ss.TrlCat = env.CurCat
 
-	epc := ss.TrainEnv.Epoch.Cur
+	epc := env.Epoch.Cur
 	if epc > ss.ConfusionEpc {
 		ss.Confusion.Incr(ss.TrlCatIdx, ss.TrlRespIdx)
 	}
@@ -1431,14 +1441,16 @@ func (ss *Sim) TrialStats(accum bool) {
 	ss.TrlTrgAct = float64(out.Pools[0].ActP.Avg / 0.01)
 
 	ss.TrlDecRespIdx = ss.Decoder.Decode("ActM")
-	ss.Decoder.Train(ss.TrainEnv.CurCatIdx)
-	if ss.TrlDecRespIdx == ss.TrainEnv.CurCatIdx {
+	if train {
+		ss.Decoder.Train(env.CurCatIdx)
+	}
+	if ss.TrlDecRespIdx == env.CurCatIdx {
 		ss.TrlDecErr = 0
 	} else {
 		ss.TrlDecErr = 1
 	}
 	ss.TrlDecErr2 = ss.TrlDecErr
-	if ss.Decoder.Sorted[1] == ss.TrainEnv.CurCatIdx {
+	if ss.Decoder.Sorted[1] == env.CurCatIdx {
 		ss.TrlDecErr2 = 0
 	}
 }
@@ -1665,7 +1677,7 @@ func (ss *Sim) UpdtActRFs() {
 	ovt := ss.ValsTsr("Output")
 	oly.UnitValsTensor(ovt, "ActM")
 	if _, ok := ss.ValsTsrs["Image"]; !ok {
-		ss.ValsTsrs["Image"] = ss.TestEnv.V1m16.ImgTsr
+		ss.ValsTsrs["Image"] = &ss.TestEnv.Img.Tsr
 	}
 	naf := len(ss.ActRFNms)
 	if len(ss.ActRFs.RFs) != naf {
@@ -2504,7 +2516,12 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		dt.SetCellFloat("TstUnitErr", row, tst.CellFloat("UnitErr", trow))
 		dt.SetCellFloat("TstPctErr", row, tst.CellFloat("PctErr", trow))
 		dt.SetCellFloat("TstPctCor", row, tst.CellFloat("PctCor", trow))
+		dt.SetCellFloat("TstPctErr2", row, tst.CellFloat("PctErr2", trow))
 		dt.SetCellFloat("TstCosDiff", row, tst.CellFloat("CosDiff", trow))
+		dt.SetCellFloat("TstDecErr", row, tst.CellFloat("PctDecErr", trow))
+		dt.SetCellFloat("TstDecErr2", row, tst.CellFloat("PctDecErr2", trow))
+		dt.SetCellFloat("TstFirstErr", row, tst.CellFloat("PctFirstErr", trow))
+		dt.SetCellFloat("TstFirstErr2", row, tst.CellFloat("PctFirstErr2", trow))
 	}
 
 	for _, lnm := range ss.HidLays {
@@ -2585,10 +2602,16 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
 		{"PctFirstErr", etensor.FLOAT64, nil, nil},
 		{"PctFirstErr2", etensor.FLOAT64, nil, nil},
+
 		{"TstUnitErr", etensor.FLOAT64, nil, nil},
 		{"TstPctErr", etensor.FLOAT64, nil, nil},
 		{"TstPctCor", etensor.FLOAT64, nil, nil},
 		{"TstCosDiff", etensor.FLOAT64, nil, nil},
+		{"TstPctErr2", etensor.FLOAT64, nil, nil},
+		{"TstDecErr", etensor.FLOAT64, nil, nil},
+		{"TstDecErr2", etensor.FLOAT64, nil, nil},
+		{"TstFirstErr", etensor.FLOAT64, nil, nil},
+		{"TstFirstErr2", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.HidLays {
 		sch = append(sch, etable.Column{lnm + "_Dead", etensor.FLOAT64, nil, nil})
@@ -2638,10 +2661,16 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctFirstErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
 	plt.SetColParams("PctFirstErr2", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+
 	plt.SetColParams("TstUnitErr", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TstPctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
 	plt.SetColParams("TstPctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	plt.SetColParams("TstCosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TstPctErr2", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TstDecErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TstDecErr2", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TstFirstErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TstFirstErr2", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
 	for _, lnm := range ss.HidLays {
 		plt.SetColParams(lnm+"_Dead", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
@@ -2694,14 +2723,22 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("Trial", row, float64(trl))
 	dt.SetCellString("Cat", row, ss.TestEnv.CurCat)
 	dt.SetCellString("TrialName", row, ss.TestEnv.String())
+
+	dt.SetCellString("Resp", row, ss.TrlResp)
 	dt.SetCellFloat("Err", row, ss.TrlErr)
+	dt.SetCellFloat("Err2", row, ss.TrlErr2)
+	dt.SetCellFloat("TrgAct", row, ss.TrlTrgAct)
 	dt.SetCellFloat("UnitErr", row, ss.TrlUnitErr)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
+	dt.SetCellFloat("DecResp", row, float64(ss.TrlDecRespIdx))
+	dt.SetCellFloat("DecErr", row, ss.TrlDecErr)
+	dt.SetCellFloat("DecErr2", row, ss.TrlDecErr2)
 
-	for _, lnm := range ss.HidLays {
-		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
-		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
-	}
+	cyclog := ss.TrnCycLog
+	ss.FirstOut(cyclog)
+	dt.SetCellFloat("FirstErr", row, ss.TrlFirstErr)
+	dt.SetCellFloat("FirstErr2", row, ss.TrlFirstErr2)
+
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 
@@ -2729,12 +2766,17 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"Trial", etensor.INT64, nil, nil},
 		{"Cat", etensor.STRING, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
+		{"Resp", etensor.STRING, nil, nil},
 		{"Err", etensor.FLOAT64, nil, nil},
+		{"Err2", etensor.FLOAT64, nil, nil},
+		{"TrgAct", etensor.FLOAT64, nil, nil},
 		{"UnitErr", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-	}
-	for _, lnm := range ss.HidLays {
-		sch = append(sch, etable.Column{lnm + " ActM.Avg", etensor.FLOAT64, nil, nil})
+		{"DecResp", etensor.INT64, nil, nil},
+		{"DecErr", etensor.FLOAT64, nil, nil},
+		{"DecErr2", etensor.FLOAT64, nil, nil},
+		{"FirstErr", etensor.FLOAT64, nil, nil},
+		{"FirstErr2", etensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, nt)
 }
@@ -2749,13 +2791,16 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("Trial", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Cat", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 
-	for _, lnm := range ss.HidLays {
-		plt.SetColParams(lnm+" ActM.Avg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
-	}
+	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("Err2", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("TrgAct", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("UnitErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("DecErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("DecErr2", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("FirstErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	plt.SetColParams("FirstErr2", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	return plt
 }
 
@@ -2780,6 +2825,11 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	dt.SetCellFloat("PctErr", row, agg.Mean(tix, "Err")[0])
 	dt.SetCellFloat("PctCor", row, 1-agg.Mean(tix, "Err")[0])
 	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
+	dt.SetCellFloat("PctErr2", row, agg.Mean(tix, "Err2")[0])
+	dt.SetCellFloat("PctDecErr", row, agg.Mean(tix, "DecErr")[0])
+	dt.SetCellFloat("PctDecErr2", row, agg.Mean(tix, "DecErr2")[0])
+	dt.SetCellFloat("PctFirstErr", row, agg.Mean(tix, "FirstErr")[0])
+	dt.SetCellFloat("PctFirstErr2", row, agg.Mean(tix, "FirstErr2")[0])
 
 	spl := split.GroupBy(tix, []string{"Cat"})
 	_, err := split.AggTry(spl, "Err", agg.AggMean)
@@ -2826,6 +2876,13 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
+		{"PctErr2", etensor.FLOAT64, nil, nil},
+		{"PctDecErr", etensor.FLOAT64, nil, nil},
+		{"PctDecErr2", etensor.FLOAT64, nil, nil},
+		{"ErrTrgAct", etensor.FLOAT64, nil, nil},
+		{"CorTrgAct", etensor.FLOAT64, nil, nil},
+		{"PctFirstErr", etensor.FLOAT64, nil, nil},
+		{"PctFirstErr2", etensor.FLOAT64, nil, nil},
 	}
 	for _, cat := range ss.TestEnv.Images.Cats {
 		sch = append(sch, etable.Column{cat, etensor.FLOAT64, nil, nil})
@@ -2987,6 +3044,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tg := tv.AddNewTab(etview.KiT_TensorGrid, "Image").(*etview.TensorGrid)
 	tg.SetStretchMax()
+	tg.SetTensor(&ss.TrainEnv.Img.Tsr)
 	ss.CurImgGrid = tg
 
 	stb := tv.AddNewTab(gi.KiT_Layout, "Spike Rasters").(*gi.Layout)
