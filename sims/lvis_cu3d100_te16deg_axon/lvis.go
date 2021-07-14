@@ -305,6 +305,9 @@ var ParamSets = params.Sets{
 			{Sel: ".V2V4", Desc: "extra boost",
 				Params: params.Params{
 					"Prjn.PrjnScale.Init": "1.0", // 1.2 not better
+					"Prjn.SWt.Init.Mean":  "0.4", // .4 a tiny bit better overall
+					"Prjn.SWt.Limit.Min":  "0.1", // .1-.7 def
+					"Prjn.SWt.Limit.Max":  "0.7", //
 				}},
 			{Sel: ".V2V4sm", Desc: "extra boost",
 				Params: params.Params{
@@ -331,12 +334,12 @@ var ParamSets = params.Sets{
 			// back projections
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1 (.1 blows up!) (still)
-					"Prjn.SWt.Init.Mean": "0.4",  // .4 here is key!
+					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1 v70
+					"Prjn.SWt.Init.Mean": "0.4",  // .4 matches V2V4 -- not that big a diff on its own
 					"Prjn.SWt.Limit.Min": "0.1",  // .1-.7 def
 					"Prjn.SWt.Limit.Max": "0.7",  //
 				}},
-			{Sel: ".TEOV2", Desc: "weaker",
+			{Sel: ".TEOV2", Desc: "weaker -- not used",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1
 				}},
