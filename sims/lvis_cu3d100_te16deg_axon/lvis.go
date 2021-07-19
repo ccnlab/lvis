@@ -194,6 +194,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
+					"Layer.Act.GTarg.GeMax":      "1.2",  // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",    // 1 >= 0 in lba
 					"Layer.Inhib.ActAvg.Init":    "0.04", // .03 init
@@ -204,6 +205,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
+					"Layer.Act.GTarg.GeMax":      "1.2",   // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
@@ -212,6 +214,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
+					"Layer.Act.GTarg.GeMax":      "1.2",   // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
@@ -236,6 +239,15 @@ var ParamSets = params.Sets{
 					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
 					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
+				}},
+			{Sel: "#Claustrum", Desc: "testing -- not working",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi":       "0.8",
+					"Layer.Inhib.Pool.On":        "false", // needs pool-level
+					"Layer.Inhib.Layer.On":       "true",
+					"Layer.Inhib.ActAvg.Init":    ".06",
+					"Layer.Inhib.ActAvg.Targ":    ".06",
+					"Layer.Inhib.ActAvg.AdaptGi": "false",
 				}},
 			///////////////////////////////
 			// projections
@@ -369,11 +381,19 @@ var ParamSets = params.Sets{
 				}},
 
 			// shortcuts -- .5 > .2 (v32 still) -- all tested together
+			{Sel: "#V1l16ToClaustrum", Desc: "random fixed -- not useful",
+				Params: params.Params{
+					"Prjn.Learn.Learn":   "false",
+					"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
+					"Prjn.SWt.Adapt.On":  "false", // seems better
+				}},
 			{Sel: ".V1SC", Desc: "v1 shortcut",
 				Params: params.Params{
 					"Prjn.Learn.Lrate.Base": "0.001", //
-					"Prjn.PrjnScale.Rel":    "0.5",   // .5 > .8 > 1 > .4 > .3 etc
-					"Prjn.SWt.Adapt.On":     "false", // seems better
+					// "Prjn.Learn.Learn":      "false",
+					"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
+					"Prjn.SWt.Adapt.On":  "false", // seems better
+					// "Prjn.SWt.Init.Var":  "0.05",
 				}},
 		},
 	}},
@@ -585,7 +605,7 @@ func (ss *Sim) New() {
 	ss.MinusCycles = 180
 	ss.PlusCycles = 50
 	ss.RepsInterval = 10
-	ss.SubPools = true
+	ss.SubPools = false
 	ss.RndOutPats = false // change here
 	if ss.RndOutPats {
 		ss.ParamSet = "RndOutPats"
@@ -845,6 +865,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v1l16.SetClass("V1l")
 	v1l8.SetClass("V1l")
 
+	// not useful so far..
+	// clst := net.AddLayer2D("Claustrum", 5, 5, emer.Hidden)
+
 	var v1cm16, v1cl16, v1cm8, v1cl8 emer.Layer
 	if cdog {
 		v1cm16 = net.AddLayer4D("V1Cm16", 16, 16, 2, 2, emer.Input)
@@ -1008,15 +1031,18 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	// shortcuts:
 
+	// clst not useful
+	// net.ConnectLayers(v1l16, clst, full, emer.Forward)
+
 	// V1 shortcuts best for syncing all layers -- like the pulvinar basically
 	net.ConnectLayers(v1l16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, v4f8, rndcut, emer.Forward).SetClass("V1SC")
 	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
 	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, teo8, rndcut, emer.Forward).SetClass("V1SC")
 	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, te, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
 
 	if hi16 {
 		net.ConnectLayers(v1l16, v3h16, rndcut, emer.Forward).SetClass("V1SC")
@@ -1028,6 +1054,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	v1l16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m16.Name(), XAlign: relpos.Left, Space: 4})
 	v1l8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m8.Name(), XAlign: relpos.Left, Space: 4})
+	// clst.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1l8.Name(), XAlign: relpos.Left, Space: 4, Scale: 2})
 
 	if cdog {
 		v1cm16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m8.Name(), YAlign: relpos.Front, Space: 4})
@@ -1311,6 +1338,9 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 			ly.ApplyExt(pats)
 		}
 	}
+
+	// ly := ss.Net.LayerByName("Claustrum").(axon.AxonLayer).AsAxon()
+	// ly.ApplyExt1D32([]float32{1})
 }
 
 // TrainTrial runs one trial of training using TrainEnv
@@ -2304,7 +2334,7 @@ func (ss *Sim) LogTrnRepTrl(dt *etable.Table) {
 	// }
 
 	// note: essential to use Go version of update when called from another goroutine
-	ss.TrnTrlPlot.GoUpdate()
+	// ss.TrnTrlPlot.GoUpdate()
 }
 
 func (ss *Sim) ConfigTrnTrlRepLog(dt *etable.Table) {
