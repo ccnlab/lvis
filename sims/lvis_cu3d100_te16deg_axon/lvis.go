@@ -183,18 +183,9 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
 					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
 				}},
-			{Sel: ".V3h", Desc: "pool inhib, sparse activity",
-				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
-					"Layer.Inhib.ActAvg.Init":    "0.02", // .02 > .04
-					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true",
-					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
-				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Act.GTarg.GeMax":      "1.2",  // these need to get stronger
+					"Layer.Act.GTarg.GeMax":      "1.0",  // 1.0 > 1.2
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",    // 1 >= 0 in lba
 					"Layer.Inhib.ActAvg.Init":    "0.04", // .03 init
@@ -205,21 +196,23 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Act.GTarg.GeMax":      "1.2",   // these need to get stronger
+					"Layer.Act.GTarg.GeMax":      "1.0",   // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
 					"Layer.Inhib.ActAvg.Targ":    "0.06",  // .06 > .05 = .04
-					"Layer.Inhib.ActAvg.AdaptGi": "true",  // this is probably essential
+					"Layer.Inhib.ActAvg.AdaptGi": "false", // was true
+					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Act.GTarg.GeMax":      "1.2",   // these need to get stronger
+					"Layer.Act.GTarg.GeMax":      "1.0",   // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
 					"Layer.Inhib.ActAvg.Targ":    "0.06",  // .06 > .05 = .04 (TEO)
-					"Layer.Inhib.ActAvg.AdaptGi": "true",  // adapt > not -- reduces hoging
+					"Layer.Inhib.ActAvg.AdaptGi": "false", // was true
+					"Layer.Inhib.Pool.Gi":        "1.2",   // was 1.1
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
@@ -257,6 +250,7 @@ var ParamSets = params.Sets{
 					"Prjn.PrjnScale.LoTol":      "0.8", // good now...
 					"Prjn.PrjnScale.Init":       "1",
 					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
+					"Prjn.PrjnScale.Adapt":      "false", // no adapt better?
 					"Prjn.SWt.Adapt.On":         "true",  // true > false, esp in cosdiff
 					"Prjn.SWt.Adapt.Lrate":      "0.001", // .001 > .01 > .1 after 250epc in NStrong
 					"Prjn.SWt.Adapt.SigGain":    "6",
@@ -291,6 +285,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
 					"Prjn.PrjnScale.LoTol":    "0.5",   // .5 > .8 -- needs extra kick at start!
+					"Prjn.PrjnScale.Adapt":    "true",  // this is essential here
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
@@ -316,22 +311,30 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V2V4", Desc: "extra boost",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "1.0", // 1.2 not better
+					"Prjn.PrjnScale.Init": "1.0", // 1.0 prev, 1.2 not better
 					"Prjn.SWt.Init.Mean":  "0.4", // .4 a tiny bit better overall
 					"Prjn.SWt.Limit.Min":  "0.1", // .1-.7 def
 					"Prjn.SWt.Limit.Max":  "0.7", //
 				}},
 			{Sel: ".V2V4sm", Desc: "extra boost",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "1.0", // 1.2 not better
+					"Prjn.PrjnScale.Init": "1.0", // 1.0 prev, 1.2 not better
+				}},
+			{Sel: "#V2m16ToV4f16", Desc: "weights into V416 getting too high",
+				Params: params.Params{
+					"Prjn.PrjnScale.Init": "0.8",
+				}},
+			{Sel: "#V2l16ToV4f16", Desc: "weights into V416 getting too high",
+				Params: params.Params{
+					"Prjn.PrjnScale.Init": "0.8",
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
+					// "Prjn.PrjnScale.Init": "1.2", // trying bigger -- was low
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
-					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
+					// "Prjn.PrjnScale.Init": "1.2", // trying bigger -- was low
 					"Prjn.PrjnScale.Rel": "0.5",
 				}},
 			{Sel: ".V4Out", Desc: "NOT weaker",
@@ -605,7 +608,7 @@ func (ss *Sim) New() {
 	ss.MinusCycles = 180
 	ss.PlusCycles = 50
 	ss.RepsInterval = 10
-	ss.SubPools = false
+	ss.SubPools = true    // true
 	ss.RndOutPats = false // change here
 	if ss.RndOutPats {
 		ss.ParamSet = "RndOutPats"
@@ -847,15 +850,27 @@ func (ss *Sim) ConfigEnv() {
 }
 
 func (ss *Sim) ConfigNet(net *axon.Network) {
-
-	hi16 := ss.TrainEnv.High16
-	cdog := ss.TrainEnv.ColorDoG
-
 	net.InitName(net, "Lvis")
 	v1nrows := 5
 	if ss.TrainEnv.V1m16.SepColor {
 		v1nrows += 4
 	}
+	hi16 := ss.TrainEnv.High16
+	cdog := ss.TrainEnv.ColorDoG
+
+	v2mNp := 8
+	v2lNp := 4
+	v2Nu := 8
+	v4Np := 4
+	v4Nu := 10
+	if ss.SubPools {
+		v2mNp *= 2
+		v2lNp *= 2
+		v2Nu = 6
+		v4Np = 8
+		v4Nu = 7
+	}
+
 	v1m16 := net.AddLayer4D("V1m16", 16, 16, v1nrows, 4, emer.Input)
 	v1l16 := net.AddLayer4D("V1l16", 8, 8, v1nrows, 4, emer.Input)
 	v1m8 := net.AddLayer4D("V1m8", 16, 16, v1nrows, 4, emer.Input)
@@ -880,10 +895,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v1cl8.SetClass("V1Cl")
 	}
 
-	v2m16 := net.AddLayer4D("V2m16", 16, 16, 6, 6, emer.Hidden)
-	v2l16 := net.AddLayer4D("V2l16", 8, 8, 6, 6, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", 16, 16, 6, 6, emer.Hidden)
-	v2l8 := net.AddLayer4D("V2l8", 8, 8, 6, 6, emer.Hidden)
+	v2m16 := net.AddLayer4D("V2m16", v2mNp, v2mNp, v2Nu, v2Nu, emer.Hidden)
+	v2l16 := net.AddLayer4D("V2l16", v2lNp, v2lNp, v2Nu, v2Nu, emer.Hidden)
+	v2m8 := net.AddLayer4D("V2m8", v2mNp, v2mNp, v2Nu, v2Nu, emer.Hidden)
+	v2l8 := net.AddLayer4D("V2l8", v2lNp, v2lNp, v2Nu, v2Nu, emer.Hidden)
 	v2m16.SetClass("V2m")
 	v2m8.SetClass("V2m")
 	v2l16.SetClass("V2l")
@@ -892,15 +907,15 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	var v1h16, v2h16, v3h16 emer.Layer
 	if hi16 {
 		v1h16 = net.AddLayer4D("V1h16", 32, 32, 5, 4, emer.Input)
-		v2h16 = net.AddLayer4D("V2h16", 32, 32, 6, 6, emer.Hidden)
-		v3h16 = net.AddLayer4D("V3h16", 16, 16, 6, 6, emer.Hidden)
+		v2h16 = net.AddLayer4D("V2h16", 32, 32, v2Nu, v2Nu, emer.Hidden)
+		v3h16 = net.AddLayer4D("V3h16", 16, 16, v2Nu, v2Nu, emer.Hidden)
 		v1h16.SetClass("V1h")
 		v2h16.SetClass("V2h")
 		v3h16.SetClass("V3h")
 	}
 
-	v4f16 := net.AddLayer4D("V4f16", 8, 8, 7, 7, emer.Hidden)
-	v4f8 := net.AddLayer4D("V4f8", 8, 8, 7, 7, emer.Hidden)
+	v4f16 := net.AddLayer4D("V4f16", v4Np, v4Np, v4Nu, v4Nu, emer.Hidden)
+	v4f8 := net.AddLayer4D("V4f8", v4Np, v4Np, v4Nu, v4Nu, emer.Hidden)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
@@ -927,70 +942,91 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	pool1to1 := prjn.NewPoolOneToOne()
 	_ = pool1to1
 
-	net.ConnectLayers(v1m16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-	net.ConnectLayers(v1l16, v2m16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+	var p4x4s2, p2x2s1, p4x4s2send, p2x2s1send, p4x4s2recip, p2x2s1recip, v4toteo, teotov4 prjn.Pattern
+	p4x4s2 = ss.Prjn4x4Skp2
+	p2x2s1 = ss.Prjn2x2Skp1
+	p4x4s2send = ss.Prjn4x4Skp2
+	p2x2s1send = ss.Prjn2x2Skp1
+	p4x4s2recip = ss.Prjn4x4Skp2Recip
+	p2x2s1recip = ss.Prjn2x2Skp1Recip
+	v4toteo = full
+	teotov4 = full
 
-	net.ConnectLayers(v1l16, v2l16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	if ss.SubPools {
+		p4x4s2 = ss.Prjn4x4Skp2Sub2
+		p2x2s1 = ss.Prjn2x2Skp1Sub2
+		p4x4s2send = ss.Prjn4x4Skp2Sub2Send
+		p2x2s1send = ss.Prjn2x2Skp1Sub2Send
+		p4x4s2recip = ss.Prjn4x4Skp2Sub2SendRecip
+		p2x2s1recip = ss.Prjn2x2Skp1Sub2SendRecip
+		v4toteo = ss.Prjn4x4Skp0Sub2
+		teotov4 = ss.Prjn4x4Skp0Sub2Recip
+	}
 
-	net.ConnectLayers(v1m8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-	net.ConnectLayers(v1l8, v2m8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+	net.ConnectLayers(v1m16, v2m16, p4x4s2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l16, v2m16, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-	net.ConnectLayers(v1l8, v2l8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l16, v2l16, p4x4s2, emer.Forward).SetClass("V1V2")
+
+	net.ConnectLayers(v1m8, v2m8, p4x4s2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l8, v2m8, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
+
+	net.ConnectLayers(v1l8, v2l8, p4x4s2, emer.Forward).SetClass("V1V2")
 
 	if cdog {
-		net.ConnectLayers(v1cm16, v2m16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-		net.ConnectLayers(v1cl16, v2m16, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+		net.ConnectLayers(v1cm16, v2m16, p4x4s2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl16, v2m16, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-		net.ConnectLayers(v1cl16, v2l16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl16, v2l16, p4x4s2, emer.Forward).SetClass("V1V2")
 
-		net.ConnectLayers(v1cm8, v2m8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-		net.ConnectLayers(v1cl8, v2m8, ss.Prjn2x2Skp1Sub2, emer.Forward).SetClass("V1V2fmSm V1V2")
+		net.ConnectLayers(v1cm8, v2m8, p4x4s2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl8, v2m8, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
 
-		net.ConnectLayers(v1cl8, v2l8, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl8, v2l8, p4x4s2, emer.Forward).SetClass("V1V2")
 	}
 
-	v2v4, v4v2 := net.BidirConnectLayers(v2m16, v4f16, ss.Prjn4x4Skp2Sub2Send)
+	v2v4, v4v2 := net.BidirConnectLayers(v2m16, v4f16, p4x4s2send)
 	v2v4.SetClass("V2V4")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
+	v4v2.SetClass("V4V2").SetPattern(p4x4s2recip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2l16, v4f16, ss.Prjn2x2Skp1Sub2Send)
+	v2v4, v4v2 = net.BidirConnectLayers(v2l16, v4f16, p2x2s1send)
 	v2v4.SetClass("V2V4sm")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Sub2SendRecip)
+	v4v2.SetClass("V4V2").SetPattern(p2x2s1recip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, ss.Prjn4x4Skp2Sub2Send)
+	v2v4, v4v2 = net.BidirConnectLayers(v2m8, v4f8, p4x4s2send)
 	v2v4.SetClass("V2V4")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
+	v4v2.SetClass("V4V2").SetPattern(p4x4s2recip)
 
-	v2v4, v4v2 = net.BidirConnectLayers(v2l8, v4f8, ss.Prjn2x2Skp1Sub2Send)
+	v2v4, v4v2 = net.BidirConnectLayers(v2l8, v4f8, p2x2s1send)
 	v2v4.SetClass("V2V4sm")
-	v4v2.SetClass("V4V2").SetPattern(ss.Prjn2x2Skp1Sub2SendRecip)
+	v4v2.SetClass("V4V2").SetPattern(p2x2s1recip)
 
 	if hi16 {
-		net.ConnectLayers(v1h16, v2h16, ss.Prjn4x4Skp2Sub2, emer.Forward).SetClass("V1V2")
-		v2v3, v3v2 := net.BidirConnectLayers(v2h16, v3h16, ss.Prjn4x4Skp2Sub2Send)
+		net.ConnectLayers(v1h16, v2h16, p4x4s2, emer.Forward).SetClass("V1V2")
+		v2v3, v3v2 := net.BidirConnectLayers(v2h16, v3h16, p4x4s2send)
 		v2v3.SetClass("V2V3")
-		v3v2.SetClass("V3V2").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
-		v3v4, v4v3 := net.BidirConnectLayers(v3h16, v4f16, ss.Prjn4x4Skp2Sub2Send)
+		v3v2.SetClass("V3V2").SetPattern(p4x4s2recip)
+		v3v4, v4v3 := net.BidirConnectLayers(v3h16, v4f16, p4x4s2send)
 		v3v4.SetClass("V3V4")
-		v4v3.SetClass("V4V3").SetPattern(ss.Prjn4x4Skp2Sub2SendRecip)
+		v4v3.SetClass("V4V3").SetPattern(p4x4s2recip)
 	}
 
-	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, ss.Prjn4x4Skp0Sub2)
+	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, v4toteo)
 	v4teo.SetClass("V4TEO")
-	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Sub2Recip)
-	net.ConnectLayers(v4f8, teo16, ss.Prjn4x4Skp0Sub2, emer.Forward).SetClass("V4TEOoth")
+	teov4.SetClass("TEOV4").SetPattern(teotov4)
+	net.ConnectLayers(v4f8, teo16, v4toteo, emer.Forward).SetClass("V4TEOoth")
 
-	v4teo, teov4 = net.BidirConnectLayers(v4f8, teo8, ss.Prjn4x4Skp0Sub2)
+	v4teo, teov4 = net.BidirConnectLayers(v4f8, teo8, v4toteo)
 	v4teo.SetClass("V4TEO")
-	teov4.SetClass("TEOV4").SetPattern(ss.Prjn4x4Skp0Sub2Recip)
-	net.ConnectLayers(v4f16, teo8, ss.Prjn4x4Skp0Sub2, emer.Forward).SetClass("V4TEOoth")
+	teov4.SetClass("TEOV4").SetPattern(teotov4)
+	net.ConnectLayers(v4f16, teo8, v4toteo, emer.Forward).SetClass("V4TEOoth")
 
 	teote, teteo := net.BidirConnectLayers(teo16, te, full)
-	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
-	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
+	teote.SetClass("TEOTE")
+	teteo.SetClass("TETEO")
 	teote, teteo = net.BidirConnectLayers(teo8, te, full)
-	teote.SetClass("TEOTE") // .SetPattern(ss.Prjn4x4Skp0)
-	teteo.SetClass("TETEO") // .SetPattern(ss.Prjn4x4Skp0Recip)
+	teote.SetClass("TEOTE")
+	teteo.SetClass("TETEO")
 
 	// full connections to output are key
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
@@ -1013,42 +1049,50 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4out.SetClass("V4Out ToOut")
 	outv4.SetClass("OutV4")
 
+	var v2v4inhib prjn.Pattern
+	v2v4inhib = pool1to1
+	if ss.SubPools {
+		v2v4inhib = ss.Prjn2x2Skp2
+	}
+
 	// this extra inhibition drives decorrelation, produces significant learning benefits
-	net.LateralConnectLayerPrjn(v2m16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2l16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2m8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2l8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v4f16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v4f8, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2m16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2l16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2m8, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2l8, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v4f16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v4f8, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
 	if hi16 {
-		net.LateralConnectLayerPrjn(v2h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
-		net.LateralConnectLayerPrjn(v3h16, ss.Prjn2x2Skp2, &axon.HebbPrjn{}).SetType(emer.Inhib)
+		net.LateralConnectLayerPrjn(v2h16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+		net.LateralConnectLayerPrjn(v3h16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	}
 
-	// shortcuts:
+	///////////////////////
+	// 	Shortcuts:
 
 	// clst not useful
 	// net.ConnectLayers(v1l16, clst, full, emer.Forward)
 
 	// V1 shortcuts best for syncing all layers -- like the pulvinar basically
 	net.ConnectLayers(v1l16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, v4f8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
 	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
 	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, teo8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
 	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l8, te, rndcut, emer.Forward).SetClass("V1SC")
 
 	if hi16 {
 		net.ConnectLayers(v1l16, v3h16, rndcut, emer.Forward).SetClass("V1SC")
 	}
 
-	// positioning
+	//////////////////////
+	// 	Positioning
 
 	v1m8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m16.Name(), YAlign: relpos.Front, Space: 4})
 

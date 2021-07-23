@@ -26,7 +26,7 @@ This is a good benchmark for performance.  On the `blanca` cluster, with 4 threa
 
 The Go leabra replication is about the same speed on the nominally faster hpc2 cluster, with 2 threads and 16 MPI nodes.
 
-Spiking takes about 120 msec for 200 cycles so it is significantly faster per cycle as expected.
+Spiking takes about 120 msec for 200 cycles so it is significantly faster per cycle as ex6pected.
 
 # Params
 
@@ -40,16 +40,9 @@ The cemer versions used fairly standard params (because they determined these pa
 
 # TODO:
 
-* narrower variation in translation
+* no subpool
+* no inhib
+* no f8
+* no cross between f8, f16
+* no te
 
-* shorter cycles
-
-* faster lrate
-
-* glong params
-
-* swt params
-
-* input and output decay -- not relevant
-
-* new errlrmod: min / max range for err measure, plus base
