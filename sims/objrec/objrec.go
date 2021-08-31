@@ -75,9 +75,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.FBAct.RiseTau":          "20",
-					"Layer.Inhib.FBAct.DecayTau":         "20",
-					"Layer.Act.Dt.IntTau":                "60", // 40 > 30 > 20 > 10
+					"Layer.Act.Dt.IntTau":                "40", // 40 > 30 > 20 > 10
 					"Layer.Inhib.Layer.Gi":               "1.0",
 					"Layer.Inhib.Layer.FBTau":            "1.4", // 1.4 def
 					"Layer.Inhib.Pool.FBTau":             "1.4",
@@ -117,6 +115,11 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005",   // .002 >= .005 > .01
 					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.2",     // .2 > .5 > .1
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // 2 > 2.5 > 1.8
+					"Layer.Learn.RLrate.On":              "true",
+					"Layer.Learn.RLrate.ActThr":          "0.2",
+					"Layer.Learn.RLrate.ActDifThr":       "0.0",
+					"Layer.Learn.RLrate.Min":             "0.01",
+					"Layer.Learn.RLrate.CovarTau":        "100",
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -166,14 +169,14 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "0.02", // .1 > higher
-					"Prjn.PrjnScale.Init":       "1",
+					"Prjn.PrjnScale.ScaleLrate": "0.02",   // .1 > higher
 					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
-					"Prjn.Learn.Lrate.Base":     "0.04",   // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
+					"Prjn.Learn.Lrate.Base":     "0.2",    // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
 					"Prjn.Learn.XCal.SubMean":   "1",      // 1 > .9
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.SWt.Adapt.Lrate":      "0.005",  // 0.005 > others maybe?  0.02 > 0.05 > .1
 					"Prjn.SWt.Adapt.SigGain":    "6",
+					"Prjn.SWt.Adapt.CovarLrate": "2",
 					"Prjn.SWt.Init.SPct":        "1",   // 1 >= lower
 					"Prjn.SWt.Init.Mean":        "0.5", // .4 better on pca, .5 starts faster
 					"Prjn.SWt.Limit.Min":        "0.2", // .3-.7 better constraint, but not clear better than no SWt
@@ -196,7 +199,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.On":     "false",
 					"Prjn.SWt.Init.Var":     "0.0",
 					"Prjn.SWt.Init.Mean":    "0.1",
-					"Prjn.PrjnScale.Init":   "0.0",
+					"Prjn.PrjnScale.Abs":    "0.1", // .1 from lvis
 					"Prjn.PrjnScale.Adapt":  "false",
 					"Prjn.IncGain":          "0.5",
 				}},
@@ -622,7 +625,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	ss.TrialStats(train)
 
 	if train {
-		ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
+		// ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
 		ss.Net.DWt()
 	}
 	if ss.ViewOn && viewUpdt == axon.AlphaCycle {

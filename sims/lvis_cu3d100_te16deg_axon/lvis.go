@@ -92,14 +92,20 @@ var ParamSets = params.Sets{
 					"Layer.Act.Noise.Mean":               "0.0",     // .05 max for blowup
 					"Layer.Act.Noise.Var":                "0.01",    // .01 a bit worse
 					"Layer.Act.Noise.Type":               "NoNoise", // off for now
-					"Layer.Act.GTarg.GeMax":              "1.0",     // 1 > .8 -- rescaling not very useful.
+					"Layer.Act.GTarg.GeMax":              "1.2",     // 1 > .8 -- rescaling not very useful.
 					"Layer.Act.Dt.LongAvgTau":            "20",      // 50 > 20 in terms of stability, but weird effect late
 					"Layer.Learn.ActAvg.MinLrn":          "0.02",    // sig improves "top5" hogging in pca strength
 					"Layer.Learn.ActAvg.SSTau":           "40",
+					"Layer.Inhib.ActAvg.AdaptRate":       "0.5",   // 0.5 default for layers, except output
 					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // 0.01 orig > 0.005
 					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005", // 0.005 orig > 0.01
 					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .5 > .2 overall
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
+					"Layer.Learn.RLrate.On":              "true",  // true = essential -- prevents over rep of
+					"Layer.Learn.RLrate.ActThr":          "0.1",   // 0.1 > 0.15 > 0.05 > 0.2
+					"Layer.Learn.RLrate.ActDifThr":       "0.05",  // 0.05 looking good..
+					"Layer.Learn.RLrate.Min":             "0.001", // .01 def
+					"Layer.Learn.RLrate.CovarTau":        "500",
 				}},
 			{Sel: ".V1m", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
@@ -157,8 +163,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
 					"Layer.Inhib.ActAvg.Init":    "0.02",
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true",
-					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
+					"Layer.Inhib.ActAvg.AdaptGi": "true", // true > false @v.75
 				}},
 			{Sel: ".V2l", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -166,8 +171,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.FB":       "1",
 					"Layer.Inhib.ActAvg.Init":    "0.02",
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true",
-					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
+					"Layer.Inhib.ActAvg.AdaptGi": "true", // true > false @v.75
 				}},
 			{Sel: "#V2l16", Desc: "this layer is too active, drives V4f16 too strongly",
 				Params: params.Params{
@@ -181,46 +185,52 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":    "0.02",
 					"Layer.Inhib.ActAvg.Targ":    "0.02",
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
+				}},
+			{Sel: ".V3h", Desc: "pool inhib, sparse activity -- only for h16",
+				Params: params.Params{
+					"Layer.Inhib.Pool.On":        "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
+					"Layer.Inhib.ActAvg.Init":    "0.02", // .02 > .04
+					"Layer.Inhib.ActAvg.Targ":    "0.02",
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
 					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Act.GTarg.GeMax":      "1.0",  // 1.0 > 1.2
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",    // 1 >= 0 in lba
-					"Layer.Inhib.ActAvg.Init":    "0.04", // .03 init
-					"Layer.Inhib.ActAvg.Targ":    "0.04", // .04 >= .03 > .05
-					"Layer.Inhib.ActAvg.AdaptGi": "true", // adapt > not still better v34
-					"Layer.Inhib.Layer.Gi":       "1.1",  // was 1.1
-					"Layer.Inhib.Pool.Gi":        "1.1",  // was 1.1
+					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
+					"Layer.Inhib.Layer.FB":       "1",     // 1 >= 0 in lba
+					"Layer.Inhib.ActAvg.Init":    "0.04",  // .03 init
+					"Layer.Inhib.ActAvg.Targ":    "0.04",  // .04 >= .03 > .05
+					"Layer.Inhib.ActAvg.AdaptGi": "false", // false OK @v.75
+					"Layer.Inhib.Layer.Gi":       "1.1",   // was 1.1
+					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Act.GTarg.GeMax":      "1.0",   // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
 					"Layer.Inhib.ActAvg.Targ":    "0.06",  // .06 > .05 = .04
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // was true
+					"Layer.Inhib.ActAvg.AdaptGi": "false", // false OK @v.75
 					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Act.GTarg.GeMax":      "1.0",   // these need to get stronger
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":       "false", // no layer!
-					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
-					"Layer.Inhib.ActAvg.Targ":    "0.06",  // .06 > .05 = .04 (TEO)
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // was true
-					"Layer.Inhib.Pool.Gi":        "1.2",   // was 1.1
+					"Layer.Inhib.ActAvg.Init":    "0.06",  // .03 actual with gi 1.2, was .06
+					"Layer.Inhib.ActAvg.Targ":    "0.06",  // see above
+					"Layer.Inhib.ActAvg.AdaptGi": "true",  // true > false @v.75
+					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.3",   // new tau inhib: 1.3 > 1.2 > 1.4 > 1.5
-					"Layer.Inhib.ActAvg.Init":    "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Targ":    "0.01",  // .005, .008 too low -- maybe not nec?
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // true = definitely worse
-					"Layer.Inhib.ActAvg.LoTol":   "1.1",
+					"Layer.Inhib.Layer.Gi":         "1.3",   // new tau inhib: 1.3 > 1.2 > 1.4 > 1.5
+					"Layer.Inhib.ActAvg.Init":      "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
+					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .005, .008 too low -- maybe not nec?
+					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true = definitely worse
+					"Layer.Inhib.ActAvg.LoTol":     "0.5",
+					"Layer.Inhib.ActAvg.AdaptRate": "0.02", // 0.01 >= 0.02 best in range 0.01..0.1
 					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
 					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
 					"Layer.Act.Clamp.Type":     "GeClamp",
@@ -232,6 +242,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
 					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
+					"Layer.Learn.RLrate.On":    "true",  // todo: try false
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
 				Params: params.Params{
@@ -246,21 +257,21 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "2",   // 2 = fast response, effective
-					"Prjn.PrjnScale.LoTol":      "0.8", // good now...
-					"Prjn.PrjnScale.Init":       "1",
-					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
-					"Prjn.PrjnScale.Adapt":      "false", // no adapt better?
-					"Prjn.SWt.Adapt.On":         "true",  // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":      "0.001", // .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.PrjnScale.ScaleLrate": "2",      // 2 = fast response, effective
+					"Prjn.PrjnScale.LoTol":      "0.8",    // good now...
+					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
+					"Prjn.PrjnScale.Adapt":      "false",  // no adapt better?
+					"Prjn.SWt.Adapt.On":         "true",   // true > false, esp in cosdiff
+					"Prjn.SWt.Adapt.Lrate":      "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
 					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Adapt.DreamVar":   "0.02", // 0.02 good overall, no ToOut
-					"Prjn.SWt.Init.SPct":        "1",    // 1 > lower
-					"Prjn.SWt.Init.Mean":        "0.5",  // .5 > .4 -- key, except v2?
-					"Prjn.SWt.Limit.Min":        "0.2",  // .2-.8 == .1-.9; .3-.7 not better
-					"Prjn.SWt.Limit.Max":        "0.8",  //
-					"Prjn.Learn.Lrate.Base":     "0.01", // 0.01 > 0.015 > 0.02 459
-					"Prjn.Learn.XCal.SubMean":   "1",
+					"Prjn.SWt.Adapt.DreamVar":   "0.02",   // 0.02 good overall, no ToOut
+					"Prjn.SWt.Adapt.CovarLrate": "0.1",    // .1 > lower for RLrate
+					"Prjn.SWt.Init.SPct":        "1",      // 1 > lower
+					"Prjn.SWt.Init.Mean":        "0.5",    // .5 > .4 -- key, except v2?
+					"Prjn.SWt.Limit.Min":        "0.2",    // .2-.8 == .1-.9; .3-.7 not better -- 0-1 minor worse
+					"Prjn.SWt.Limit.Max":        "0.8",    //
+					"Prjn.Learn.Lrate.Base":     "0.04",   // 0.01 > 0.015 > 0.02 459 -- .04 for RLrate
+					"Prjn.Learn.XCal.SubMean":   "1",      // essential -- not sufficient just to do zero sum in SWt
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":            "0.0",
 					"Prjn.Com.PFailWtMax":       "0.0",
@@ -285,7 +296,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
 					"Prjn.PrjnScale.LoTol":    "0.5",   // .5 > .8 -- needs extra kick at start!
-					"Prjn.PrjnScale.Adapt":    "true",  // this is essential here
+					"Prjn.PrjnScale.Adapt":    "true",  // was essential here
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
@@ -294,16 +305,16 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Var":     "0.0",
 					"Prjn.SWt.Init.Mean":    "0.1",
 					"Prjn.SWt.Adapt.On":     "false",
-					"Prjn.PrjnScale.Init":   "0.1", // .1 = .2, slower blowup
+					"Prjn.PrjnScale.Abs":    "0.1", // .1 = .2, slower blowup
 					"Prjn.PrjnScale.Adapt":  "false",
 					"Prjn.IncGain":          "1", // .5 def
 				}},
 			{Sel: ".V1V2", Desc: "special SWt params",
 				Params: params.Params{
-					"Prjn.SWt.Init.Mean":  "0.4", // .4 here is key!
-					"Prjn.SWt.Limit.Min":  "0.1", // .1-.7
-					"Prjn.SWt.Limit.Max":  "0.7", //
-					"Prjn.PrjnScale.Init": "1.4", // 1.4 > 2.0 for color -- extra boost to get more v2 early on
+					"Prjn.SWt.Init.Mean": "0.4", // .4 here is key!
+					"Prjn.SWt.Limit.Min": "0.1", // .1-.7
+					"Prjn.SWt.Limit.Max": "0.7", //
+					"Prjn.PrjnScale.Abs": "1.4", // 1.4 > 2.0 for color -- extra boost to get more v2 early on
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -311,30 +322,30 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V2V4", Desc: "extra boost",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "1.0", // 1.0 prev, 1.2 not better
-					"Prjn.SWt.Init.Mean":  "0.4", // .4 a tiny bit better overall
-					"Prjn.SWt.Limit.Min":  "0.1", // .1-.7 def
-					"Prjn.SWt.Limit.Max":  "0.7", //
+					"Prjn.PrjnScale.Abs": "1.0", // 1.0 prev, 1.2 not better
+					"Prjn.SWt.Init.Mean": "0.4", // .4 a tiny bit better overall
+					"Prjn.SWt.Limit.Min": "0.1", // .1-.7 def
+					"Prjn.SWt.Limit.Max": "0.7", //
 				}},
 			{Sel: ".V2V4sm", Desc: "extra boost",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "1.0", // 1.0 prev, 1.2 not better
+					"Prjn.PrjnScale.Abs": "1.0", // 1.0 prev, 1.2 not better
 				}},
 			{Sel: "#V2m16ToV4f16", Desc: "weights into V416 getting too high",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "0.8",
+					"Prjn.PrjnScale.Abs": "1.0", // was 0.8, but as of #680 1.0 better
 				}},
 			{Sel: "#V2l16ToV4f16", Desc: "weights into V416 getting too high",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "0.8",
+					"Prjn.PrjnScale.Abs": "1.0", // see above
 				}},
 			{Sel: ".V4TEO", Desc: "stronger",
 				Params: params.Params{
-					// "Prjn.PrjnScale.Init": "1.2", // trying bigger -- was low
+					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
 				}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
-					// "Prjn.PrjnScale.Init": "1.2", // trying bigger -- was low
+					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
 					"Prjn.PrjnScale.Rel": "0.5",
 				}},
 			{Sel: ".V4Out", Desc: "NOT weaker",
@@ -343,7 +354,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEOTE", Desc: "too weak at start",
 				Params: params.Params{
-					"Prjn.PrjnScale.Init": "1", // 1.2 not better
+					"Prjn.PrjnScale.Abs": "1", // 1.2 not better
 				}},
 
 			// back projections
@@ -1336,7 +1347,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	ss.TrialStats(train)
 
 	if train {
-		ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
+		// ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
 		ss.Net.DWt()
 	}
 
