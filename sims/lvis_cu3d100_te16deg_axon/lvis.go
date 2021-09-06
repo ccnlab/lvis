@@ -103,9 +103,8 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
 					"Layer.Learn.RLrate.On":              "true",  // true = essential -- prevents over rep of
 					"Layer.Learn.RLrate.ActThr":          "0.1",   // 0.1 > 0.15 > 0.05 > 0.2
-					"Layer.Learn.RLrate.ActDifThr":       "0.05",  // 0.05 looking good..
-					"Layer.Learn.RLrate.Min":             "0.001", // .01 def
-					"Layer.Learn.RLrate.CovarTau":        "500",
+					"Layer.Learn.RLrate.ActDifThr":       "0.02",  // 0.05 looking good..
+					"Layer.Learn.RLrate.Min":             "0.001", // .001 best, adifthr.05
 				}},
 			{Sel: ".V1m", Desc: "pool inhib KwtaTsr, initial activity",
 				Params: params.Params{
@@ -265,13 +264,12 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.Lrate":      "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
 					"Prjn.SWt.Adapt.SigGain":    "6",
 					"Prjn.SWt.Adapt.DreamVar":   "0.02",   // 0.02 good overall, no ToOut
-					"Prjn.SWt.Adapt.CovarLrate": "0.1",    // .1 > lower for RLrate
 					"Prjn.SWt.Init.SPct":        "1",      // 1 > lower
 					"Prjn.SWt.Init.Mean":        "0.5",    // .5 > .4 -- key, except v2?
 					"Prjn.SWt.Limit.Min":        "0.2",    // .2-.8 == .1-.9; .3-.7 not better -- 0-1 minor worse
 					"Prjn.SWt.Limit.Max":        "0.8",    //
 					"Prjn.Learn.Lrate.Base":     "0.04",   // 0.01 > 0.015 > 0.02 459 -- .04 for RLrate
-					"Prjn.Learn.XCal.SubMean":   "1",      // essential -- not sufficient just to do zero sum in SWt
+					"Prjn.Learn.XCal.SubMean":   "1",      // testing..
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":            "0.0",
 					"Prjn.Com.PFailWtMax":       "0.0",
@@ -297,6 +295,11 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
 					"Prjn.PrjnScale.LoTol":    "0.5",   // .5 > .8 -- needs extra kick at start!
 					"Prjn.PrjnScale.Adapt":    "true",  // was essential here
+					"Prjn.Learn.XCal.SubMean": "0",
+				}},
+			{Sel: ".FmOut", Desc: "from output -- some things should be different..",
+				Params: params.Params{
+					"Prjn.Learn.XCal.SubMean": "1",
 				}},
 			{Sel: ".Inhib", Desc: "inhibitory projection",
 				Params: params.Params{
@@ -305,7 +308,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Var":     "0.0",
 					"Prjn.SWt.Init.Mean":    "0.1",
 					"Prjn.SWt.Adapt.On":     "false",
-					"Prjn.PrjnScale.Abs":    "0.1", // .1 = .2, slower blowup
+					"Prjn.PrjnScale.Abs":    "0.2", // .1 = .2, slower blowup
 					"Prjn.PrjnScale.Adapt":  "false",
 					"Prjn.IncGain":          "1", // .5 def
 				}},
@@ -1042,23 +1045,23 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	// full connections to output are key
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
 	teoout.SetClass("TEOOut ToOut")
-	outteo.SetClass("OutTEO")
+	outteo.SetClass("OutTEO FmOut")
 
 	teoout, outteo = net.BidirConnectLayers(teo8, out, full)
 	teoout.SetClass("TEOOut ToOut")
-	outteo.SetClass("OutTEO")
+	outteo.SetClass("OutTEO FmOut")
 
 	teout, _ := net.BidirConnectLayers(te, out, full)
-	teout.SetClass("ToOut")
+	teout.SetClass("ToOut FmOut")
 
 	// v59 459 -- only useful later -- TEO maybe not doing as well later?
 	v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
 	v4out.SetClass("V4Out ToOut")
-	outv4.SetClass("OutV4")
+	outv4.SetClass("OutV4 FmOut")
 
 	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
 	v4out.SetClass("V4Out ToOut")
-	outv4.SetClass("OutV4")
+	outv4.SetClass("OutV4 FmOut")
 
 	var v2v4inhib prjn.Pattern
 	v2v4inhib = pool1to1
@@ -1347,6 +1350,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	ss.TrialStats(train)
 
 	if train {
+		// not using this anymore, in favor of neuron-level RLrate
 		// ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
 		ss.Net.DWt()
 	}

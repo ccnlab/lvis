@@ -116,10 +116,9 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.2",     // .2 > .5 > .1
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // 2 > 2.5 > 1.8
 					"Layer.Learn.RLrate.On":              "true",
-					"Layer.Learn.RLrate.ActThr":          "0.2",
-					"Layer.Learn.RLrate.ActDifThr":       "0.0",
-					"Layer.Learn.RLrate.Min":             "0.01",
-					"Layer.Learn.RLrate.CovarTau":        "100",
+					"Layer.Learn.RLrate.ActThr":          "0.1",
+					"Layer.Learn.RLrate.ActDifThr":       "0.02",
+					"Layer.Learn.RLrate.Min":             "0.001",
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -176,7 +175,6 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.SWt.Adapt.Lrate":      "0.005",  // 0.005 > others maybe?  0.02 > 0.05 > .1
 					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Adapt.CovarLrate": "2",
 					"Prjn.SWt.Init.SPct":        "1",   // 1 >= lower
 					"Prjn.SWt.Init.Mean":        "0.5", // .4 better on pca, .5 starts faster
 					"Prjn.SWt.Limit.Min":        "0.2", // .3-.7 better constraint, but not clear better than no SWt

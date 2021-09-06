@@ -159,7 +159,7 @@ def write_sbatch():
     # f.write("#SBATCH --export=NONE\n")
     # f.write("unset SLURM_EXPORT_ENV\n")
     f.write("\n\n")
-    f.write("go build -tags mpi\n")
+    f.write("go build -mod=mod -tags mpi\n")
     f.write("/bin/rm images\n")
     f.write("ln -s $HOME/ccn_images images\n")
     f.write("date -u '+%Y-%m-%d %T %Z' > job.start\n")

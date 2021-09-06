@@ -169,7 +169,7 @@ def write_sbatch():
     f.write("echo $SLURM_ARRAY_JOB_ID\n")
     f.write("\n\n")
     f.write("if [ \"$SLURM_ARRAY_TASK_ID\" == \"0\" ]; then\n")
-    f.write("go build\n")  # add anything here needed to prepare code. This part will only be executed by the first array job
+    f.write("go build -mod=mod\n")  # add anything here needed to prepare code. This part will only be executed by the first array job
     f.write("else\n")
     f.write("wait_seconds=\"180\"\n")
     f.write("until test $((wait_seconds--)) -eq 0 -o -e \"job.start\" ; do sleep 1; done\n") #Wait for array job 0 to complete prepatory work before continuing
