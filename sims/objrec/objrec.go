@@ -117,7 +117,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // 2 > 2.5 > 1.8
 					"Layer.Learn.RLrate.On":              "true",
 					"Layer.Learn.RLrate.ActThr":          "0.1",
-					"Layer.Learn.RLrate.ActDifThr":       "0.02",
+					"Layer.Learn.RLrate.ActDifThr":       "0.02", // .02 > .05
 					"Layer.Learn.RLrate.Min":             "0.001",
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",

@@ -78,16 +78,21 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.FBAct.Tau":              "30",  // 30 > 20 >> 1 definitively
-					"Layer.Act.Dt.IntTau":                "40",  // 40 > 20
-					"Layer.Inhib.Layer.Gi":               "1.1", // 1.1 > 1.0 > 1.2 -- all layers
-					"Layer.Inhib.Pool.Gi":                "1.1", // 1.1 > 1.0 -- universal for all layers
-					"Layer.Act.Gbar.L":                   "0.2", // 0.2 orig > 0.1 new def
-					"Layer.Act.Decay.Act":                "0.2", // 0.2 > 0 > 0.5 w/ glong.7 459
-					"Layer.Act.Decay.Glong":              "0.6", // 0.6 > 0.7 > 0.8
-					"Layer.Act.KNa.Fast.Max":             "0.1", // fm both .2 worse
-					"Layer.Act.KNa.Med.Max":              "0.2", // 0.2 > 0.1 def
-					"Layer.Act.KNa.Slow.Max":             "0.2", // 0.2 > higher
+					"Layer.Inhib.Inhib.AvgTau":           "30",   // 30 > 20 >> 1 definitively
+					"Layer.Inhib.Inhib.GiSynThr":         "0.0",  // 0.01 shows effects
+					"Layer.Act.Dt.IntTau":                "40",   // 40 > 20
+					"Layer.Inhib.Layer.Gi":               "1.1",  // 1.1 > 1.0 > 1.2 -- all layers
+					"Layer.Inhib.Pool.Gi":                "1.1",  // 1.1 > 1.0 -- universal for all layers
+					"Layer.Inhib.Pool.FFEx0":             "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
+					"Layer.Inhib.Pool.FFEx":              "0.05", // .05 best so far
+					"Layer.Inhib.Layer.FFEx0":            "0.15",
+					"Layer.Inhib.Layer.FFEx":             "0.05", // .05 best so far
+					"Layer.Act.Gbar.L":                   "0.2",  // 0.2 orig > 0.1 new def
+					"Layer.Act.Decay.Act":                "0.2",  // 0.2 > 0 > 0.5 w/ glong.7 459
+					"Layer.Act.Decay.Glong":              "0.6",  // 0.6 > 0.7 > 0.8
+					"Layer.Act.KNa.Fast.Max":             "0.1",  // fm both .2 worse
+					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
+					"Layer.Act.KNa.Slow.Max":             "0.2",  // 0.2 > higher
 					"Layer.Act.Noise.Dist":               "Gaussian",
 					"Layer.Act.Noise.Mean":               "0.0",     // .05 max for blowup
 					"Layer.Act.Noise.Var":                "0.01",    // .01 a bit worse
@@ -103,137 +108,97 @@ var ParamSets = params.Sets{
 					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
 					"Layer.Learn.RLrate.On":              "true",  // true = essential -- prevents over rep of
 					"Layer.Learn.RLrate.ActThr":          "0.1",   // 0.1 > 0.15 > 0.05 > 0.2
-					"Layer.Learn.RLrate.ActDifThr":       "0.02",  // 0.05 looking good..
+					"Layer.Learn.RLrate.ActDifThr":       "0.02",  // 0.02 > 0.05 in other models
 					"Layer.Learn.RLrate.Min":             "0.001", // .001 best, adifthr.05
 				}},
-			{Sel: ".V1m", Desc: "pool inhib KwtaTsr, initial activity",
+			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
-					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
-					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
+					"Layer.Inhib.Layer.Gi":    "0.9",     // 0.9 > 1.1 def -- more activity
+					"Layer.Inhib.Pool.Gi":     "0.9",     // 0.9 > 1.1 def -- more activity
+					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
+					"Layer.Act.Clamp.Type":    "GeClamp", // GeClamp better
+					"Layer.Act.Clamp.Ge":      "1.0",     // 1.0 > .6 -- more activity
 					"Layer.Act.Decay.Act":     "1",       // these make no diff
 					"Layer.Act.Decay.Glong":   "1",
 				}},
-			{Sel: ".V1l", Desc: "pool inhib KwtaTsr, initial activity",
+			{Sel: ".V2", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1l8: 0.06, V1l16: 0.05
-					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
-					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
-					"Layer.Act.Decay.Act":     "1",
-					"Layer.Act.Decay.Glong":   "1",
-				}},
-			{Sel: ".V1Cm", Desc: "pool inhib KwtaTsr, initial activity",
-				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
-					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
-					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
-					"Layer.Act.Decay.Act":     "1",       // these make no diff
-					"Layer.Act.Decay.Glong":   "1",
-				}},
-			{Sel: ".V1Cl", Desc: "pool inhib KwtaTsr, initial activity",
-				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1l8: 0.06, V1l16: 0.05
-					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
-					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
-					"Layer.Act.Decay.Act":     "1",
-					"Layer.Act.Decay.Glong":   "1",
-				}},
-			{Sel: ".V1h", Desc: "pool inhib KwtaTsr, initial activity",
-				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for GeClamp
-					"Layer.Inhib.ActAvg.Targ": "0.06",    // actuals: V1m8: .04, V1m16: .03
-					"Layer.Act.Clamp.Type":    "GeClamp", // not better..
-					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
-					"Layer.Act.Decay.Act":     "1",       // these make no diff
-					"Layer.Act.Decay.Glong":   "1",
+					"Layer.Inhib.Topo.On":    "false",
+					"Layer.Inhib.Topo.Width": "4",
+					"Layer.Inhib.Topo.Sigma": "1.0",
+					"Layer.Inhib.Topo.Gi":    "0.002", // 0.002 best -- reduces Top5, keeps NStrong
+					"Layer.Inhib.Topo.FF0":   "0.2",   // 0.2 best -- test more
 				}},
 			{Sel: ".V2m", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
-					"Layer.Inhib.ActAvg.Init":    "0.02",
-					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true", // true > false @v.75
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":    "1",    // 0 possibly causes blowup at some point, no bene
+					"Layer.Inhib.ActAvg.Init": "0.02",
 				}},
 			{Sel: ".V2l", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",
-					"Layer.Inhib.ActAvg.Init":    "0.02",
-					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true", // true > false @v.75
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":    "1",
+					"Layer.Inhib.ActAvg.Init": "0.02",
+					"Layer.Inhib.Topo.Width":  "2", // smaller
 				}},
 			{Sel: "#V2l16", Desc: "this layer is too active, drives V4f16 too strongly",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02", // not clear if needed now..
-					"Layer.Inhib.ActAvg.Targ": "0.02",
 				}},
 			{Sel: ".V2h", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
-					"Layer.Inhib.ActAvg.Init":    "0.02",
-					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":    "1",    // 0 possibly causes blowup at some point, no bene
+					"Layer.Inhib.ActAvg.Init": "0.02",
 				}},
 			{Sel: ".V3h", Desc: "pool inhib, sparse activity -- only for h16",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",    // 0 possibly causes blowup at some point, no bene
-					"Layer.Inhib.ActAvg.Init":    "0.02", // .02 > .04
-					"Layer.Inhib.ActAvg.Targ":    "0.02",
-					"Layer.Inhib.ActAvg.AdaptGi": "true",
-					"Layer.Act.GTarg.GeMax":      "1.2", // these need to get stronger?
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":    "1",    // 0 possibly causes blowup at some point, no bene
+					"Layer.Inhib.ActAvg.Init": "0.02", // .02 > .04
+					"Layer.Act.GTarg.GeMax":   "1.2",  // these need to get stronger?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
-					"Layer.Inhib.Layer.FB":       "1",     // 1 >= 0 in lba
-					"Layer.Inhib.ActAvg.Init":    "0.04",  // .03 init
-					"Layer.Inhib.ActAvg.Targ":    "0.04",  // .04 >= .03 > .05
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // false OK @v.75
-					"Layer.Inhib.Layer.Gi":       "1.1",   // was 1.1
-					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":    "1",    // 1 >= 0 in lba
+					"Layer.Inhib.ActAvg.Init": "0.04", // .04 >= .03 > .05
+					"Layer.Inhib.Layer.Gi":    "1.1",  // was 1.1
+					"Layer.Inhib.Pool.Gi":     "1.1",  // was 1.1
+					"Layer.Inhib.Topo.On":     "false",
+					"Layer.Inhib.Topo.Width":  "4", // was 4
+					"Layer.Inhib.Topo.Sigma":  "1.0",
+					"Layer.Inhib.Topo.Gi":     "0.002", // 0.002 best -- reduces Top5, keeps NStrong
+					"Layer.Inhib.Topo.FF0":    "0.2",   // 0.2 best -- test more
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
-					"Layer.Inhib.Layer.On":       "false", // no layer!
-					"Layer.Inhib.ActAvg.Init":    "0.06",  // trying lower start
-					"Layer.Inhib.ActAvg.Targ":    "0.06",  // .06 > .05 = .04
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // false OK @v.75
-					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
+					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
+					"Layer.Inhib.Layer.On":    "false", // no layer!
+					"Layer.Inhib.ActAvg.Init": "0.06",  // .06 > .05 = .04
+					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
-					"Layer.Inhib.Layer.On":       "false", // no layer!
-					"Layer.Inhib.ActAvg.Init":    "0.06",  // .03 actual with gi 1.2, was .06
-					"Layer.Inhib.ActAvg.Targ":    "0.06",  // see above
-					"Layer.Inhib.ActAvg.AdaptGi": "true",  // true > false @v.75
-					"Layer.Inhib.Pool.Gi":        "1.1",   // was 1.1
+					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
+					"Layer.Inhib.Layer.On":    "false", // no layer!
+					"Layer.Inhib.ActAvg.Init": "0.06",  // .03 actual with gi 1.2, was .06
+					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":         "1.3",   // new tau inhib: 1.3 > 1.2 > 1.4 > 1.5
+					"Layer.Inhib.Layer.Gi":         "1.3",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
 					"Layer.Inhib.ActAvg.Init":      "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .005, .008 too low -- maybe not nec?
-					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true = definitely worse
+					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .01 -- .005, .008 too low -- maybe not nec?
+					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true: it is essential -- too hard to balance manually
 					"Layer.Inhib.ActAvg.LoTol":     "0.5",
 					"Layer.Inhib.ActAvg.AdaptRate": "0.02", // 0.01 >= 0.02 best in range 0.01..0.1
 					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
 					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
 					"Layer.Act.Clamp.Type":     "GeClamp",
-					"Layer.Act.Clamp.Ge":       "0.6", // .6 = .7 > .5 (tiny diff)
+					"Layer.Act.Clamp.Ge":       "0.6", // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					"Layer.Act.Clamp.Burst":    "false",
 					"Layer.Act.Clamp.BurstThr": "0.5",   //
 					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same
@@ -242,15 +207,15 @@ var ParamSets = params.Sets{
 					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
 					"Layer.Learn.RLrate.On":    "true",  // todo: try false
+					"Layer.Inhib.Pool.FFEx":    "0.0",   // no
+					"Layer.Inhib.Layer.FFEx":   "0.0",   //
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "0.8",
-					"Layer.Inhib.Pool.On":        "false", // needs pool-level
-					"Layer.Inhib.Layer.On":       "true",
-					"Layer.Inhib.ActAvg.Init":    ".06",
-					"Layer.Inhib.ActAvg.Targ":    ".06",
-					"Layer.Inhib.ActAvg.AdaptGi": "false",
+					"Layer.Inhib.Layer.Gi":    "0.8",
+					"Layer.Inhib.Pool.On":     "false", // needs pool-level
+					"Layer.Inhib.Layer.On":    "true",
+					"Layer.Inhib.ActAvg.Init": ".06",
 				}},
 			///////////////////////////////
 			// projections
@@ -307,8 +272,9 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Lrate.Base": "0.0001", // .0001 > .001 -- slower better!
 					"Prjn.SWt.Init.Var":     "0.0",
 					"Prjn.SWt.Init.Mean":    "0.1",
+					"Prjn.SWt.Init.Sym":     "false",
 					"Prjn.SWt.Adapt.On":     "false",
-					"Prjn.PrjnScale.Abs":    "0.2", // .1 = .2, slower blowup
+					"Prjn.PrjnScale.Abs":    "0.2", // .2 > .1 for controlling PCA; .3 or.4 with GiSynThr .01
 					"Prjn.PrjnScale.Adapt":  "false",
 					"Prjn.IncGain":          "1", // .5 def
 				}},
@@ -420,7 +386,6 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":    "0.9", // 0.9 > 1.0
 					"Layer.Inhib.ActAvg.Init": "0.1", // 0.1 seems good
-					"Layer.Inhib.ActAvg.Targ": "0.1",
 				}},
 		},
 	}},
@@ -430,7 +395,6 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 = 1.6 > 1.4
 					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Inhib.ActAvg.Targ": "0.01",
 				}},
 		},
 	}},
@@ -504,6 +468,7 @@ type Sim struct {
 	Prjn4x4Skp0Sub2Recip     *prjn.PoolTileSub `view:"-" desc:"for V4 <-> TEO"`
 	Prjn1x1Skp0              *prjn.PoolTile    `view:"-" desc:"for TE <-> TEO"`
 	Prjn1x1Skp0Recip         *prjn.PoolTile    `view:"-" desc:"for TE <-> TEO"`
+	Prjn6x6Skp2Lat           *prjn.PoolTileSub `view:"-" desc:"lateral inhibitory connectivity for subpools"`
 
 	StartRun       int                           `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
 	MaxRuns        int                           `desc:"maximum number of model runs to perform"`
@@ -638,10 +603,7 @@ func (ss *Sim) New() {
 	ss.Prjn4x4Skp2.Skip.Set(2, 2)
 	ss.Prjn4x4Skp2.Start.Set(-1, -1)
 	ss.Prjn4x4Skp2.TopoRange.Min = 0.8
-
-	ss.Prjn4x4Skp2Recip = prjn.NewPoolTile()
-	*ss.Prjn4x4Skp2Recip = *ss.Prjn4x4Skp2
-	ss.Prjn4x4Skp2Recip.Recip = true
+	ss.Prjn4x4Skp2Recip = prjn.NewPoolTileRecip(ss.Prjn4x4Skp2)
 
 	ss.Prjn4x4Skp2Sub2 = prjn.NewPoolTileSub()
 	ss.Prjn4x4Skp2Sub2.Size.Set(4, 4)
@@ -649,28 +611,19 @@ func (ss *Sim) New() {
 	ss.Prjn4x4Skp2Sub2.Start.Set(-1, -1)
 	ss.Prjn4x4Skp2Sub2.Subs.Set(2, 2)
 	ss.Prjn4x4Skp2Sub2.TopoRange.Min = 0.8
-
-	ss.Prjn4x4Skp2Sub2Recip = prjn.NewPoolTileSub()
-	*ss.Prjn4x4Skp2Sub2Recip = *ss.Prjn4x4Skp2Sub2
-	ss.Prjn4x4Skp2Sub2Recip.Recip = true
+	ss.Prjn4x4Skp2Sub2Recip = prjn.NewPoolTileSubRecip(ss.Prjn4x4Skp2Sub2)
 
 	ss.Prjn4x4Skp2Sub2Send = prjn.NewPoolTileSub()
 	*ss.Prjn4x4Skp2Sub2Send = *ss.Prjn4x4Skp2Sub2
 	ss.Prjn4x4Skp2Sub2Send.SendSubs = true
-
-	ss.Prjn4x4Skp2Sub2SendRecip = prjn.NewPoolTileSub()
-	*ss.Prjn4x4Skp2Sub2SendRecip = *ss.Prjn4x4Skp2Sub2Send
-	ss.Prjn4x4Skp2Sub2SendRecip.Recip = true
+	ss.Prjn4x4Skp2Sub2SendRecip = prjn.NewPoolTileSubRecip(ss.Prjn4x4Skp2Sub2Send)
 
 	ss.Prjn2x2Skp1 = prjn.NewPoolTile()
 	ss.Prjn2x2Skp1.Size.Set(2, 2)
 	ss.Prjn2x2Skp1.Skip.Set(1, 1)
 	ss.Prjn2x2Skp1.Start.Set(0, 0)
 	ss.Prjn2x2Skp1.TopoRange.Min = 0.8
-
-	ss.Prjn2x2Skp1Recip = prjn.NewPoolTile()
-	*ss.Prjn2x2Skp1Recip = *ss.Prjn2x2Skp1
-	ss.Prjn2x2Skp1Recip.Recip = true
+	ss.Prjn2x2Skp1Recip = prjn.NewPoolTileRecip(ss.Prjn2x2Skp1)
 
 	ss.Prjn2x2Skp1Sub2 = prjn.NewPoolTileSub()
 	ss.Prjn2x2Skp1Sub2.Size.Set(2, 2)
@@ -679,9 +632,7 @@ func (ss *Sim) New() {
 	ss.Prjn2x2Skp1Sub2.Subs.Set(2, 2)
 	ss.Prjn2x2Skp1Sub2.TopoRange.Min = 0.8
 
-	ss.Prjn2x2Skp1Sub2Recip = prjn.NewPoolTileSub()
-	*ss.Prjn2x2Skp1Sub2Recip = *ss.Prjn2x2Skp1Sub2
-	ss.Prjn2x2Skp1Sub2Recip.Recip = true
+	ss.Prjn2x2Skp1Sub2Recip = prjn.NewPoolTileSubRecip(ss.Prjn2x2Skp1Sub2)
 
 	ss.Prjn2x2Skp1Sub2Send = prjn.NewPoolTileSub()
 	ss.Prjn2x2Skp1Sub2Send.Size.Set(2, 2)
@@ -708,10 +659,7 @@ func (ss *Sim) New() {
 	ss.Prjn4x4Skp0.GaussFull.Sigma = 1.5
 	ss.Prjn4x4Skp0.GaussInPool.Sigma = 1.5
 	ss.Prjn4x4Skp0.TopoRange.Min = 0.8
-
-	ss.Prjn4x4Skp0Recip = prjn.NewPoolTile()
-	*ss.Prjn4x4Skp0Recip = *ss.Prjn4x4Skp0
-	ss.Prjn4x4Skp0Recip.Recip = true
+	ss.Prjn4x4Skp0Recip = prjn.NewPoolTileRecip(ss.Prjn4x4Skp0)
 
 	ss.Prjn4x4Skp0Sub2 = prjn.NewPoolTileSub()
 	ss.Prjn4x4Skp0Sub2.Size.Set(4, 4)
@@ -722,10 +670,7 @@ func (ss *Sim) New() {
 	ss.Prjn4x4Skp0Sub2.GaussFull.Sigma = 1.5
 	ss.Prjn4x4Skp0Sub2.GaussInPool.Sigma = 1.5
 	ss.Prjn4x4Skp0Sub2.TopoRange.Min = 0.8
-
-	ss.Prjn4x4Skp0Sub2Recip = prjn.NewPoolTileSub()
-	*ss.Prjn4x4Skp0Sub2Recip = *ss.Prjn4x4Skp0Sub2
-	ss.Prjn4x4Skp0Sub2Recip.Recip = true
+	ss.Prjn4x4Skp0Sub2Recip = prjn.NewPoolTileSubRecip(ss.Prjn4x4Skp0Sub2)
 
 	ss.Prjn1x1Skp0 = prjn.NewPoolTile()
 	ss.Prjn1x1Skp0.Size.Set(1, 1)
@@ -734,10 +679,14 @@ func (ss *Sim) New() {
 	ss.Prjn1x1Skp0.GaussFull.Sigma = 1.5
 	ss.Prjn1x1Skp0.GaussInPool.Sigma = 1.5
 	ss.Prjn1x1Skp0.TopoRange.Min = 0.8
+	ss.Prjn1x1Skp0Recip = prjn.NewPoolTileRecip(ss.Prjn1x1Skp0)
 
-	ss.Prjn1x1Skp0Recip = prjn.NewPoolTile()
-	*ss.Prjn1x1Skp0Recip = *ss.Prjn1x1Skp0
-	ss.Prjn1x1Skp0Recip.Recip = true
+	ss.Prjn6x6Skp2Lat = prjn.NewPoolTileSub()
+	ss.Prjn6x6Skp2Lat.Size.Set(6, 6)
+	ss.Prjn6x6Skp2Lat.Skip.Set(2, 2)
+	ss.Prjn6x6Skp2Lat.Start.Set(-2, -2)
+	ss.Prjn6x6Skp2Lat.Subs.Set(2, 2)
+	ss.Prjn6x6Skp2Lat.TopoRange.Min = 0.8
 
 	ss.RndSeeds = make([]int64, 100) // make enough for plenty of runs
 	for i := 0; i < 100; i++ {
@@ -913,10 +862,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v2l16 := net.AddLayer4D("V2l16", v2lNp, v2lNp, v2Nu, v2Nu, emer.Hidden)
 	v2m8 := net.AddLayer4D("V2m8", v2mNp, v2mNp, v2Nu, v2Nu, emer.Hidden)
 	v2l8 := net.AddLayer4D("V2l8", v2lNp, v2lNp, v2Nu, v2Nu, emer.Hidden)
-	v2m16.SetClass("V2m")
-	v2m8.SetClass("V2m")
-	v2l16.SetClass("V2l")
-	v2l8.SetClass("V2l")
+	v2m16.SetClass("V2m V2")
+	v2m8.SetClass("V2m V2")
+	v2l16.SetClass("V2l V2")
+	v2l8.SetClass("V2l V2")
 
 	var v1h16, v2h16, v3h16 emer.Layer
 	if hi16 {
@@ -924,7 +873,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v2h16 = net.AddLayer4D("V2h16", 32, 32, v2Nu, v2Nu, emer.Hidden)
 		v3h16 = net.AddLayer4D("V3h16", 16, 16, v2Nu, v2Nu, emer.Hidden)
 		v1h16.SetClass("V1h")
-		v2h16.SetClass("V2h")
+		v2h16.SetClass("V2h V2")
 		v3h16.SetClass("V3h")
 	}
 
@@ -1063,26 +1012,28 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4out.SetClass("V4Out ToOut")
 	outv4.SetClass("OutV4 FmOut")
 
-	var v2v4inhib prjn.Pattern
-	v2v4inhib = pool1to1
+	var v2inhib, v4inhib prjn.Pattern
+	v2inhib = pool1to1
+	v4inhib = pool1to1
 	if ss.SubPools {
-		v2v4inhib = ss.Prjn2x2Skp2
+		v2inhib = ss.Prjn2x2Skp2 // ss.Prjn6x6Skp2Lat
+		v4inhib = ss.Prjn2x2Skp2
 	}
 
 	// this extra inhibition drives decorrelation, produces significant learning benefits
-	net.LateralConnectLayerPrjn(v2m16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2l16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2m8, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2l8, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v4f16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v4f8, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2m16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2l16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2m8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v2l8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v4f16, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+	net.LateralConnectLayerPrjn(v4f8, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
 	if hi16 {
-		net.LateralConnectLayerPrjn(v2h16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-		net.LateralConnectLayerPrjn(v3h16, v2v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+		net.LateralConnectLayerPrjn(v2h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+		net.LateralConnectLayerPrjn(v3h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
 	}
 
 	///////////////////////
@@ -2209,6 +2160,7 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 	for _, lnm := range ss.HidLays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		dt.SetCellFloat(lnm+"_MaxGeM", row, float64(ly.Pools[0].GeM.Max))
+		dt.SetCellFloat(lnm+"_MaxGiM", row, float64(ly.Pools[0].GiM.Max))
 		dt.SetCellFloat(lnm+"_ActDifAvg", row, float64(ly.Pools[0].AvgDif.Avg))
 		dt.SetCellFloat(lnm+"_ActDifMax", row, float64(ly.Pools[0].AvgDif.Max))
 		dt.SetCellFloat(lnm+"_CosDiff", row, float64(1-ly.CosDiff.Cos))
@@ -2254,6 +2206,7 @@ func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
 	}
 	for _, lnm := range ss.HidLays {
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_MaxGiM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_CosDiff", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActDifAvg", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActDifMax", etensor.FLOAT64, nil, nil})
@@ -2286,6 +2239,7 @@ func (ss *Sim) ConfigTrnTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 
 	for _, lnm := range ss.HidLays {
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
+		plt.SetColParams(lnm+"_MaxGiM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 		plt.SetColParams(lnm+"_CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 		plt.SetColParams(lnm+"_ActDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 		plt.SetColParams(lnm+"_ActDifMax", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -2630,6 +2584,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 			dt.SetCellFloat(ly.Nm+"_FB_Scale", row, float64(fbpj.GScale.Scale))
 		}
 		dt.SetCellFloat(lnm+"_MaxGeM", row, float64(ly.ActAvg.AvgMaxGeM))
+		dt.SetCellFloat(lnm+"_MaxGiM", row, float64(ly.ActAvg.AvgMaxGiM))
 		dt.SetCellFloat(lnm+"_ActAvg", row, float64(ly.ActAvg.ActMAvg))
 		dt.SetCellFloat(lnm+"_GiMult", row, float64(ly.ActAvg.GiMult))
 		dt.SetCellFloat(lnm+"_ActDifAvg", row, agg.Mean(tix, lnm+"_ActDifAvg")[0])
@@ -2713,6 +2668,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + "_FB_AvgMaxG", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_FB_Scale", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_MaxGeM", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_MaxGiM", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_GiMult", etensor.FLOAT64, nil, nil})
 		sch = append(sch, etable.Column{lnm + "_ActDifAvg", etensor.FLOAT64, nil, nil})
@@ -2772,6 +2728,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+"_FB_AvgMaxG", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, .5)
 		plt.SetColParams(lnm+"_FB_Scale", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, .5)
 		plt.SetColParams(lnm+"_MaxGeM", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		plt.SetColParams(lnm+"_MaxGiM", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0.5)
 		plt.SetColParams(lnm+"_GiMult", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		plt.SetColParams(lnm+"_ActDifAvg", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
