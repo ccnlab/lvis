@@ -1,8 +1,8 @@
 # LVis CU3D100 TE16deg
 
-This is the "standard" version of the LVis model, implemented using the standard `leabra` rate code activation algorithm, corresponding to the `cemer` C++ versions that were originally developed (`lvis_te16deg.proj` and `lvis_fix8.proj`).
+This is the "standard" version of the LVis model, implemented using the `axon` spiking activation algorithm, with the architecture tracing back to the `cemer` C++ versions that were originally developed (`lvis_te16deg.proj` and `lvis_fix8.proj`).
 
-The `lvix_fix8.proj` version has "blob" color filters in addition to the monochrome gabor filters, and has the capacity to fixate on different regions in the image, but this was never fully utilized.  This Go implementation does not (yet) have the blob color filters, and thus corresponds to the older `lvis_te16deg.proj` version.
+The `lvix_fix8.proj` version has "blob" color filters in addition to the monochrome gabor filters, and has the capacity to fixate on different regions in the image, but this was never fully utilized.  This Go implementation has the blob color filters, but no specified fixation -- just random 2D planar transforms.
 
 # Images: CU3D100
 

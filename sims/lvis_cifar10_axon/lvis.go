@@ -730,29 +730,18 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxTrls = 512 / mpi.WorldSize()
 	}
 
-	plus := false // plus images are a bit worse overall -- stranger objects etc.
-
-	var path string
-	if plus {
-		path = "images/CU3D_100_plus_renders"
-		ss.TrainEnv.Nm = "cu3d100plus"
-	} else {
-		path = "images/CU3D_100_renders_lr20_u30_nb"
-		ss.TrainEnv.Nm = "cu3d100old"
-	}
+	path := "images/cifar-10-batches-bin"
+	ss.TrainEnv.Nm = "cifar10"
 
 	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.Defaults()
 	ss.TrainEnv.High16 = false // not useful -- may need more tuning?
 	ss.TrainEnv.ColorDoG = true
-	ss.TrainEnv.Images.NTestPerCat = 2
-	ss.TrainEnv.Images.SplitByItm = true
+	ss.TrainEnv.Images.ImgSize = 32
+	ss.TrainEnv.Images.TestBatch = 5
 	ss.TrainEnv.OutRandom = ss.RndOutPats
 	ss.TrainEnv.OutSize.Set(10, 10)
-	ss.TrainEnv.Images.SetPath(path, []string{".png"}, "_")
-	ss.TrainEnv.OpenConfig()
-	// ss.TrainEnv.Images.OpenPath(path, []string{".png"}, "_")
-	// ss.TrainEnv.SaveConfig()
+	ss.TrainEnv.Images.OpenPath(path)
 
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
@@ -763,15 +752,12 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Defaults()
 	ss.TestEnv.High16 = ss.TrainEnv.High16
 	ss.TestEnv.ColorDoG = ss.TrainEnv.ColorDoG
-	ss.TestEnv.Images.NTestPerCat = 2
-	ss.TestEnv.Images.SplitByItm = true
+	ss.TestEnv.Images.ImgSize = 32
+	ss.TestEnv.Images.TestBatch = 5
 	ss.TestEnv.OutRandom = ss.RndOutPats
 	ss.TestEnv.OutSize.Set(10, 10)
 	ss.TestEnv.Test = true
-	ss.TestEnv.Images.SetPath(path, []string{".png"}, "_")
-	ss.TestEnv.OpenConfig()
-	// ss.TestEnv.Images.OpenPath(path, []string{".png"}, "_")
-	// ss.TestEnv.SaveConfig()
+	ss.TestEnv.Images.OpenPath(path)
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 	ss.TestEnv.Validate()
 
