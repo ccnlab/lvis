@@ -189,10 +189,10 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":         "1.3",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
-					"Layer.Inhib.ActAvg.Init":      "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .01 -- .005, .008 too low -- maybe not nec?
-					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true: it is essential -- too hard to balance manually
+					"Layer.Inhib.Layer.Gi":         "1.1",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
+					"Layer.Inhib.ActAvg.Init":      "0.1",   // .005 > .008 > .01 -- prevents loss of Ge over time..
+					"Layer.Inhib.ActAvg.Targ":      "0.1",   // .01 -- .005, .008 too low -- maybe not nec?
+					"Layer.Inhib.ActAvg.AdaptGi":   "false", // true: it is essential -- too hard to balance manually
 					"Layer.Inhib.ActAvg.LoTol":     "0.5",
 					"Layer.Inhib.ActAvg.AdaptRate": "0.02", // 0.01 >= 0.02 best in range 0.01..0.1
 					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
@@ -740,7 +740,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.Images.ImgSize = 32
 	ss.TrainEnv.Images.TestBatch = 5
 	ss.TrainEnv.OutRandom = ss.RndOutPats
-	ss.TrainEnv.OutSize.Set(10, 10)
+	ss.TrainEnv.OutSize.Set(10, 1)
 	ss.TrainEnv.Images.OpenPath(path)
 
 	ss.TrainEnv.Validate()
@@ -755,36 +755,11 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Images.ImgSize = 32
 	ss.TestEnv.Images.TestBatch = 5
 	ss.TestEnv.OutRandom = ss.RndOutPats
-	ss.TestEnv.OutSize.Set(10, 10)
+	ss.TestEnv.OutSize.Set(10, 1)
 	ss.TestEnv.Test = true
 	ss.TestEnv.Images.OpenPath(path)
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 	ss.TestEnv.Validate()
-
-	/*
-		// Delete to 60
-			last20 := []string{"submarine", "synthesizer", "tablelamp", "tank", "telephone", "television", "toaster", "toilet", "trafficcone", "trafficlight", "trex", "trombone", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht"}
-			next20 := []string{"pedestalsink", "person", "piano", "plant", "plate", "pliers", "propellor", "remote", "rolltopdesk", "sailboat", "scissors", "screwdriver", "sectionalcouch", "simpledesk", "skateboard", "skull", "slrcamera", "speaker", "spotlightlamp", "stapler"}
-			last40 := append(last20, next20...)
-			ss.TrainEnv.Images.DeleteCats(last40)
-			ss.TestEnv.Images.DeleteCats(last40)
-	*/
-
-	/*
-		objs20 := []string{"banana", "layercake", "trafficcone", "sailboat", "trex", "person", "guitar", "tablelamp", "doorknob", "handgun", "donut", "chair", "slrcamera", "elephant", "piano", "fish", "car", "heavycannon", "stapler", "motorcycle"}
-
-		objsnxt20 := []string{"submarine", "synthesizer", "tank", "telephone", "television", "toaster", "toilet", "trafficlight", "tropicaltree", "trumpet", "turntable", "umbrella", "wallclock", "warningsign", "wrench", "yacht", "pedestalsink", "pliers", "sectionalcouch", "skull"}
-
-		objs40 := append(objs20, objsnxt20...)
-
-		ss.TrainEnv.Images.SelectCats(objs40)
-		ss.TestEnv.Images.SelectCats(objs40)
-	*/
-
-	// remove most confusable items
-	confuse := []string{"blade", "flashlight", "pckeyboard", "scissors", "screwdriver", "submarine"}
-	ss.TrainEnv.Images.DeleteCats(confuse)
-	ss.TestEnv.Images.DeleteCats(confuse)
 
 	if ss.UseMPI {
 		ss.TrainEnv.MPIAlloc()
@@ -806,9 +781,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	v2mNp := 8
 	v2lNp := 4
-	v2Nu := 8
+	v2Nu := 7
 	v4Np := 4
-	v4Nu := 10
+	v4Nu := 8
 	if ss.SubPools {
 		v2mNp *= 2
 		v2lNp *= 2
@@ -865,12 +840,14 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
-	teo16 := net.AddLayer4D("TEOf16", 2, 2, 15, 15, emer.Hidden)
-	teo8 := net.AddLayer4D("TEOf8", 2, 2, 15, 15, emer.Hidden)
+	teNu := 10
+
+	teo16 := net.AddLayer4D("TEOf16", 2, 2, teNu, teNu, emer.Hidden)
+	teo8 := net.AddLayer4D("TEOf8", 2, 2, teNu, teNu, emer.Hidden)
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
-	te := net.AddLayer4D("TE", 2, 2, 15, 15, emer.Hidden)
+	te := net.AddLayer4D("TE", 2, 2, teNu, teNu, emer.Hidden)
 
 	var out emer.Layer
 	if ss.RndOutPats {

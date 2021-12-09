@@ -114,8 +114,8 @@ var ParamSets = params.Sets{
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Layer.Gi":    "0.9",     // 0.9 > 1.1 def -- more activity
-					"Layer.Inhib.Pool.Gi":     "0.9",     // 0.9 > 1.1 def -- more activity
+					"Layer.Inhib.Layer.Gi":    "0.9",     // 0.9 >= 1.1 def -- more activity -- clamp.Ge more important
+					"Layer.Inhib.Pool.Gi":     "0.9",     // 0.9 >= 1.1 def -- more activity
 					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
 					"Layer.Act.Clamp.Type":    "GeClamp", // GeClamp better
 					"Layer.Act.Clamp.Ge":      "1.0",     // 1.0 > .6 -- more activity

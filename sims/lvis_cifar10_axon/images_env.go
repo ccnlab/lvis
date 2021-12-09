@@ -77,7 +77,7 @@ type ImagesEnv struct {
 	CurTrans  mat32.Vec2      `desc:"current translation"`
 	CurScale  float32         `desc:"current scaling"`
 	CurRot    float32         `desc:"current rotation"`
-	Image     *image.RGBA     `view:"-" desc:"rendered image as loaded"`
+	Image     *image.RGBA     `view:"-" desc:"image as loaded, after resizing"`
 }
 
 func (ev *ImagesEnv) Name() string { return ev.Nm }
@@ -89,9 +89,9 @@ func (ev *ImagesEnv) Validate() error {
 
 func (ev *ImagesEnv) Defaults() {
 	ev.TransSigma = 0
-	ev.TransMax.Set(0.2, 0.2)
-	ev.ScaleRange.Set(0.8, 1.1)
-	ev.RotateMax = 8
+	ev.TransMax.Set(0.0, 0.0)   // 0.2, 0.2 for CU3D100
+	ev.ScaleRange.Set(1.0, 1.0) // 0.8, 1.1 for CU3D100
+	ev.RotateMax = 0            // 8 for CU3D100
 	ev.RndPctOn = 0.2
 	ev.RndMinDiff = 0.5
 	ev.NOutPer = 5
@@ -301,6 +301,7 @@ func (ev *ImagesEnv) OpenImage() error {
 	ev.Image, err = ev.Images.Image(ev.Image, img)
 	if err != nil {
 		log.Println(err)
+		return err
 	}
 	return err
 }
@@ -346,7 +347,7 @@ func (ev *ImagesEnv) FilterImage() error {
 		fmt.Println(err)
 		return err
 	}
-	ev.TransformImage()
+	// ev.TransformImage()
 	ev.Img.SetImage(ev.Image, ev.V1l16.V1sGeom.FiltRt.X)
 	ev.V1l16.Filter()
 	ev.V1m16.Filter()
