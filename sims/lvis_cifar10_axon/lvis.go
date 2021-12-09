@@ -114,8 +114,8 @@ var ParamSets = params.Sets{
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Layer.Gi":    "0.9",     // 0.9 > 1.1 def -- more activity
-					"Layer.Inhib.Pool.Gi":     "0.9",     // 0.9 > 1.1 def -- more activity
+					"Layer.Inhib.Layer.Gi":    "1.1",     // 0.9 > 1.1 def -- more activity
+					"Layer.Inhib.Pool.Gi":     "1.1",     // 0.9 > 1.1 def -- more activity
 					"Layer.Inhib.ActAvg.Init": "0.06",    // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
 					"Layer.Act.Clamp.Type":    "GeClamp", // GeClamp better
 					"Layer.Act.Clamp.Ge":      "1.0",     // 1.0 > .6 -- more activity
@@ -189,7 +189,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":         "1.1",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
+					"Layer.Inhib.Layer.Gi":         "1.0",   // old: 1.3 for 1/100
 					"Layer.Inhib.ActAvg.Init":      "0.1",   // .005 > .008 > .01 -- prevents loss of Ge over time..
 					"Layer.Inhib.ActAvg.Targ":      "0.1",   // .01 -- .005, .008 too low -- maybe not nec?
 					"Layer.Inhib.ActAvg.AdaptGi":   "false", // true: it is essential -- too hard to balance manually
