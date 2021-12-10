@@ -16,7 +16,7 @@ A basic Leabra model on the raw pixel images does very poorly, with roughly 20-3
 
 # Axon Results
 
-Preliminary data shows the basic LVis axon model architecture learns to about 5% training and testing error.  It remains unclear how much of this residual error is due to noisy nature of spiking: using the top-2 criterion drops that down to about 1%.  Need to do more repeat testing to determine noise effects -- the raw testing performance does exhibit significant variability.
+Preliminary data shows the basic LVis axon model architecture learns to about 3% training and testing error with steady decreases over time.  It remains unclear how much of this residual error is due to noisy nature of spiking: using the top-2 criterion drops that down to about 1%.  Need to do more repeat testing to determine noise effects -- the raw testing performance does exhibit significant variability.
 
 It looks like having the more focused 8 degree field of view in addition to the full 16 degree provides slightly better learning and generalization.
 

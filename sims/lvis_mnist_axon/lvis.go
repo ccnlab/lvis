@@ -445,6 +445,7 @@ type Sim struct {
 	ConfusionEpc    int              `desc:"epoch to start recording confusion matrix"`
 	MinusCycles     int              `desc:"number of minus-phase cycles"`
 	PlusCycles      int              `desc:"number of plus-phase cycles"`
+	NTests          int              `desc:"number of repeated tests of same input"`
 	SubPools        bool             `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
 	RndOutPats      bool             `desc:"if true, use random output patterns -- else localist"`
 	PostCycs        int              `desc:"number of cycles to run after main alphacyc cycles, between stimuli"`
@@ -591,6 +592,7 @@ func (ss *Sim) New() {
 	ss.Time.Defaults()
 	ss.MinusCycles = 180
 	ss.PlusCycles = 50
+	ss.NTests = 5
 	ss.RepsInterval = 10
 	ss.SubPools = true    // true
 	ss.RndOutPats = false // change here
@@ -1203,8 +1205,6 @@ func (ss *Sim) ThetaCyc(train bool) {
 		}
 	}
 
-	ss.TrialStats(train)
-
 	if train {
 		// not using this anymore, in favor of neuron-level RLrate
 		// ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
@@ -1294,6 +1294,7 @@ func (ss *Sim) TrainTrial() {
 	ss.Net.LayerByName("Output").SetType(emer.Target)
 	ss.ApplyInputs(&ss.TrainEnv)
 	ss.ThetaCyc(true) // train
+	ss.TrialStats(true)
 	ss.LogTrnTrl(ss.TrnTrlLog)
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		ss.LogTrnRepTrl(ss.TrnTrlRepLog)
@@ -1540,10 +1541,31 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		}
 	}
 
-	// note: type must be in place before apply inputs
-	ss.Net.LayerByName("Output").SetType(emer.Compare)
-	ss.ApplyInputs(&ss.TestEnv)
-	ss.ThetaCyc(false) // !train
+	votes := make([]int, ss.NTests)
+	dvotes := make([]int, ss.NTests)
+	for nt := 0; nt < ss.NTests; nt++ {
+		// note: type must be in place before apply inputs
+		ss.Net.LayerByName("Output").SetType(emer.Compare)
+		ss.ApplyInputs(&ss.TestEnv)
+		ss.ThetaCyc(false) // !train
+		ss.TrialStats(false)
+		votes[nt] = ss.TrlRespIdx
+		dvotes[nt] = ss.TrlDecRespIdx
+	}
+	top, _ := decoder.TopVoteInt(votes)
+	dtop, _ := decoder.TopVoteInt(dvotes)
+	ss.TrlRespIdx = top
+	if ss.TrlRespIdx == ss.TrlCatIdx {
+		ss.TrlErr = 0
+	} else {
+		ss.TrlErr = 1
+	}
+	ss.TrlDecRespIdx = dtop
+	if ss.TrlDecRespIdx == ss.TrlCatIdx {
+		ss.TrlDecErr = 0
+	} else {
+		ss.TrlDecErr = 1
+	}
 	ss.LogTstTrl(ss.TstTrlLog)
 }
 
