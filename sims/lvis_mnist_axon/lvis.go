@@ -592,7 +592,7 @@ func (ss *Sim) New() {
 	ss.Time.Defaults()
 	ss.MinusCycles = 180
 	ss.PlusCycles = 50
-	ss.NTests = 5
+	ss.NTests = 10
 	ss.RepsInterval = 10
 	ss.SubPools = true    // true
 	ss.RndOutPats = false // change here
@@ -750,6 +750,10 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.OutSize.Set(10, 1)
 	ss.TrainEnv.Images.OpenPath(path)
 
+	ss.TrainEnv.TransMax.Set(0.1, 0.1)   // 0.2, 0.2 for CU3D100
+	ss.TrainEnv.ScaleRange.Set(0.9, 1.0) // 0.8, 1.1 for CU3D100
+	ss.TrainEnv.RotateMax = 8            // 8 for CU3D100
+
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 	ss.TrainEnv.Trial.Max = ss.MaxTrls
@@ -763,6 +767,11 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Test = true
 	ss.TestEnv.Images.OpenPath(path)
 	ss.TestEnv.Trial.Max = ss.MaxTrls
+
+	ss.TestEnv.TransMax.Set(0.05, 0.05)  // 0.2, 0.2 for CU3D100
+	ss.TestEnv.ScaleRange.Set(0.95, 1.0) // 0.8, 1.1 for CU3D100
+	ss.TestEnv.RotateMax = 4             // 8 for CU3D100
+
 	ss.TestEnv.Validate()
 
 	if ss.UseMPI {
@@ -1541,9 +1550,16 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		}
 	}
 
+	if ss.CurImgGrid != nil {
+		ss.CurImgGrid.SetTensor(&ss.TestEnv.Img.Tsr)
+	}
+
 	votes := make([]int, ss.NTests)
 	dvotes := make([]int, ss.NTests)
 	for nt := 0; nt < ss.NTests; nt++ {
+		if ss.CurImgGrid != nil {
+			ss.CurImgGrid.UpdateSig()
+		}
 		// note: type must be in place before apply inputs
 		ss.Net.LayerByName("Output").SetType(emer.Compare)
 		ss.ApplyInputs(&ss.TestEnv)
@@ -1551,6 +1567,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		ss.TrialStats(false)
 		votes[nt] = ss.TrlRespIdx
 		dvotes[nt] = ss.TrlDecRespIdx
+		ss.TestEnv.Render()
 	}
 	top, _ := decoder.TopVoteInt(votes)
 	dtop, _ := decoder.TopVoteInt(dvotes)
@@ -1567,6 +1584,10 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		ss.TrlDecErr = 1
 	}
 	ss.LogTstTrl(ss.TstTrlLog)
+
+	if ss.CurImgGrid != nil {
+		ss.CurImgGrid.SetTensor(&ss.TrainEnv.Img.Tsr)
+	}
 }
 
 // TestAll runs through the full set of testing items
@@ -1579,6 +1600,13 @@ func (ss *Sim) TestAll() {
 			break
 		}
 	}
+}
+
+// RunTestTrial runs through one test trial
+func (ss *Sim) RunTestTrial() {
+	ss.StopNow = false
+	ss.TestTrial(false)
+	ss.Stopped()
 }
 
 // RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
@@ -3123,9 +3151,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		if !ss.IsRunning {
 			ss.IsRunning = true
-			ss.TestTrial(false) // don't break on chg
-			ss.IsRunning = false
-			vp.SetNeedsFullRender()
+			tbar.UpdateActions()
+			go ss.RunTestTrial()
 		}
 	})
 

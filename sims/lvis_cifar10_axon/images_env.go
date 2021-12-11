@@ -347,7 +347,7 @@ func (ev *ImagesEnv) FilterImage() error {
 		fmt.Println(err)
 		return err
 	}
-	// ev.TransformImage()
+	ev.TransformImage()
 	ev.Img.SetImage(ev.Image, ev.V1l16.V1sGeom.FiltRt.X)
 	ev.V1l16.Filter()
 	ev.V1m16.Filter()
@@ -433,10 +433,15 @@ func (ev *ImagesEnv) Step() bool {
 	if ev.Trial.Incr() {
 		ev.Epoch.Incr()
 	}
+	ev.Render()
+	return true
+}
+
+// Render renders current item with random transforms
+func (ev *ImagesEnv) Render() {
 	ev.RandTransforms()
 	ev.FilterImage()
 	ev.SetOutput(ev.CurCatIdx)
-	return true
 }
 
 func (ev *ImagesEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
