@@ -80,26 +80,26 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Inhib.AvgTau":           "30",   // 30 > 20 >> 1 definitively
 					"Layer.Inhib.Inhib.GiSynThr":         "0.0",  // 0.01 shows effects
-					"Layer.Act.Dt.IntTau":                "40",   // 40 > 20
+					"Layer.Inhib.Layer.Bg":               "0.0",  // 0.3 == 0.2 == 0.0 asymptotically -- no real effect except slower starting learning
 					"Layer.Inhib.Layer.Gi":               "1.1",  // 1.1 > 1.0 > 1.2 -- all layers
 					"Layer.Inhib.Pool.Gi":                "1.1",  // 1.1 > 1.0 -- universal for all layers
 					"Layer.Inhib.Pool.FFEx0":             "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
 					"Layer.Inhib.Pool.FFEx":              "0.05", // .05 best so far
 					"Layer.Inhib.Layer.FFEx0":            "0.15",
 					"Layer.Inhib.Layer.FFEx":             "0.05", // .05 best so far
+					"Layer.Act.Dt.IntTau":                "40",   // 40 > 20
 					"Layer.Act.Gbar.L":                   "0.2",  // 0.2 orig > 0.1 new def
 					"Layer.Act.Decay.Act":                "0.2",  // 0.2 > 0 > 0.5 w/ glong.7 459
 					"Layer.Act.Decay.Glong":              "0.6",  // 0.6 > 0.7 > 0.8
 					"Layer.Act.KNa.Fast.Max":             "0.1",  // fm both .2 worse
 					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
 					"Layer.Act.KNa.Slow.Max":             "0.2",  // 0.2 > higher
-					"Layer.Act.Noise.Dist":               "Gaussian",
-					"Layer.Act.Noise.Mean":               "0.0",     // .05 max for blowup
-					"Layer.Act.Noise.Var":                "0.01",    // .01 a bit worse
-					"Layer.Act.Noise.Type":               "NoNoise", // off for now
-					"Layer.Act.GTarg.GeMax":              "1.2",     // 1 > .8 -- rescaling not very useful.
-					"Layer.Act.Dt.LongAvgTau":            "20",      // 50 > 20 in terms of stability, but weird effect late
-					"Layer.Learn.ActAvg.MinLrn":          "0.02",    // sig improves "top5" hogging in pca strength
+					"Layer.Act.Noise.On":                 "false",
+					"Layer.Act.Noise.Ge":                 "0.005", // 0.002 has sig effects..
+					"Layer.Act.Noise.Gi":                 "0.0",
+					"Layer.Act.GTarg.GeMax":              "1.2",  // 1 > .8 -- rescaling not very useful.
+					"Layer.Act.Dt.LongAvgTau":            "20",   // 50 > 20 in terms of stability, but weird effect late
+					"Layer.Learn.ActAvg.MinLrn":          "0.02", // sig improves "top5" hogging in pca strength
 					"Layer.Learn.ActAvg.SSTau":           "40",
 					"Layer.Inhib.ActAvg.AdaptRate":       "0.5",   // 0.5 default for layers, except output
 					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // 0.01 orig > 0.005
@@ -114,12 +114,11 @@ var ParamSets = params.Sets{
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Layer.Gi":    "1.1",     //
-					"Layer.Inhib.Pool.Gi":     "1.1",     //
-					"Layer.Inhib.ActAvg.Init": "0.08",    // actuals .05 - .1
-					"Layer.Act.Clamp.Type":    "GeClamp", // GeClamp better
-					"Layer.Act.Clamp.Ge":      "1.0",     // 1.0 > .6 -- more activity
-					"Layer.Act.Decay.Act":     "1",       // these make no diff
+					"Layer.Inhib.Layer.Gi":    "1.1",  //
+					"Layer.Inhib.Pool.Gi":     "1.1",  //
+					"Layer.Inhib.ActAvg.Init": "0.08", // actuals .05 - .1
+					"Layer.Act.Clamp.Ge":      "1.0",  // 1.0 > .6 -- more activity
+					"Layer.Act.Decay.Act":     "1",    // these make no diff
 					"Layer.Act.Decay.Glong":   "1",
 				}},
 			{Sel: ".V1m", Desc: "",
@@ -203,20 +202,11 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.AdaptGi":   "false", // true: it is essential -- too hard to balance manually
 					"Layer.Inhib.ActAvg.LoTol":     "0.5",
 					"Layer.Inhib.ActAvg.AdaptRate": "0.02", // 0.01 >= 0.02 best in range 0.01..0.1
-					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
-					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
-					"Layer.Act.Clamp.Type":     "GeClamp",
-					"Layer.Act.Clamp.Ge":       "0.6", // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
-					"Layer.Act.Clamp.Burst":    "false",
-					"Layer.Act.Clamp.BurstThr": "0.5",   //
-					"Layer.Act.Clamp.BurstGe":  "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same
-					"Layer.Act.Clamp.BurstCyc": "20",    // 20 > 15 > 10 -- maybe refractory?
-					"Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
-					"Layer.Act.GABAB.Gbar":     "0.005", // .005 > .01 > .02 > .05 > .1 > .2
-					"Layer.Act.NMDA.Gbar":      "0.03",  // was .02
-					"Layer.Learn.RLrate.On":    "true",  // todo: try false
-					"Layer.Inhib.Pool.FFEx":    "0.0",   // no
-					"Layer.Inhib.Layer.FFEx":   "0.0",   //
+					"Layer.Act.Clamp.Ge":           "0.6",  // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
+					// "Layer.Act.Spike.Tr": "3",   // standard tr fine
+					"Layer.Learn.RLrate.On":  "true", // todo: try false
+					"Layer.Inhib.Pool.FFEx":  "0.0",  // no
+					"Layer.Inhib.Layer.FFEx": "0.0",  //
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
 				Params: params.Params{
@@ -750,9 +740,9 @@ func (ss *Sim) ConfigEnv() {
 	ss.TrainEnv.OutSize.Set(10, 1)
 	ss.TrainEnv.Images.OpenPath(path)
 
-	ss.TrainEnv.TransMax.Set(0.1, 0.1)   // 0.2, 0.2 for CU3D100
-	ss.TrainEnv.ScaleRange.Set(0.9, 1.0) // 0.8, 1.1 for CU3D100
-	ss.TrainEnv.RotateMax = 8            // 8 for CU3D100
+	ss.TrainEnv.TransMax.Set(0.0, 0.0)   // 0.1 > 0.2
+	ss.TrainEnv.ScaleRange.Set(1.0, 1.0) // 0.8, 1.1 for CU3D100
+	ss.TrainEnv.RotateMax = 0            // 8 for CU3D100
 
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
@@ -768,9 +758,9 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Images.OpenPath(path)
 	ss.TestEnv.Trial.Max = ss.MaxTrls
 
-	ss.TestEnv.TransMax.Set(0.05, 0.05)  // 0.2, 0.2 for CU3D100
-	ss.TestEnv.ScaleRange.Set(0.95, 1.0) // 0.8, 1.1 for CU3D100
-	ss.TestEnv.RotateMax = 4             // 8 for CU3D100
+	ss.TestEnv.TransMax.Set(0.0, 0.0)   // 0.05 > 0.2
+	ss.TestEnv.ScaleRange.Set(1.0, 1.0) // 0.8, 1.1 for CU3D100
+	ss.TestEnv.RotateMax = 0            // 8 for CU3D100
 
 	ss.TestEnv.Validate()
 
@@ -800,6 +790,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	}
 
 	deg8 := true
+	v1sc := true // v1 shortcuts
 
 	var v1m8, v1l8, v2m8, v2l8, v4f8, teo8 emer.Layer
 
@@ -936,11 +927,13 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	// clst not useful
 	// net.ConnectLayers(v1l16, clst, full, emer.Forward)
 
-	// V1 shortcuts best for syncing all layers -- like the pulvinar basically
-	net.ConnectLayers(v1l16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
+	if v1sc {
+		// V1 shortcuts best for syncing all layers -- like the pulvinar basically
+		net.ConnectLayers(v1l16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
+		net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
+		net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
+		net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
+	}
 
 	if deg8 {
 		net.ConnectLayers(v1m8, v2m8, p4x4s2, emer.Forward).SetClass("V1V2")
@@ -982,9 +975,11 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
 		// V1 shortcuts best for syncing all layers -- like the pulvinar basically
-		net.ConnectLayers(v1l8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
-		net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
-		net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+		if v1sc {
+			net.ConnectLayers(v1l8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
+			net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+			net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
+		}
 	}
 
 	//////////////////////
