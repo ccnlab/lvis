@@ -86,6 +86,11 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.FFEx":              "0.05", // .05 best so far
 					"Layer.Inhib.Layer.FFEx0":            "0.15",
 					"Layer.Inhib.Layer.FFEx":             "0.05", // .05 best so far
+					"Layer.Inhib.Layer.Bg":               "0.0",  // testing, .3 best in ra25
+					"Layer.Inhib.Pool.Bg":                "0.0",
+					"Layer.Act.Dend.GbarExp":             "0.2",  // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":               "3",    // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":             "2.81", // 5 vs. 2.81? test..
 					"Layer.Act.Dt.IntTau":                "40",   // 40 > 20
 					"Layer.Act.Gbar.L":                   "0.2",  // 0.2 orig > 0.1 new def
 					"Layer.Act.Decay.Act":                "0.2",  // 0.2 > 0 > 0.5 w/ glong.7 459
