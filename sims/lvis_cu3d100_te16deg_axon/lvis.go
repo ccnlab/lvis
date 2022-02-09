@@ -86,8 +86,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.FFEx":              "0.05", // .05 best so far
 					"Layer.Inhib.Layer.FFEx0":            "0.15",
 					"Layer.Inhib.Layer.FFEx":             "0.05", // .05 best so far
-					"Layer.Inhib.Layer.Bg":               "0.0",  // testing, .3 best in ra25
-					"Layer.Inhib.Pool.Bg":                "0.0",
+					"Layer.Inhib.Layer.Bg":               "0.0",  // .2 worse
+					"Layer.Inhib.Pool.Bg":                "0.0",  // "
 					"Layer.Act.Dend.GbarExp":             "0.2",  // 0.2 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":               "3",    // 2 good for 0.2
 					"Layer.Act.Dt.VmDendTau":             "2.81", // 5 vs. 2.81? test..
@@ -235,6 +235,12 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.XCal.SubMean":   "1",      // testing..
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":            "0.0",
+					"Prjn.Learn.Kinase.On":      "true",
+					"Prjn.Learn.Kinase.SAvgThr": "0.02", // 0.02 = 0.01 > 0.05
+					"Prjn.Learn.Kinase.MTau":    "40",
+					"Prjn.Learn.Kinase.PTau":    "10",
+					"Prjn.Learn.Kinase.DTau":    "40",
+					"Prjn.Learn.Kinase.DScale":  "0.93", // 0.93 > 0.94 > 1 > .9
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{

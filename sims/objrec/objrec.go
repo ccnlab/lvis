@@ -75,46 +75,16 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Act.Dt.IntTau":                "40", // 40 > 30 > 20 > 10
+					"Layer.Act.Dt.IntTau":                "30", // trying 30 now per lvis
 					"Layer.Inhib.Layer.Gi":               "1.0",
-					"Layer.Inhib.Layer.FBTau":            "1.4", // 1.4 def
-					"Layer.Inhib.Pool.FBTau":             "1.4",
-					"Layer.Act.Decay.Act":                "0.0",  // 0.2 with glong .6 best in lvis, slows learning here
-					"Layer.Act.Decay.Glong":              "1",    // 0, 1 best here
-					"Layer.Act.Decay.KNa":                "0.0",  // 0 > 0.5 interesting..
-					"Layer.Act.Gbar.L":                   "0.2",  // .2 > .1 @176
-					"Layer.Act.Gbar.E":                   "1.0",  // 1.2 maybe better % cor but not cosdiff
-					"Layer.Act.Gbar.K":                   "1.0",  // 1.0 > 0.5 > 2.0 -- interactive test
-					"Layer.Act.NMDA.Gbar":                "0.03", // 0.03 > .04 @176 > .02 -- massive effects for .02
-					"Layer.Act.NMDA.Tau":                 "100",  // 100 def
-					"Layer.Act.GABAB.Gbar":               "0.2",  // .1 == .2 pretty much
-					"Layer.Act.GABAB.Gbase":              "0.2",  // .1 == .2
-					"Layer.Act.GABAB.DecayTau":           "50",   // 50 def
-					"Layer.Act.GABAB.RiseTau":            "45",   // 45 def
-					"Layer.Act.Spike.Exp":                "true", // true > false @176
-					"Layer.Act.Spike.Tr":                 "3",    // 3 def -- 2 tiny bit worse, needs out ge .5
-					"Layer.Learn.ActAvg.SpikeG":          "8",    // 8 for sure..
-					"Layer.Learn.ActAvg.SSTau":           "40",   // 40 > 35 def > 30
-					"Layer.Learn.ActAvg.STau":            "10",   // 10 >= 8 def (10 better early) > 6
-					"Layer.Learn.ActAvg.MTau":            "40",   // for 50 cyc qtr: SS = 40, 50, 45 faster then die
-					"Layer.Learn.ActAvg.MinLrn":          "0.02", // lvis: sig improves "top5" hogging in pca strength -- slower start here but same asymp.
-					"Layer.Act.Dt.GeTau":                 "5",    // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.KNa.On":                   "true", // true > false @176
-					"Layer.Act.KNa.Fast.Max":             "0.1",  // 0.1 > 0.1 -- 122 best
-					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
-					"Layer.Act.KNa.Slow.Max":             "0.2",  // 0.2 > 0.1 > 0.5
-					"Layer.Act.Noise.Dist":               "Gaussian",
-					"Layer.Act.Noise.Mean":               "0.0",
-					"Layer.Act.Noise.Var":                "0.01",    // 0.01 > 0.005 > 0.02
-					"Layer.Act.Noise.Type":               "NoNoise", // no diff -- maybe tiny bit better
-					"Layer.Act.Clamp.Rate":               "180",     // 180 == 200 > 150 > 120 > 100 -- major effect on 100, 120
-					"Layer.Act.Clamp.ErrThr":             "0.5",     // 0.5 best
-					"Layer.Act.Dt.LongAvgTau":            "20",      // 20 > 50 > 100
-					"Layer.Act.GTarg.GeMax":              "1",       // 1 > .8 here
-					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.02",    // .02 > .01 > .005 > .05
-					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005",   // .002 >= .005 > .01
-					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.2",     // .2 > .5 > .1
-					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",     // 2 > 2.5 > 1.8
+					"Layer.Act.Decay.Act":                "0.0",   // 0.2 with glong .6 best in lvis, slows learning here
+					"Layer.Act.Decay.Glong":              "0.6",   // 0.6 def
+					"Layer.Act.Dt.GeTau":                 "5",     // 5 = 4 (bit slower) > 6 > 7 @176
+					"Layer.Act.Dt.LongAvgTau":            "20",    // 20 > 50 > 100
+					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // .02 > .01 > .005 > .05
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005", // .002 >= .005 > .01
+					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .2 > .5 > .1
+					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // 2 > 2.5 > 1.8
 					"Layer.Learn.RLrate.On":              "true",
 					"Layer.Learn.RLrate.ActThr":          "0.1",
 					"Layer.Learn.RLrate.ActDifThr":       "0.02", // .02 > .05
@@ -122,66 +92,49 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.0",  //
-					"Layer.Inhib.Pool.Gi":     "1.0",  //
-					"Layer.Inhib.Pool.On":     "true", // key for soft clamped
-					"Layer.Inhib.ActAvg.Init": "0.06", // .1 for hard clamp, .06 for Ge clamp
-					"Layer.Inhib.ActAvg.Targ": "0.06",
-					"Layer.Act.Clamp.Type":    "GeClamp", // GeClamp better in every other case..
-					"Layer.Act.Clamp.Ge":      "0.6",     // .6 generally = .5
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.Layer.Gi":    "0.9", //
+					"Layer.Inhib.Pool.Gi":     "0.9", //
+					"Layer.Inhib.ActAvg.Init": "0.1", // .1 for hard clamp, .06 for Ge clamp
+					"Layer.Act.Clamp.Ge":      "1.0", // 1 > .6 lvis
 				}},
 			{Sel: "#V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.0",  // 1.0 == 0.9 == 0.8 > 0.7 > 1.1 (vry bad)
-					"Layer.Inhib.Pool.Gi":        "1.0",  // 1.0 == 0.9 > 0.8 > 1.1 (vry bad)
-					"Layer.Inhib.Pool.On":        "true", // needs pool-level
-					"Layer.Inhib.ActAvg.Init":    "0.05",
-					"Layer.Inhib.ActAvg.Targ":    "0.05",
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // no advantage, no cost at .05
+					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.0 == 0.9 == 0.8 > 0.7 > 1.1 (vry bad)
+					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.0 == 0.9 > 0.8 > 1.1 (vry bad)
+					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.ActAvg.Init": "0.05",
 				}},
 			{Sel: "#IT", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.1",  // 1.1 > 1.0, 1.2
-					"Layer.Inhib.ActAvg.Init":    "0.05", // .05 > .04 with adapt
-					"Layer.Inhib.ActAvg.Targ":    "0.05", // .05 > .04 with adapt
-					"Layer.Inhib.ActAvg.AdaptGi": "true", // this is only adapt that is key
-					"Layer.Act.GABAB.Gbar":       "0.2",  // .2 > lower (small dif)
+					"Layer.Inhib.Layer.Gi":    "1.1",  // 1.1 > 1.0, 1.2
+					"Layer.Inhib.ActAvg.Init": "0.05", // .05 > .04 with adapt
+					"Layer.Act.GABAB.Gbar":    "0.2",  // .2 > lower (small dif)
 				}},
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.5", // 1.5 = 1.6 > 1.4 adapt
-					"Layer.Inhib.ActAvg.Init":    "0.05",
-					"Layer.Inhib.ActAvg.Targ":    "0.05",  // this has to be exact for adapt
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // true >= false (small, only cosdif)
-					"Layer.Inhib.ActAvg.LoTol":   "0.8",   // essential to keep low
-					"Layer.Act.Clamp.Rate":       "180",   // 180 best here too
-					"Layer.Act.Clamp.Type":       "GeClamp",
-					"Layer.Act.Clamp.Ge":         "0.6",   // .6 generally = .5
-					"Layer.Act.Clamp.Burst":      "false", // effective for boosting errors but no overall effect
-					"Layer.Act.Clamp.BurstThr":   "0.5",   //
-					"Layer.Act.Clamp.BurstGe":    "2",     // 2, 20cyc with tr 2 or 3, ge .6 all about same; 2 = 1.5 = 1 more or less -- tiny bit of extra err diff progressively
-					"Layer.Act.Clamp.BurstCyc":   "20",    // 20 > 15 > 10 -- maybe refractory?  25, 30 = 20
-					"Layer.Act.Spike.Tr":         "3",     // 2 >= 3 > 1 > 0
-					"Layer.Act.GTarg.GeMax":      "0.8",   // 0.8 >= 1 -- tiny diff
-					"Layer.Act.GABAB.Gbar":       "0.005", // .005 > .01 > .02 > .05 > .1 > .2
-					"Layer.Act.NMDA.Gbar":        "0.03",  // .03 > .02 > .01 > .1
+					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 = 1.6 > 1.4 adapt
+					"Layer.Inhib.ActAvg.Init": "0.05",
+					"Layer.Act.Clamp.Ge":      "0.6", // .6 generally = .5
 				}},
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "0.02",   // .1 > higher
-					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
-					"Prjn.Learn.Lrate.Base":     "0.2",    // lower progressively worse.. gain 1, lr .35 or .4 pretty close to 6/.04
-					"Prjn.Learn.XCal.SubMean":   "1",      // 1 > .9
-					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
-					"Prjn.SWt.Adapt.Lrate":      "0.005",  // 0.005 > others maybe?  0.02 > 0.05 > .1
+					"Prjn.PrjnScale.ScaleLrate": "2",     // .1 > higher
+					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
+					"Prjn.Learn.Lrate.Base":     "0.1",   // .2 for !kinase
+					"Prjn.SWt.Adapt.Lrate":      "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
 					"Prjn.SWt.Adapt.SigGain":    "6",
 					"Prjn.SWt.Init.SPct":        "1",   // 1 >= lower
 					"Prjn.SWt.Init.Mean":        "0.5", // .4 better on pca, .5 starts faster
 					"Prjn.SWt.Limit.Min":        "0.2", // .3-.7 better constraint, but not clear better than no SWt
 					"Prjn.SWt.Limit.Max":        "0.8",
 					"Prjn.Com.PFail":            "0.0",
-					"Prjn.Com.PFailWtMax":       "0.0", // 0.8 default
-					// "Prjn.WtInit.Sym":        "false", // slows first couple of epochs but then no diff
+					"Prjn.Learn.Kinase.On":      "false",
+					"Prjn.Learn.Kinase.SAvgThr": "0.02", // 0.02 = 0.01 > 0.05
+					"Prjn.Learn.Kinase.MTau":    "40",
+					"Prjn.Learn.Kinase.PTau":    "10",
+					"Prjn.Learn.Kinase.DTau":    "40",
+					"Prjn.Learn.Kinase.DScale":  "0.93", // 0.93 > 0.94 > 1 > .9
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
