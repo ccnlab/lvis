@@ -231,7 +231,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Mean":        "0.5",    // .5 > .4 -- key, except v2?
 					"Prjn.SWt.Limit.Min":        "0.2",    // .2-.8 == .1-.9; .3-.7 not better -- 0-1 minor worse
 					"Prjn.SWt.Limit.Max":        "0.8",    //
-					"Prjn.Learn.Lrate.Base":     "0.04",   // 0.01 > 0.015 > 0.02 459 -- .04 for RLrate
+					"Prjn.Learn.Lrate.Base":     "0.02",   // 0.01 > 0.015 > 0.02 459 -- .04 for RLrate
 					"Prjn.Learn.XCal.SubMean":   "1",      // testing..
 					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
 					"Prjn.Com.PFail":            "0.0",
@@ -240,7 +240,7 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Kinase.MTau":    "40",
 					"Prjn.Learn.Kinase.PTau":    "10",
 					"Prjn.Learn.Kinase.DTau":    "40",
-					"Prjn.Learn.Kinase.DScale":  "0.93", // 0.93 > 0.94 > 1 > .9
+					"Prjn.Learn.Kinase.DScale":  "0.95", // 0.93 > 0.94 > 1 > .9
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{

@@ -75,32 +75,36 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Act.Dt.IntTau":                "30", // trying 30 now per lvis
-					"Layer.Inhib.Layer.Gi":               "1.0",
-					"Layer.Act.Decay.Act":                "0.0",   // 0.2 with glong .6 best in lvis, slows learning here
-					"Layer.Act.Decay.Glong":              "0.6",   // 0.6 def
-					"Layer.Act.Dt.GeTau":                 "5",     // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.LongAvgTau":            "20",    // 20 > 50 > 100
-					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // .02 > .01 > .005 > .05
-					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005", // .002 >= .005 > .01
-					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .2 > .5 > .1
-					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // 2 > 2.5 > 1.8
-					"Layer.Learn.RLrate.On":              "true",
-					"Layer.Learn.RLrate.ActThr":          "0.1",
-					"Layer.Learn.RLrate.ActDifThr":       "0.02", // .02 > .05
-					"Layer.Learn.RLrate.Min":             "0.001",
+					"Layer.Act.Dt.IntTau":        "30",  // trying 30 now per lvis
+					"Layer.Act.Decay.Act":        "0.0", // 0.2 with glong .6 best in lvis, slows learning here
+					"Layer.Act.Decay.Glong":      "0.6", // 0.6 def
+					"Layer.Act.Dend.GbarExp":     "0.5", // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":       "6",   // 3 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
+					"Layer.Act.Dt.GeTau":         "5",   // 5 = 4 (bit slower) > 6 > 7 @176
+					"Layer.Act.Dt.LongAvgTau":    "20",  // 20 > 50 > 100
+					"Layer.Act.NMDA.MgC":         "1.4",
+					"Layer.Act.NMDA.Voff":        "5",
+					"Layer.Act.Dend.VGCCCa":      "20",
+					"Layer.Act.Dend.CaMax":       "100",
+					"Layer.Act.Dend.CaThr":       "0.2",
+					"Layer.Learn.SpikeCa.LrnM":   "0",  // 0.1 def
+					"Layer.Learn.SpikeCa.LrnTau": "20", // 20 > 30
+					"Layer.Learn.SpikeCa.MTau":   "10",
+					"Layer.Learn.SpikeCa.PTau":   "40",
+					"Layer.Learn.SpikeCa.DTau":   "40",
+					"Layer.Learn.SpikeCa.MinLrn": "0.02", // 0.05 probably ok
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Layer.Gi":    "0.9", //
-					"Layer.Inhib.Pool.Gi":     "0.9", //
-					"Layer.Inhib.ActAvg.Init": "0.1", // .1 for hard clamp, .06 for Ge clamp
-					"Layer.Act.Clamp.Ge":      "1.0", // 1 > .6 lvis
+					"Layer.Inhib.Layer.Gi":    "0.9",  //
+					"Layer.Inhib.Pool.Gi":     "0.9",  //
+					"Layer.Inhib.ActAvg.Init": "0.08", // .1 for hard clamp, .06 for Ge clamp
+					"Layer.Act.Clamp.Ge":      "1.0",  // 1 > .6 lvis
 				}},
 			{Sel: "#V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.0 == 0.9 == 0.8 > 0.7 > 1.1 (vry bad)
+					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.0 == 0.9 == 0.8 > 0.7 > 1.1 (vry bad -- still!!)
 					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.0 == 0.9 > 0.8 > 1.1 (vry bad)
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.ActAvg.Init": "0.05",
@@ -119,22 +123,19 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "2",     // .1 > higher
-					"Prjn.PrjnScale.AvgTau":     "500",   // slower default
-					"Prjn.Learn.Lrate.Base":     "0.1",   // .2 for !kinase
-					"Prjn.SWt.Adapt.Lrate":      "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
-					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Init.SPct":        "1",   // 1 >= lower
-					"Prjn.SWt.Init.Mean":        "0.5", // .4 better on pca, .5 starts faster
-					"Prjn.SWt.Limit.Min":        "0.2", // .3-.7 better constraint, but not clear better than no SWt
-					"Prjn.SWt.Limit.Max":        "0.8",
-					"Prjn.Com.PFail":            "0.0",
-					"Prjn.Learn.Kinase.On":      "false",
-					"Prjn.Learn.Kinase.SAvgThr": "0.02", // 0.02 = 0.01 > 0.05
-					"Prjn.Learn.Kinase.MTau":    "40",
-					"Prjn.Learn.Kinase.PTau":    "10",
-					"Prjn.Learn.Kinase.DTau":    "40",
-					"Prjn.Learn.Kinase.DScale":  "0.93", // 0.93 > 0.94 > 1 > .9
+					"Prjn.Learn.Lrate.Base":      "0.2",   // .15 kinase, .2 for !kinase
+					"Prjn.SWt.Adapt.Lrate":       "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
+					"Prjn.SWt.Init.SPct":         "1",     // 1 >= lower
+					"Prjn.Com.PFail":             "0.0",
+					"Prjn.Learn.Kinase.SpikeG":   "12", // 42 nominal for spkca, but 12 is better..
+					"Prjn.Learn.Kinase.Rule":     "SynSpkCa",
+					"Prjn.Learn.Kinase.OptInteg": "false",
+					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 10 test more
+					"Prjn.Learn.Kinase.PTau":     "40",
+					"Prjn.Learn.Kinase.DTau":     "40",
+					"Prjn.Learn.Kinase.DScale":   "1",
+					"Prjn.Learn.XCal.On":         "true",
+					"Prjn.Learn.XCal.PThrMin":    "0.01", // can handle this -- todo: try bigger, test more
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -510,7 +511,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 		ss.MiniBatchCtr++
 		if ss.MiniBatchCtr >= ss.MiniBatches {
 			ss.MiniBatchCtr = 0
-			ss.Net.WtFmDWt()
+			ss.Net.WtFmDWt(&ss.Time)
 		}
 	}
 
@@ -577,7 +578,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 
 	if train {
 		// ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
-		ss.Net.DWt()
+		ss.Net.DWt(&ss.Time)
 	}
 	if ss.ViewOn && viewUpdt == axon.AlphaCycle {
 		ss.UpdateView(train)
@@ -790,7 +791,7 @@ func (ss *Sim) SaveWeights(filename gi.FileName) {
 // LrateSched implements the learning rate schedule
 func (ss *Sim) LrateSched(epc int) {
 	switch epc {
-	case 40:
+	case 70:
 		ss.Net.LrateSched(0.5)
 		fmt.Printf("dropped lrate 0.5 at epoch: %d\n", epc)
 	case 80:
