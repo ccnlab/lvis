@@ -78,42 +78,26 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Inhib.AvgTau":           "30",   // 30 > 20 >> 1 definitively
-					"Layer.Inhib.Inhib.GiSynThr":         "0.0",  // 0.01 shows effects
-					"Layer.Inhib.Layer.Gi":               "1.1",  // 1.1 > 1.0 > 1.2 -- all layers
-					"Layer.Inhib.Pool.Gi":                "1.1",  // 1.1 > 1.0 -- universal for all layers
-					"Layer.Inhib.Pool.FFEx0":             "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
-					"Layer.Inhib.Pool.FFEx":              "0.05", // .05 best so far
-					"Layer.Inhib.Layer.FFEx0":            "0.15",
-					"Layer.Inhib.Layer.FFEx":             "0.05", // .05 best so far
-					"Layer.Inhib.Layer.Bg":               "0.0",  // .2 worse
-					"Layer.Inhib.Pool.Bg":                "0.0",  // "
-					"Layer.Act.Dend.GbarExp":             "0.2",  // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":               "3",    // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":             "2.81", // 5 vs. 2.81? test..
-					"Layer.Act.Dt.IntTau":                "40",   // 40 > 20
-					"Layer.Act.Gbar.L":                   "0.2",  // 0.2 orig > 0.1 new def
-					"Layer.Act.Decay.Act":                "0.2",  // 0.2 > 0 > 0.5 w/ glong.7 459
-					"Layer.Act.Decay.Glong":              "0.6",  // 0.6 > 0.7 > 0.8
-					"Layer.Act.KNa.Fast.Max":             "0.1",  // fm both .2 worse
-					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
-					"Layer.Act.KNa.Slow.Max":             "0.2",  // 0.2 > higher
-					"Layer.Act.Noise.On":                 "false",
-					"Layer.Act.Noise.Ge":                 "0.005", // 0.002 has sig effects..
-					"Layer.Act.Noise.Gi":                 "0.0",
-					"Layer.Act.GTarg.GeMax":              "1.2",  // 1 > .8 -- rescaling not very useful.
-					"Layer.Act.Dt.LongAvgTau":            "20",   // 50 > 20 in terms of stability, but weird effect late
-					"Layer.Learn.ActAvg.MinLrn":          "0.02", // sig improves "top5" hogging in pca strength
-					"Layer.Learn.ActAvg.SSTau":           "40",
-					"Layer.Inhib.ActAvg.AdaptRate":       "0.5",   // 0.5 default for layers, except output
-					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // 0.01 orig > 0.005
-					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005", // 0.005 orig > 0.01
-					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .5 > .2 overall
-					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
-					"Layer.Learn.RLrate.On":              "true",  // true = essential -- prevents over rep of
-					"Layer.Learn.RLrate.ActThr":          "0.1",   // 0.1 > 0.15 > 0.05 > 0.2
-					"Layer.Learn.RLrate.ActDifThr":       "0.02",  // 0.02 > 0.05 in other models
-					"Layer.Learn.RLrate.Min":             "0.001", // .001 best, adifthr.05
+					"Layer.Inhib.Pool.FFEx0":     "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
+					"Layer.Inhib.Pool.FFEx":      "0.05", // .05 best so far
+					"Layer.Inhib.Layer.FFEx0":    "0.15",
+					"Layer.Inhib.Layer.FFEx":     "0.05", // .05 best so far
+					"Layer.Inhib.Layer.Bg":       "0.0",  // .2 worse
+					"Layer.Inhib.Pool.Bg":        "0.0",  // "
+					"Layer.Act.Dend.GbarExp":     "0.2",  // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":       "3",    // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":     "5",    // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":         "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":        "5",    // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.Dend.VGCCCa":      "20",
+					"Layer.Act.Dend.CaMax":       "100",
+					"Layer.Act.Dend.CaThr":       "0.2",
+					"Layer.Learn.SpikeCa.LrnM":   "0",  // 0.1 def
+					"Layer.Learn.SpikeCa.LrnTau": "40", // 40 >= 30 > 20 > 15 (dies) -- some inc in pca top5
+					"Layer.Learn.SpikeCa.MTau":   "10",
+					"Layer.Learn.SpikeCa.PTau":   "40",
+					"Layer.Learn.SpikeCa.DTau":   "40",
+					"Layer.Learn.SpikeCa.MinLrn": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
@@ -219,28 +203,20 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
-					"Prjn.PrjnScale.ScaleLrate": "2",      // 2 = fast response, effective
-					"Prjn.PrjnScale.LoTol":      "0.8",    // good now...
-					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
-					"Prjn.PrjnScale.Adapt":      "false",  // no adapt better?
-					"Prjn.SWt.Adapt.On":         "true",   // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":      "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.SigGain":    "6",
-					"Prjn.SWt.Adapt.DreamVar":   "0.02",   // 0.02 good overall, no ToOut
-					"Prjn.SWt.Init.SPct":        "1",      // 1 > lower
-					"Prjn.SWt.Init.Mean":        "0.5",    // .5 > .4 -- key, except v2?
-					"Prjn.SWt.Limit.Min":        "0.2",    // .2-.8 == .1-.9; .3-.7 not better -- 0-1 minor worse
-					"Prjn.SWt.Limit.Max":        "0.8",    //
-					"Prjn.Learn.Lrate.Base":     "0.02",   // 0.01 > 0.015 > 0.02 459 -- .04 for RLrate
-					"Prjn.Learn.XCal.SubMean":   "1",      // testing..
-					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
-					"Prjn.Com.PFail":            "0.0",
-					"Prjn.Learn.Kinase.On":      "true",
-					"Prjn.Learn.Kinase.SAvgThr": "0.02", // 0.02 = 0.01 > 0.05
-					"Prjn.Learn.Kinase.MTau":    "40",
-					"Prjn.Learn.Kinase.PTau":    "10",
-					"Prjn.Learn.Kinase.DTau":    "40",
-					"Prjn.Learn.Kinase.DScale":  "0.95", // 0.93 > 0.94 > 1 > .9
+					"Prjn.SWt.Adapt.On":          "true",   // true > false, esp in cosdiff
+					"Prjn.SWt.Adapt.Lrate":       "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.SWt.Adapt.DreamVar":    "0.02",   // 0.02 good overall, no ToOut
+					"Prjn.Learn.Lrate.Base":      "0.02",   // 0.02 std for neurspk
+					"Prjn.Com.PFail":             "0.0",
+					"Prjn.Learn.Kinase.SpikeG":   "12", // 42 nominal for spkca, but 6 matches lrate
+					"Prjn.Learn.Kinase.Rule":     "SynSpkCa",
+					"Prjn.Learn.Kinase.OptInteg": "true",
+					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 2 > 1 for PCA Top5, no perf diff
+					"Prjn.Learn.Kinase.PTau":     "40",
+					"Prjn.Learn.Kinase.DTau":     "40",
+					"Prjn.Learn.Kinase.DScale":   "1",
+					"Prjn.Learn.XCal.On":         "true",
+					"Prjn.Learn.XCal.PThrMin":    "0.05", // .1 (at end) > 0.05 > 0.02 > 0.01
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -1304,7 +1280,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	if train {
 		// not using this anymore, in favor of neuron-level RLrate
 		// ss.ErrLrMod.LrateMod(ss.Net, float32(1-ss.TrlCosDiff))
-		ss.Net.DWt()
+		ss.Net.DWt(&ss.Time)
 	}
 
 	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
@@ -3490,5 +3466,5 @@ func (ss *Sim) MPIWtFmDWt() {
 		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
 		ss.Net.SetDWts(ss.SumDWts, mpi.WorldSize())
 	}
-	ss.Net.WtFmDWt()
+	ss.Net.WtFmDWt(&ss.Time)
 }

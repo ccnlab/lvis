@@ -72,24 +72,26 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Act.Dt.IntTau":        "30",  // trying 30 now per lvis
-					"Layer.Act.Decay.Act":        "0.0", // 0.2 with glong .6 best in lvis, slows learning here
-					"Layer.Act.Decay.Glong":      "0.6", // 0.6 def
-					"Layer.Act.Dend.GbarExp":     "0.5", // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":       "6",   // 3 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
+					"Layer.Act.Dt.IntTau":   "30",  // trying 30 now per lvis
+					"Layer.Act.Decay.Act":   "0.0", // 0.2 with glong .6 best in lvis, slows learning here
+					"Layer.Act.Decay.Glong": "0.6", // 0.6 def
+					// .2, 3 sig better for both Neur and Syn
+					"Layer.Act.Dend.GbarExp":     "0.2", // 0.2 > 0.5 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":       "3",   // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
 					"Layer.Act.Dt.GeTau":         "5",   // 5 = 4 (bit slower) > 6 > 7 @176
 					"Layer.Act.Dt.LongAvgTau":    "20",  // 20 > 50 > 100
-					"Layer.Act.NMDA.MgC":         "1.4", // mg1, voff0, gbarexp.2, gbarr3 = faster at first then bad
-					"Layer.Act.NMDA.Voff":        "5",
+					"Layer.Act.Dt.VmDendTau":     "5",   // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":         "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":        "5",   // mg1, voff0 = mg1.4, voff5 w best params
 					"Layer.Act.Dend.VGCCCa":      "20",
 					"Layer.Act.Dend.CaMax":       "100",
 					"Layer.Act.Dend.CaThr":       "0.2",
 					"Layer.Learn.SpikeCa.LrnM":   "0",  // 0.1 def
-					"Layer.Learn.SpikeCa.LrnTau": "30", // 30 > 20 > 15 (dies)
-					"Layer.Learn.SpikeCa.MTau":   "10",
+					"Layer.Learn.SpikeCa.LrnTau": "40", // 40 >= 30 > 20 > 60 (worse start, pca) > 15 (dies) -- some inc in pca top5
+					"Layer.Learn.SpikeCa.MTau":   "10", // 40, 10 same as 10, 40 for Neur
 					"Layer.Learn.SpikeCa.PTau":   "40",
 					"Layer.Learn.SpikeCa.DTau":   "40",
-					"Layer.Learn.SpikeCa.MinLrn": "0.02", // .02 > .05 > .1 (very bad) -- try lower
+					"Layer.Learn.SpikeCa.MinLrn": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -126,8 +128,8 @@ var ParamSets = params.Sets{
 					"Prjn.Com.PFail":             "0.0",
 					"Prjn.Learn.Kinase.SpikeG":   "12", // 42 nominal for spkca, but 12 is better..
 					"Prjn.Learn.Kinase.Rule":     "SynSpkCa",
-					"Prjn.Learn.Kinase.OptInteg": "false",
-					"Prjn.Learn.Kinase.MTau":     "2", // 2 = 5 = 10
+					"Prjn.Learn.Kinase.OptInteg": "true",
+					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 2 > 1 for PCA Top5, no perf diff
 					"Prjn.Learn.Kinase.PTau":     "40",
 					"Prjn.Learn.Kinase.DTau":     "40",
 					"Prjn.Learn.Kinase.DScale":   "1",
