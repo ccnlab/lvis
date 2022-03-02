@@ -18,11 +18,9 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/emer/axon/axon"
-	"github.com/emer/emergent/actrf"
 	"github.com/emer/emergent/egui"
 	"github.com/emer/emergent/elog"
 	"github.com/emer/emergent/emer"
@@ -76,22 +74,23 @@ var ParamSets = params.Sets{
 					"Layer.Act.Decay.Act":   "0.0", // 0.2 with glong .6 best in lvis, slows learning here
 					"Layer.Act.Decay.Glong": "0.6", // 0.6 def
 					// .2, 3 sig better for both Neur and Syn
-					"Layer.Act.Dend.GbarExp":     "0.2", // 0.2 > 0.5 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":       "3",   // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
-					"Layer.Act.Dt.GeTau":         "5",   // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.LongAvgTau":    "20",  // 20 > 50 > 100
-					"Layer.Act.Dt.VmDendTau":     "5",   // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":         "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":        "5",   // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.Dend.VGCCCa":      "20",
-					"Layer.Act.Dend.CaMax":       "100",
-					"Layer.Act.Dend.CaThr":       "0.2",
-					"Layer.Learn.SpikeCa.LrnM":   "0",  // 0.1 def
-					"Layer.Learn.SpikeCa.LrnTau": "40", // 40 >= 30 > 20 > 60 (worse start, pca) > 15 (dies) -- some inc in pca top5
-					"Layer.Learn.SpikeCa.MTau":   "10", // 40, 10 same as 10, 40 for Neur
-					"Layer.Learn.SpikeCa.PTau":   "40",
-					"Layer.Learn.SpikeCa.DTau":   "40",
-					"Layer.Learn.SpikeCa.MinLrn": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
+					"Layer.Act.Dend.GbarExp":    "0.2", // 0.2 > 0.5 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":      "3",   // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
+					"Layer.Act.Dt.GeTau":        "5",   // 5 = 4 (bit slower) > 6 > 7 @176
+					"Layer.Act.Dt.LongAvgTau":   "20",  // 20 > 50 > 100
+					"Layer.Act.Dt.VmDendTau":    "5",   // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":        "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":       "5",   // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Learn.NeurCa.SynTau": "40",  // 40 >= 30 > 20 > 60 (worse start, pca) > 15 (dies) -- some inc in pca top5
+					"Layer.Learn.NeurCa.MTau":   "10",  // 40, 10 same as 10, 40 for Neur
+					"Layer.Learn.NeurCa.PTau":   "40",
+					"Layer.Learn.NeurCa.DTau":   "40",
+					"Layer.Learn.NeurCa.LrnThr": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
+					"Layer.Learn.NeurCa.VGCCCa": "10",   // 20 seems reasonable, but not obviously better than 0
+					"Layer.Learn.NeurCa.CaMax":  "140",
+					"Layer.Learn.NeurCa.CaThr":  "0.01",
+					"Layer.Learn.LrnNMDA.ITau":  "1",  // urakubo = 100, does not work here..
+					"Layer.Learn.LrnNMDA.Tau":   "30", // urakubo = 30 > 20 but no major effect on PCA
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -126,13 +125,14 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.Lrate":       "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
 					"Prjn.SWt.Init.SPct":         "1",     // 1 >= lower
 					"Prjn.Com.PFail":             "0.0",
-					"Prjn.Learn.Kinase.SpikeG":   "12", // 42 nominal for spkca, but 12 is better..
+					"Prjn.Learn.Kinase.SpikeG":   "12", // 8 is target for SynSpk, SynNMDA
 					"Prjn.Learn.Kinase.Rule":     "SynSpkCa",
 					"Prjn.Learn.Kinase.OptInteg": "true",
 					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 2 > 1 for PCA Top5, no perf diff
 					"Prjn.Learn.Kinase.PTau":     "40",
 					"Prjn.Learn.Kinase.DTau":     "40",
 					"Prjn.Learn.Kinase.DScale":   "1",
+					"Prjn.Learn.Kinase.MaxISI":   "100", // 50 = 80 = 100, but 50 slightly faster
 					"Prjn.Learn.XCal.On":         "true",
 					"Prjn.Learn.XCal.PThrMin":    "0.05", // .1 (at end) > 0.05 > 0.02 > 0.01
 				}},
@@ -193,20 +193,11 @@ var ParamSets = params.Sets{
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net    *axon.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	Params emer.Params   `view:"inline" desc:"all parameter management"`
-	Tag    string        `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Stats  estats.Stats  `desc:"contains computed statistic values"`
-	Logs   elog.Logs     `desc:"Contains all the logs and information about the logs.'"`
-	// TrnTrlLog      *etable.Table                 `view:"no-inline" desc:"training trial-level log data"`
-	// TrnTrlRepLog   *etable.Table                 `view:"no-inline" desc:"training trial-level reps log data"`
-	// TrnEpcLog      *etable.Table                 `view:"no-inline" desc:"training epoch-level log data"`
-	// TstEpcLog      *etable.Table                 `view:"no-inline" desc:"testing epoch-level log data"`
-	// TstTrlLog      *etable.Table                 `view:"no-inline" desc:"testing trial-level log data"`
-	// TrnErrStats    *etable.Table                 `view:"no-inline" desc:"training error stats"`
-	// RunLog         *etable.Table                 `view:"no-inline" desc:"summary log of each run"`
-	// RunStats       *etable.Table                 `view:"no-inline" desc:"aggregate stats on all runs"`
-	ActRFs        actrf.RFs       `view:"no-inline" desc:"activation-based receptive fields"`
+	Net           *axon.Network   `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	Params        emer.Params     `view:"inline" desc:"all parameter management"`
+	Tag           string          `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Stats         estats.Stats    `desc:"contains computed statistic values"`
+	Logs          elog.Logs       `desc:"Contains all the logs and information about the logs.'"`
 	V1V4Prjn      *prjn.PoolTile  `view:"projection from V1 to V4 which is tiled 4x4 skip 2 with topo scale values"`
 	StartRun      int             `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
 	MaxRuns       int             `desc:"maximum number of model runs to perform"`
@@ -227,23 +218,14 @@ type Sim struct {
 	MiniBatchCtr int `inactive:"+" desc:"counter for mini-batch learning"`
 
 	// internal state - view:"-"
-	GUI        egui.GUI                      `view:"-" desc:"manages all the gui elements"`
-	CurImgGrid *etview.TensorGrid            `view:"-" desc:"the current image grid view"`
-	ActRFGrids map[string]*etview.TensorGrid `view:"-" desc:"the act rf grid views"`
-	ActRFNms   []string                      `desc:"names of layers to compute activation rfields on"`
-	// TrnTrlPlot   *eplot.Plot2D                 `view:"-" desc:"the training trial plot"`
-	// TrnEpcPlot   *eplot.Plot2D                 `view:"-" desc:"the training epoch plot"`
-	// TstEpcPlot   *eplot.Plot2D                 `view:"-" desc:"the testing epoch plot"`
-	// TstTrlPlot   *eplot.Plot2D                 `view:"-" desc:"the test-trial plot"`
-	// RunPlot      *eplot.Plot2D                 `view:"-" desc:"the run plot"`
-	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
-	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
-	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
-	IsRunning    bool             `view:"-" desc:"true if sim is running"`
-	StopNow      bool             `view:"-" desc:"flag to stop running"`
-	NeedsNewRun  bool             `view:"-" desc:"flag to initialize NewRun if last one finished"`
-	RndSeeds     []int64          `view:"-" desc:"a list of random seeds to use for each run"`
-	NetData      *netview.NetData `view:"-" desc:"net data for recording in nogui mode"`
+	GUI          egui.GUI `view:"-" desc:"manages all the gui elements"`
+	SaveWts      bool     `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+	NoGui        bool     `view:"-" desc:"if true, runing in no GUI mode"`
+	LogSetParams bool     `view:"-" desc:"if true, print message for all params that are set"`
+	IsRunning    bool     `view:"-" desc:"true if sim is running"`
+	StopNow      bool     `view:"-" desc:"flag to stop running"`
+	NeedsNewRun  bool     `view:"-" desc:"flag to initialize NewRun if last one finished"`
+	RndSeeds     []int64  `view:"-" desc:"a list of random seeds to use for each run"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -278,8 +260,6 @@ func (ss *Sim) New() {
 	ss.ViewOn = true
 	ss.TrainUpdt = axon.GammaCycle
 	ss.TestUpdt = axon.GammaCycle
-	// ss.LayStatNms = []string{"V4", "IT", "Output"}
-	ss.ActRFNms = []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}
 	ss.PNovel = 0
 	ss.MiniBatches = 1 // 1 > 16
 	ss.RepsInterval = 10
@@ -295,13 +275,6 @@ func (ss *Sim) Config() {
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
 	ss.ConfigLogs()
-	// ss.ConfigTrnTrlLog(ss.TrnTrlLog)
-	// ss.ConfigTrnTrlRepLog(ss.TrnTrlRepLog)
-	// ss.ConfigTrnEpcLog(ss.TrnEpcLog)
-	// ss.ConfigTstEpcLog(ss.TstEpcLog)
-	// ss.ConfigTstTrlLog(ss.TstTrlLog)
-	// ss.ConfigRunLog(ss.RunLog)
-	// ss.ConfigSpikeRasts()
 }
 
 func (ss *Sim) ConfigEnv() {
@@ -342,8 +315,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Dsc = "testing params and state"
 	ss.TestEnv.Defaults()
 	ss.TestEnv.MinLED = 0
-	ss.TestEnv.MaxLED = 19     // all by default
-	ss.TestEnv.Trial.Max = 500 // 1000 is too long!
+	ss.TestEnv.MaxLED = 19    // all by default
+	ss.TestEnv.Trial.Max = 50 // 0 // 1000 is too long!
 	ss.TestEnv.Validate()
 
 	ss.TrainEnv.Init(0)
@@ -482,7 +455,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	plusCyc := 50
 
 	ss.Net.NewState()
-	ss.Time.NewState()
+	ss.Time.NewState(train)
 	for cyc := 0; cyc < minusCyc; cyc++ { // do the minus phase
 		ss.Net.Cycle(&ss.Time)
 		ss.StatCounters(train)
@@ -620,8 +593,8 @@ func (ss *Sim) TrainTrial() {
 	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
 		ss.Log(elog.Analyze, elog.Trial)
 	}
-	if ss.CurImgGrid != nil {
-		ss.CurImgGrid.UpdateSig()
+	if ss.GUI.IsRunning {
+		ss.GUI.Grid("Image").SetTensor(&ss.TrainEnv.Vis.ImgTsr)
 	}
 }
 
@@ -791,10 +764,6 @@ func (ss *Sim) TrialStats(accum bool) {
 	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].ActP.Avg))
 
 	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
-
-	if !accum { // testing
-		ss.UpdtActRFs()
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -821,9 +790,11 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.ApplyInputs(&ss.TestEnv)
 	ss.ThetaCyc(false) // !train
 	ss.Log(elog.Test, elog.Trial)
-	if ss.NetData != nil { // offline record net data from testing, just final state
-		ss.NetData.Record(ss.GUI.NetViewText)
+	if ss.GUI.IsRunning {
+		ss.GUI.Grid("Image").SetTensor(&ss.TestEnv.Vis.ImgTsr)
 	}
+	ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
+	ss.GUI.NetDataRecord()
 }
 
 // TestItem tests given item which is at given index in test item list
@@ -839,7 +810,7 @@ func (ss *Sim) TestItem(idx int) {
 // TestAll runs through the full set of testing items
 func (ss *Sim) TestAll() {
 	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
-	ss.ActRFs.Reset()
+	ss.Stats.ActRFs.Reset()
 	for {
 		ss.TestTrial(true) // return on chg, don't present
 		_, _, chg := ss.TestEnv.Counter(env.Epoch)
@@ -847,9 +818,8 @@ func (ss *Sim) TestAll() {
 			break
 		}
 	}
-	ss.ActRFs.Avg()
-	ss.ActRFs.Norm()
-	ss.ViewActRFs()
+	ss.Stats.ActRFsAvgNorm()
+	ss.GUI.ViewActRFs(&ss.Stats.ActRFs)
 }
 
 // RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
@@ -857,57 +827,6 @@ func (ss *Sim) RunTestAll() {
 	ss.StopNow = false
 	ss.TestAll()
 	ss.Stopped()
-}
-
-// UpdtActRFs updates activation rf's -- only called during testing
-func (ss *Sim) UpdtActRFs() {
-	if _, ok := ss.Stats.F32Tensors["Image"]; !ok {
-		ss.Stats.F32Tensors["Image"] = &ss.TestEnv.Vis.ImgTsr
-	}
-	naf := len(ss.ActRFNms)
-	if len(ss.ActRFs.RFs) != naf {
-		for _, anm := range ss.ActRFNms {
-			sp := strings.Split(anm, ":")
-			lnm := sp[0]
-			ly := ss.Net.LayerByName(lnm)
-			if ly == nil {
-				continue
-			}
-			lvt := ss.Stats.SetLayerTensor(ss.Net, lnm, "ActM")
-			tnm := sp[1]
-			tvt := ss.Stats.F32Tensor(tnm)
-			ss.ActRFs.AddRF(anm, lvt, tvt)
-			// af.NormRF.SetMetaData("min", "0")
-		}
-	}
-	for _, anm := range ss.ActRFNms {
-		sp := strings.Split(anm, ":")
-		lnm := sp[0]
-		ly := ss.Net.LayerByName(lnm)
-		if ly == nil {
-			continue
-		}
-		lvt := ss.Stats.SetLayerTensor(ss.Net, lnm, "ActM")
-		tnm := sp[1]
-		tvt := ss.Stats.F32Tensor(tnm)
-		ss.ActRFs.Add(anm, lvt, tvt, 0.01) // thr prevent weird artifacts
-	}
-}
-
-// ViewActRFs displays act rfs
-func (ss *Sim) ViewActRFs() {
-	if ss.ActRFGrids == nil {
-		return
-	}
-	for _, nm := range ss.ActRFNms {
-		tg := ss.ActRFGrids[nm]
-		if tg.Tensor == nil {
-			rf := ss.ActRFs.RFByName(nm)
-			tg.SetTensor(&rf.NormRF)
-		} else {
-			tg.UpdateSig()
-		}
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -918,11 +837,19 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.CreateTables()
 	ss.Logs.SetContext(&ss.Stats, ss.Net)
 	// don't plot certain combinations we don't use
+	ss.Logs.NoPlot(elog.Test, elog.Cycle)
 	ss.Logs.NoPlot(elog.Train, elog.Cycle)
 	ss.Logs.NoPlot(elog.Test, elog.Run)
 	// note: Analyze not plotted by default
 	ss.Logs.SetMeta(elog.Train, elog.Run, "LegendCol", "Params")
-	ss.Stats.ConfigRasters(ss.Net, ss.Net.LayersByClass())
+	ss.Stats.ConfigRasters(ss.Net, ss.Net.LayersByClass()) // all
+
+	ss.Stats.SetF32Tensor("Image", &ss.TestEnv.Vis.ImgTsr) // image used for actrfs, must be there first
+	ss.Stats.InitActRFs(ss.Net, []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}, "ActM")
+
+	// reshape v4 tensor for inner 2x2 set of representative units
+	v4 := ss.Net.LayerByName("V4").(axon.AxonLayer).AsAxon()
+	ss.Stats.F32Tensor("V4").SetShape([]int{2, 2, v4.Shp.Dim(2), v4.Shp.Dim(3)}, nil, nil)
 }
 
 // Log is the main logging function, handles special things for different scopes
@@ -987,7 +914,8 @@ func (ss *Sim) LogTestErrors() {
 	ss.Logs.MiscTables["TestErrors"] = ix.NewTable()
 
 	allsp := split.All(ix)
-	split.Agg(allsp, "SSE", agg.AggSum)
+	split.Agg(allsp, "UnitErr", agg.AggMean)
+	split.Agg(allsp, "CosDiff", agg.AggMean)
 	// note: can add other stats to compute
 	ss.Logs.MiscTables["TestErrorStats"] = allsp.AggsToTable(etable.AddAggName)
 }
@@ -1066,11 +994,6 @@ func (ss *Sim) LogFileName(lognm string) string {
 	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
 }
 
-// for _, lnm := range ss.LayStatNms {
-// 	ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
-// 	dt.SetCellFloat(lnm+"_ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
-// }
-
 /*
 func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	trl := ss.TstTrlLog
@@ -1147,25 +1070,15 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	layers := ss.Net.LayersByClass() // all
 	for _, lnm := range layers {
 		sr := ss.Stats.F32Tensor("Raster_" + lnm)
-		tg := ss.GUI.RasterGrid(lnm)
-		tg.SetName(lnm + "Spikes")
-		gi.AddNewLabel(stb, lnm, lnm+":")
-		stb.AddChild(tg)
-		gi.AddNewSpace(stb, lnm+"_spc")
-		ss.GUI.ConfigRasterGrid(tg, sr)
+		ss.GUI.ConfigRasterGrid(stb, lnm, sr)
 	}
 
 	tg := ss.GUI.TabView.AddNewTab(etview.KiT_TensorGrid, "Image").(*etview.TensorGrid)
 	tg.SetStretchMax()
-	ss.CurImgGrid = tg
+	ss.GUI.SetGrid("Image", tg)
 	tg.SetTensor(&ss.TrainEnv.Vis.ImgTsr)
 
-	ss.ActRFGrids = make(map[string]*etview.TensorGrid)
-	for _, nm := range ss.ActRFNms {
-		tg := ss.GUI.TabView.AddNewTab(etview.KiT_TensorGrid, nm).(*etview.TensorGrid)
-		tg.SetStretchMax()
-		ss.ActRFGrids[nm] = tg
-	}
+	ss.GUI.AddActRFGridTabs(&ss.Stats.ActRFs)
 
 	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Init", Icon: "update",
 		Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
@@ -1396,6 +1309,10 @@ func (ss *Sim) CmdArgs() {
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
 	}
+	if saveNetData {
+		fmt.Printf("Saving NetView data from testing\n")
+		ss.GUI.InitNetData(ss.Net, 200)
+	}
 	fmt.Printf("Running Runs: %d - %d\n", ss.StartRun, ss.MaxRuns)
 	ss.TrainEnv.Run.Set(ss.StartRun)
 	ss.TrainEnv.Run.Max = ss.MaxRuns
@@ -1405,7 +1322,6 @@ func (ss *Sim) CmdArgs() {
 	ss.Logs.CloseLogFiles()
 
 	if saveNetData {
-		ndfn := ss.Net.Nm + "_" + ss.RunName() + ".netdata.gz"
-		ss.NetData.SaveJSON(gi.FileName(ndfn))
+		ss.GUI.SaveNetData(ss.RunName())
 	}
 }

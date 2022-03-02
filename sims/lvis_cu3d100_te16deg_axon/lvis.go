@@ -78,26 +78,25 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Pool.FFEx0":     "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
-					"Layer.Inhib.Pool.FFEx":      "0.05", // .05 best so far
-					"Layer.Inhib.Layer.FFEx0":    "0.15",
-					"Layer.Inhib.Layer.FFEx":     "0.05", // .05 best so far
-					"Layer.Inhib.Layer.Bg":       "0.0",  // .2 worse
-					"Layer.Inhib.Pool.Bg":        "0.0",  // "
-					"Layer.Act.Dend.GbarExp":     "0.2",  // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":       "3",    // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":     "5",    // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":         "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":        "5",    // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.Dend.VGCCCa":      "20",
-					"Layer.Act.Dend.CaMax":       "100",
-					"Layer.Act.Dend.CaThr":       "0.2",
-					"Layer.Learn.SpikeCa.LrnM":   "0",  // 0.1 def
-					"Layer.Learn.SpikeCa.LrnTau": "40", // 40 >= 30 > 20 > 15 (dies) -- some inc in pca top5
-					"Layer.Learn.SpikeCa.MTau":   "10",
-					"Layer.Learn.SpikeCa.PTau":   "40",
-					"Layer.Learn.SpikeCa.DTau":   "40",
-					"Layer.Learn.SpikeCa.MinLrn": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
+					"Layer.Inhib.Pool.FFEx0":    "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
+					"Layer.Inhib.Pool.FFEx":     "0.05", // .05 best so far
+					"Layer.Inhib.Layer.FFEx0":   "0.15",
+					"Layer.Inhib.Layer.FFEx":    "0.05", // .05 best so far
+					"Layer.Inhib.Layer.Bg":      "0.0",  // .2 worse
+					"Layer.Inhib.Pool.Bg":       "0.0",  // "
+					"Layer.Act.Dend.GbarExp":    "0.2",  // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":      "3",    // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":    "5",    // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":        "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":       "5",    // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.Dend.VGCCCa":     "20",
+					"Layer.Act.Dend.CaMax":      "100",
+					"Layer.Act.Dend.CaThr":      "0.2",
+					"Layer.Learn.NeurCa.SynTau": "30", // 30 > 40 for PCA
+					"Layer.Learn.NeurCa.MTau":   "10",
+					"Layer.Learn.NeurCa.PTau":   "40",
+					"Layer.Learn.NeurCa.DTau":   "40",
+					"Layer.Learn.NeurCa.LrnThr": "0.05", // .05 > .01 here (minor diff) but not in smaller nets (match with XCal.LrnThr)
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
@@ -206,17 +205,19 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.On":          "true",   // true > false, esp in cosdiff
 					"Prjn.SWt.Adapt.Lrate":       "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
 					"Prjn.SWt.Adapt.DreamVar":    "0.02",   // 0.02 good overall, no ToOut
-					"Prjn.Learn.Lrate.Base":      "0.02",   // 0.02 std for neurspk
+					"Prjn.Learn.Lrate.Base":      "0.02",   // 0.02 > 0.01 synspk; 0.02 std for neurspk
 					"Prjn.Com.PFail":             "0.0",
-					"Prjn.Learn.Kinase.SpikeG":   "12", // 42 nominal for spkca, but 6 matches lrate
+					"Prjn.Learn.Kinase.SpikeG":   "12", // 42 nominal for spkca, but 12 matches lrate
 					"Prjn.Learn.Kinase.Rule":     "SynSpkCa",
 					"Prjn.Learn.Kinase.OptInteg": "true",
-					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 2 > 1 for PCA Top5, no perf diff
+					"Prjn.Learn.Kinase.MTau":     "5", // 5 == 2 -- try 2 again
 					"Prjn.Learn.Kinase.PTau":     "40",
 					"Prjn.Learn.Kinase.DTau":     "40",
 					"Prjn.Learn.Kinase.DScale":   "1",
+					"Prjn.Learn.Kinase.MaxISI":   "100", // 100 >= 50 -- not much diff, no sig speed diff with 50
 					"Prjn.Learn.XCal.On":         "true",
-					"Prjn.Learn.XCal.PThrMin":    "0.05", // .1 (at end) > 0.05 > 0.02 > 0.01
+					"Prjn.Learn.XCal.PThrMin":    "0.05", // .05 > .01 for PCA for SynSpk, bad for NeurSpk
+					"Prjn.Learn.XCal.LrnThr":     "0.05", // .05 > .01 here but not smaller nets -- should match NeurCa.LrnThr 0.05 also good
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -1227,7 +1228,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	plusCyc := ss.PlusCycles
 
 	ss.Net.NewState()
-	ss.Time.NewState()
+	ss.Time.NewState(train)
 	for cyc := 0; cyc < minusCyc; cyc++ { // do the minus phase
 		ss.Net.Cycle(&ss.Time)
 		ss.LogTrnCyc(ss.TrnCycLog, ss.Time.Cycle)
