@@ -31,6 +31,7 @@ import (
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
+	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/agg"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etview" // include to get gui views
@@ -81,16 +82,16 @@ var ParamSets = params.Sets{
 					"Layer.Act.Dt.VmDendTau":    "5",   // 5 much better in fsa!
 					"Layer.Act.NMDA.MgC":        "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
 					"Layer.Act.NMDA.Voff":       "5",   // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Learn.NeurCa.SynTau": "40",  // 40 >= 30 > 20 > 60 (worse start, pca) > 15 (dies) -- some inc in pca top5
+					"Layer.Learn.NeurCa.SynTau": "30",  // 30 best on lvis
 					"Layer.Learn.NeurCa.MTau":   "10",  // 40, 10 same as 10, 40 for Neur
 					"Layer.Learn.NeurCa.PTau":   "40",
 					"Layer.Learn.NeurCa.DTau":   "40",
 					"Layer.Learn.NeurCa.LrnThr": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
-					"Layer.Learn.NeurCa.VGCCCa": "10",   // 20 seems reasonable, but not obviously better than 0
-					"Layer.Learn.NeurCa.CaMax":  "140",
-					"Layer.Learn.NeurCa.CaThr":  "0.01",
-					"Layer.Learn.LrnNMDA.ITau":  "1",  // urakubo = 100, does not work here..
-					"Layer.Learn.LrnNMDA.Tau":   "30", // urakubo = 30 > 20 but no major effect on PCA
+					"Layer.Learn.NeurCa.VGCCCa": "10",   // 10 == 0 > 20
+					"Layer.Learn.NeurCa.CaMax":  "200",  // 140 for Tau 50
+					"Layer.Learn.NeurCa.CaThr":  "0.05", // 0.05 is max, benefits PCA
+					"Layer.Learn.LrnNMDA.ITau":  "1",    // urakubo = 100, does not work here..
+					"Layer.Learn.LrnNMDA.Tau":   "50",   // 50 > 40 > 30
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -125,8 +126,8 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.Lrate":       "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
 					"Prjn.SWt.Init.SPct":         "1",     // 1 >= lower
 					"Prjn.Com.PFail":             "0.0",
-					"Prjn.Learn.Kinase.SpikeG":   "12", // 8 is target for SynSpk, SynNMDA
-					"Prjn.Learn.Kinase.Rule":     "SynSpkCa",
+					"Prjn.Learn.Kinase.SpikeG":   "12",        // SynSpk: 14
+					"Prjn.Learn.Kinase.Rule":     "SynNMDACa", // NMDACa",
 					"Prjn.Learn.Kinase.OptInteg": "true",
 					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 2 > 1 for PCA Top5, no perf diff
 					"Prjn.Learn.Kinase.PTau":     "40",
@@ -222,8 +223,6 @@ type Sim struct {
 	SaveWts      bool     `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool     `view:"-" desc:"if true, runing in no GUI mode"`
 	LogSetParams bool     `view:"-" desc:"if true, print message for all params that are set"`
-	IsRunning    bool     `view:"-" desc:"true if sim is running"`
-	StopNow      bool     `view:"-" desc:"flag to stop running"`
 	NeedsNewRun  bool     `view:"-" desc:"flag to initialize NewRun if last one finished"`
 	RndSeeds     []int64  `view:"-" desc:"a list of random seeds to use for each run"`
 }
@@ -237,7 +236,6 @@ var TheSim Sim
 
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
-	ss.Net = &axon.Network{}
 	ss.Net = &axon.Network{}
 	ss.Params.Params = ParamSets
 	ss.Params.AddNetwork(ss.Net)
@@ -383,7 +381,7 @@ func (ss *Sim) InitWts(net *axon.Network) {
 func (ss *Sim) Init() {
 	ss.InitRndSeed()
 	ss.TrainEnv.Run.Max = ss.MaxRuns
-	ss.StopNow = false
+	ss.GUI.StopNow = false
 	ss.Params.SetAll()
 	ss.Net.SlowInterval = 100 // / ss.MiniBatches
 	ss.NewRun()
@@ -497,7 +495,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 		// if !train {
 		// ss.Log(elog.Test, elog.Cycle)
 		// }
-		if !ss.NoGui {
+		if ss.GUI.Active {
 			ss.RasterRec(ss.Time.Cycle)
 		}
 		ss.Time.CycleInc()
@@ -532,7 +530,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	lays := []string{"V1", "Output"}
+	lays := ss.Net.LayersByClass("Input", "Target")
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		pats := en.State(ly.Nm)
@@ -557,9 +555,6 @@ func (ss *Sim) TrainTrial() {
 	// if epoch counter has changed
 	epc, _, chg := ss.TrainEnv.Counter(env.Epoch)
 	if chg {
-		if (ss.RepsInterval > 0) && ((epc-1)%ss.RepsInterval == 0) { // -1 so runs on first epc
-			ss.PCAStats()
-		}
 		ss.Log(elog.Train, elog.Epoch)
 		ss.LrateSched(epc)
 		if ss.ViewOn && ss.TrainUpdt > axon.AlphaCycle {
@@ -572,7 +567,7 @@ func (ss *Sim) TrainTrial() {
 			// done with training..
 			ss.RunEnd()
 			if ss.TrainEnv.Run.Incr() { // we are done!
-				ss.StopNow = true
+				ss.GUI.StopNow = true
 				return
 			} else {
 				ss.NeedsNewRun = true
@@ -590,9 +585,6 @@ func (ss *Sim) TrainTrial() {
 	}
 	ss.ThetaCyc(true) // train
 	ss.Log(elog.Train, elog.Trial)
-	if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
-		ss.Log(elog.Analyze, elog.Trial)
-	}
 	if ss.GUI.IsRunning {
 		ss.GUI.Grid("Image").SetTensor(&ss.TrainEnv.Vis.ImgTsr)
 	}
@@ -602,10 +594,18 @@ func (ss *Sim) TrainTrial() {
 func (ss *Sim) RunEnd() {
 	ss.Log(elog.Train, elog.Run)
 	if ss.SaveWts {
-		fnm := ss.WeightsFileName()
-		fmt.Printf("Saving Weights to: %s\n", fnm)
-		ss.Net.SaveWtsJSON(gi.FileName(fnm))
+		ss.SaveWeights()
 	}
+}
+
+// SaveWeights saves the network weights with the std wts filename
+func (ss *Sim) SaveWeights() {
+	if mpi.WorldRank() != 0 {
+		return
+	}
+	fnm := ss.WeightsFileName()
+	mpi.Printf("Saving Weights to: %s\n", fnm)
+	ss.Net.SaveWtsJSON(gi.FileName(fnm))
 }
 
 // NewRun intializes a new run of the model, using the TrainEnv.Run counter
@@ -628,11 +628,11 @@ func (ss *Sim) NewRun() {
 
 // TrainEpoch runs training trials for remainder of this epoch
 func (ss *Sim) TrainEpoch() {
-	ss.StopNow = false
+	ss.GUI.StopNow = false
 	curEpc := ss.TrainEnv.Epoch.Cur
 	for {
 		ss.TrainTrial()
-		if ss.StopNow || ss.TrainEnv.Epoch.Cur != curEpc {
+		if ss.GUI.StopNow || ss.TrainEnv.Epoch.Cur != curEpc {
 			break
 		}
 	}
@@ -641,11 +641,11 @@ func (ss *Sim) TrainEpoch() {
 
 // TrainRun runs training trials for remainder of run
 func (ss *Sim) TrainRun() {
-	ss.StopNow = false
+	ss.GUI.StopNow = false
 	curRun := ss.TrainEnv.Run.Cur
 	for {
 		ss.TrainTrial()
-		if ss.StopNow || ss.TrainEnv.Run.Cur != curRun {
+		if ss.GUI.StopNow || ss.TrainEnv.Run.Cur != curRun {
 			break
 		}
 	}
@@ -654,10 +654,10 @@ func (ss *Sim) TrainRun() {
 
 // Train runs the full training from this point onward
 func (ss *Sim) Train() {
-	ss.StopNow = false
+	ss.GUI.StopNow = false
 	for {
 		ss.TrainTrial()
-		if ss.StopNow {
+		if ss.GUI.StopNow {
 			break
 		}
 	}
@@ -666,18 +666,12 @@ func (ss *Sim) Train() {
 
 // Stop tells the sim to stop running
 func (ss *Sim) Stop() {
-	ss.StopNow = true
+	ss.GUI.StopNow = true
 }
 
 // Stopped is called when a run method stops running -- updates the IsRunning flag and toolbar
 func (ss *Sim) Stopped() {
 	ss.GUI.Stopped()
-}
-
-// SaveWeights saves the network weights -- when called with giv.CallMethod
-// it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename gi.FileName) {
-	ss.Net.SaveWtsJSON(filename)
 }
 
 // LrateSched implements the learning rate schedule
@@ -713,59 +707,6 @@ func (ss *Sim) TrainNovel() {
 	ss.PNovel = 0.5
 }
 
-// InitStats initializes all the statistics, especially important for the
-// cumulative epoch stats -- called at start of new run
-func (ss *Sim) InitStats() {
-	ss.Stats.SetFloat("TrlErr", 0.0)
-	ss.Stats.SetFloat("TrlErr2", 0.0)
-	ss.Stats.SetFloat("TrlUnitErr", 0.0)
-	ss.Stats.SetFloat("TrlCosDiff", 0.0)
-	ss.Stats.SetFloat("TrlTrgAct", 0.0)
-	ss.Stats.SetString("TrlOut", "")
-	ss.Stats.SetInt("FirstZero", -1) // critical to reset to -1
-	ss.Stats.SetInt("NZero", 0)
-}
-
-// StatCounters saves current counters to Stats, so they are available for logging etc
-// Also saves a string rep of them to the GUI, if the GUI is active
-func (ss *Sim) StatCounters(train bool) {
-	ev := ss.TrainEnv
-	if !train {
-		ev = ss.TestEnv
-	}
-	ss.Stats.SetInt("Run", ss.TrainEnv.Run.Cur)
-	ss.Stats.SetInt("Epoch", ss.TrainEnv.Epoch.Cur)
-	ss.Stats.SetInt("Trial", ev.Trial.Cur)
-	ss.Stats.SetString("TrialName", ev.String())
-	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ss.GUI.NetViewText = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "TrlUnitErr", "TrlErr", "TrlCosDiff"})
-}
-
-// TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
-// accum is true.  Note that we're accumulating stats here on the Sim side so the
-// core algorithm side remains as simple as possible, and doesn't need to worry about
-// different time-scales over which stats could be accumulated etc.
-// You can also aggregate directly from log data, as is done for testing stats
-func (ss *Sim) TrialStats(accum bool) {
-	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
-	ss.Stats.SetFloat("TrlCosDiff", float64(out.CosDiff.Cos))
-	ss.Stats.SetFloat("TrlUnitErr", out.PctUnitErr())
-
-	ev := ss.TrainEnv
-	if !accum {
-		ev = ss.TestEnv
-	}
-
-	ovt := ss.Stats.SetLayerTensor(ss.Net, "Output", "ActM")
-	rsp, trlErr, trlErr2 := ev.OutErr(ovt)
-	ss.Stats.SetFloat("TrlErr", trlErr)
-	ss.Stats.SetFloat("TrlErr2", trlErr2)
-	ss.Stats.SetString("TrlOut", fmt.Sprintf("%d", rsp))
-	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].ActP.Avg))
-
-	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Testing
 
@@ -793,7 +734,6 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	if ss.GUI.IsRunning {
 		ss.GUI.Grid("Image").SetTensor(&ss.TestEnv.Vis.ImgTsr)
 	}
-	ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
 	ss.GUI.NetDataRecord()
 }
 
@@ -813,8 +753,9 @@ func (ss *Sim) TestAll() {
 	ss.Stats.ActRFs.Reset()
 	for {
 		ss.TestTrial(true) // return on chg, don't present
+		ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
 		_, _, chg := ss.TestEnv.Counter(env.Epoch)
-		if chg || ss.StopNow {
+		if chg || ss.GUI.StopNow {
 			break
 		}
 	}
@@ -824,9 +765,67 @@ func (ss *Sim) TestAll() {
 
 // RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
 func (ss *Sim) RunTestAll() {
-	ss.StopNow = false
+	ss.Logs.ResetLog(elog.Test, elog.Epoch) // only show last row
+	ss.GUI.StopNow = false
 	ss.TestAll()
 	ss.Stopped()
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// 		Stats
+
+// InitStats initializes all the statistics.
+// called at start of new run
+func (ss *Sim) InitStats() {
+	ss.Stats.SetFloat("TrlErr", 0.0)
+	ss.Stats.SetFloat("TrlErr2", 0.0)
+	ss.Stats.SetFloat("TrlUnitErr", 0.0)
+	ss.Stats.SetFloat("TrlCosDiff", 0.0)
+	ss.Stats.SetFloat("TrlTrgAct", 0.0)
+	ss.Stats.SetString("TrlOut", "")
+	ss.Stats.SetString("TrlOut", "")
+	ss.Stats.SetString("Cat", "0")
+	ss.Stats.SetInt("FirstZero", -1) // critical to reset to -1
+	ss.Stats.SetInt("NZero", 0)
+}
+
+// StatCounters saves current counters to Stats, so they are available for logging etc
+// Also saves a string rep of them to the GUI, if the GUI is active
+func (ss *Sim) StatCounters(train bool) {
+	ev := ss.TrainEnv
+	if !train {
+		ev = ss.TestEnv
+	}
+	ss.Stats.SetInt("Run", ss.TrainEnv.Run.Cur)
+	ss.Stats.SetInt("Epoch", ss.TrainEnv.Epoch.Cur)
+	ss.Stats.SetInt("Trial", ev.Trial.Cur)
+	ss.Stats.SetString("TrialName", ev.String())
+	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
+	ss.GUI.NetViewText = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "Cat", "Cycle", "TrlUnitErr", "TrlErr", "TrlCosDiff"})
+}
+
+// TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
+// accum is true.  Note that we're accumulating stats here on the Sim side so the
+// core algorithm side remains as simple as possible, and doesn't need to worry about
+// different time-scales over which stats could be accumulated etc.
+// You can also aggregate directly from log data, as is done for testing stats
+func (ss *Sim) TrialStats(accum bool) {
+	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
+	ss.Stats.SetFloat("TrlCosDiff", float64(out.CosDiff.Cos))
+	ss.Stats.SetFloat("TrlUnitErr", out.PctUnitErr())
+
+	ev := ss.TrainEnv
+	if !accum {
+		ev = ss.TestEnv
+	}
+
+	ovt := ss.Stats.SetLayerTensor(ss.Net, "Output", "ActM")
+	rsp, trlErr, trlErr2 := ev.OutErr(ovt)
+	ss.Stats.SetFloat("TrlErr", trlErr)
+	ss.Stats.SetFloat("TrlErr2", trlErr2)
+	ss.Stats.SetString("TrlOut", fmt.Sprintf("%d", rsp))
+	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].ActP.Avg))
+	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -842,14 +841,11 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.NoPlot(elog.Test, elog.Run)
 	// note: Analyze not plotted by default
 	ss.Logs.SetMeta(elog.Train, elog.Run, "LegendCol", "Params")
-	ss.Stats.ConfigRasters(ss.Net, ss.Net.LayersByClass()) // all
+	ss.Logs.SetMeta(elog.Test, elog.Epoch, "Type", "Bar")
+	ss.Stats.ConfigRasters(ss.Net, 200, ss.Net.LayersByClass()) // all
 
 	ss.Stats.SetF32Tensor("Image", &ss.TestEnv.Vis.ImgTsr) // image used for actrfs, must be there first
 	ss.Stats.InitActRFs(ss.Net, []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}, "ActM")
-
-	// reshape v4 tensor for inner 2x2 set of representative units
-	v4 := ss.Net.LayerByName("V4").(axon.AxonLayer).AsAxon()
-	ss.Stats.F32Tensor("V4").SetShape([]int{2, 2, v4.Shp.Dim(2), v4.Shp.Dim(3)}, nil, nil)
 }
 
 // Log is the main logging function, handles special things for different scopes
@@ -860,11 +856,13 @@ func (ss *Sim) Log(mode elog.EvalModes, time elog.Times) {
 	case mode == elog.Test && time == elog.Epoch:
 		ss.LogTestErrors()
 	case mode == elog.Train && time == elog.Epoch:
+		epc := ss.TrainEnv.Epoch.Cur
+		if (ss.RepsInterval > 0) && ((epc-1)%ss.RepsInterval == 0) { // -1 so runs on first epc
+			ss.PCAStats()
+		}
 		ss.LogTrainErrStats()
 	case time == elog.Cycle:
 		row = ss.Stats.Int("Cycle")
-	case time == elog.Trial:
-		row = ss.Stats.Int("Trial")
 	}
 
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
@@ -877,6 +875,14 @@ func (ss *Sim) Log(mode elog.EvalModes, time elog.Times) {
 	switch {
 	case mode == elog.Train && time == elog.Run:
 		ss.LogRunStats()
+	case mode == elog.Train && time == elog.Trial:
+		epc := ss.TrainEnv.Epoch.Cur
+		if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
+			ss.Log(elog.Analyze, elog.Trial)
+		}
+	}
+	if time == elog.Epoch { // Reset Trial log after Epoch
+		ss.Logs.ResetLog(mode, elog.Trial)
 	}
 }
 
@@ -961,7 +967,7 @@ func (ss *Sim) PCAStats() {
 
 // RasterRec updates spike raster record for given cycle
 func (ss *Sim) RasterRec(cyc int) {
-	ss.Stats.RasterRec(ss.Net, cyc, "Spike", ss.Net.LayersByClass())
+	ss.Stats.RasterRec(ss.Net, cyc, "Spike")
 }
 
 // RunName returns a name for this run that combines Tag and Params -- add this to
@@ -994,52 +1000,6 @@ func (ss *Sim) LogFileName(lognm string) string {
 	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
 }
 
-/*
-func (ss *Sim) LogTstEpc(dt *etable.Table) {
-	trl := ss.TstTrlLog
-	tix := etable.NewIdxView(trl)
-	// epc := ss.TrainEnv.Epoch.Prv // ?
-
-	spl := split.GroupBy(tix, []string{"Obj"})
-	_, err := split.AggTry(spl, "Err", agg.AggMean)
-	if err != nil {
-		log.Println(err)
-	}
-	objs := spl.AggsToTable(etable.AddAggName)
-	no := objs.Rows
-	dt.SetNumRows(no)
-	for i := 0; i < no; i++ {
-		dt.SetCellFloat("Obj", i, float64(i))
-		dt.SetCellFloat("PctErr", i, objs.Cols[1].FloatVal1D(i))
-	}
-	ss.TstEpcPlot.GoUpdate()
-}
-
-func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
-	dt.SetMetaData("name", "TstEpcLog")
-	dt.SetMetaData("desc", "Summary stats for testing trials")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	sch := etable.Schema{
-		{"Obj", etensor.INT64, nil, nil},
-		{"PctErr", etensor.FLOAT64, nil, nil},
-	}
-	dt.SetFromSchema(sch, 0)
-}
-
-func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Object Recognition Testing Epoch Plot"
-	plt.Params.XAxisCol = "Obj"
-	plt.Params.Type = eplot.Bar
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Obj", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-	return plt
-}
-*/
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
@@ -1067,8 +1027,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	stb := ss.GUI.TabView.AddNewTab(gi.KiT_Layout, "Spike Rasters").(*gi.Layout)
 	stb.Lay = gi.LayoutVert
 	stb.SetStretchMax()
-	layers := ss.Net.LayersByClass() // all
-	for _, lnm := range layers {
+	for _, lnm := range ss.Stats.Rasters {
 		sr := ss.Stats.F32Tensor("Raster_" + lnm)
 		ss.GUI.ConfigRasterGrid(stb, lnm, sr)
 	}
@@ -1210,7 +1169,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test All",
 		Icon:    "step-fwd",
-		Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
+		Tooltip: "Tests a large same of testing items and records ActRFs.",
 		Active:  egui.ActiveStopped,
 		Func: func() {
 			if !ss.GUI.IsRunning {

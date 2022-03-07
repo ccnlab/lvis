@@ -47,11 +47,18 @@ func (ss *Sim) ConfigLogItems() {
 				ctx.SetStatInt("Trial")
 			}}})
 	ss.Logs.AddItem(&elog.Item{
+		Name: "Idx",
+		Type: etensor.INT64,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetInt(ctx.Row)
+			}}})
+	ss.Logs.AddItem(&elog.Item{
 		Name: "Cat",
 		Type: etensor.STRING,
 		Write: elog.WriteMap{
 			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
-				ctx.SetStatString("Cat")
+				ctx.SetStatString("TrlCat")
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "TrialName",
@@ -66,6 +73,14 @@ func (ss *Sim) ConfigLogItems() {
 		Write: elog.WriteMap{
 			elog.Scope(elog.AllModes, elog.Cycle): func(ctx *elog.Context) {
 				ctx.SetStatInt("Cycle")
+			}}})
+	ss.Logs.AddItem(&elog.Item{
+		Name: "Resp",
+		Type: etensor.STRING,
+		Plot: elog.DFalse,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetStatString("TrlResp")
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Err",
@@ -168,6 +183,69 @@ func (ss *Sim) ConfigLogItems() {
 				ix := ctx.LastNRows(elog.Train, elog.Epoch, 5) // cached
 				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
 			}}})
+	// DecErr decoding
+	ss.Logs.AddItem(&elog.Item{
+		Name: "DecResp",
+		Type: etensor.STRING,
+		Plot: elog.DFalse,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetStatInt("TrlDecRespIdx")
+			}}})
+	ss.Logs.AddItem(&elog.Item{
+		Name: "DecErr",
+		Type: etensor.FLOAT64,
+		Plot: elog.DTrue,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetStatFloat("TrlDecErr")
+			}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+				ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+			}, elog.Scope(elog.AllModes, elog.Run): func(ctx *elog.Context) {
+				ix := ctx.LastNRows(ctx.Mode, elog.Epoch, 5)
+				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+			}}})
+	ss.Logs.AddItem(&elog.Item{
+		Name: "DecErr2",
+		Type: etensor.FLOAT64,
+		Plot: elog.DTrue,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetStatFloat("TrlDecErr2")
+			}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+				ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+			}, elog.Scope(elog.AllModes, elog.Run): func(ctx *elog.Context) {
+				ix := ctx.LastNRows(ctx.Mode, elog.Epoch, 5)
+				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+			}}})
+	// FirstErr
+	ss.Logs.AddItem(&elog.Item{
+		Name: "FirstErr",
+		Type: etensor.FLOAT64,
+		Plot: elog.DTrue,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetStatFloat("TrlFirstErr")
+			}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+				ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+			}, elog.Scope(elog.AllModes, elog.Run): func(ctx *elog.Context) {
+				ix := ctx.LastNRows(ctx.Mode, elog.Epoch, 5)
+				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+			}}})
+	ss.Logs.AddItem(&elog.Item{
+		Name: "FirstErr2",
+		Type: etensor.FLOAT64,
+		Plot: elog.DTrue,
+		Write: elog.WriteMap{
+			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				ctx.SetStatFloat("TrlFirstErr2")
+			}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+				ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+			}, elog.Scope(elog.AllModes, elog.Run): func(ctx *elog.Context) {
+				ix := ctx.LastNRows(ctx.Mode, elog.Epoch, 5)
+				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+			}}})
+
 	ss.Logs.AddItem(&elog.Item{
 		Name: "ErrTrgAct",
 		Type: etensor.FLOAT64,
@@ -221,16 +299,31 @@ func (ss *Sim) ConfigLogItems() {
 		DimNames:  []string{"Cat"},
 		Plot:      elog.DTrue,
 		Range:     minmax.F64{Min: 0},
-		TensorIdx: -1, // plot all values
+		// TensorIdx: -1, // plot all values
 		Write: elog.WriteMap{
 			elog.Scope(elog.Test, elog.Epoch): func(ctx *elog.Context) {
-				ix := ctx.Logs.IdxView(elog.Test, elog.Trial)
+				ix, _ := ctx.Logs.NamedIdxView(elog.Test, elog.Trial, ctx.Item.Name)
 				spl := split.GroupBy(ix, []string{"Cat"})
 				split.AggTry(spl, "Err", agg.AggMean)
 				cats := spl.AggsToTable(etable.ColNameOnly)
 				ss.Logs.MiscTables[ctx.Item.Name] = cats
 				ctx.SetTensor(cats.Cols[1])
 			}}})
+
+	// Copy over Testing items
+	stats := []string{"UnitErr", "PctErr", "PctCor", "PctErr2", "CosDiff", "DecErr", "DecErr2", "FirstErr", "FirstErr2"}
+	for _, st := range stats {
+		stnm := st
+		tstnm := "Tst" + st
+		ss.Logs.AddItem(&elog.Item{
+			Name: tstnm,
+			Type: etensor.FLOAT64,
+			Plot: elog.DFalse,
+			Write: elog.WriteMap{
+				elog.Scope(elog.Train, elog.Epoch): func(ctx *elog.Context) {
+					ctx.SetFloat64(ctx.ItemFloat(elog.Test, elog.Epoch, stnm))
+				}}})
+	}
 
 	// Standard stats for Ge and AvgAct tuning -- for all hidden, output layers
 	layers := ss.Net.LayersByClass("Hidden", "Target")
@@ -240,7 +333,7 @@ func (ss *Sim) ConfigLogItems() {
 		uvals := ss.Stats.F32Tensor(clnm)
 		cly.UnitValsRepTensor(uvals, "Act")               // for sizing
 		if len(uvals.Shape.Shp) != len(cly.Shape().Shp) { // reshape
-			uvals.SetShape([]int{2, 2, cly.Shape().Dim(2), cly.Shape().Dim(3)}, nil, cly.Shape().DimNames())
+			uvals.SetShape(ss.CenterPoolShape(cly, 2), nil, cly.Shape().DimNames())
 		}
 		ss.Logs.AddItem(&elog.Item{
 			Name:   clnm + "_ActAvg",
@@ -249,12 +342,31 @@ func (ss *Sim) ConfigLogItems() {
 			FixMax: elog.DFalse,
 			Range:  minmax.F64{Max: 1},
 			Write: elog.WriteMap{
-				elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+				elog.Scope(elog.AllModes, elog.Cycle): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Avg)
+				}, elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Avg)
 				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.ActAvg.ActMAvg)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:   clnm + "_ActMax",
+			Type:   etensor.FLOAT64,
+			Plot:   elog.DFalse,
+			FixMax: elog.DFalse,
+			Range:  minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				elog.Scope(elog.AllModes, elog.Cycle): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Max)
+				}, elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Max)
+				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + "_MaxGeM",
@@ -269,39 +381,39 @@ func (ss *Sim) ConfigLogItems() {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.ActAvg.AvgMaxGeM)
 				}}})
-		// ss.Logs.AddItem(&elog.Item{ // enable if using lateral inhib
-		// 	Name:  clnm + "_MaxGiM",
+		ss.Logs.AddItem(&elog.Item{
+			Name:  clnm + "_MaxGiM",
+			Type:  etensor.FLOAT64,
+			Plot:  elog.DFalse,
+			Range: minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(ly.Pools[0].GiM.Max)
+				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(ly.ActAvg.AvgMaxGiM)
+				}}})
+		// ss.Logs.AddItem(&elog.Item{
+		// 	Name:  clnm + "_AvgDifAvg",
 		// 	Type:  etensor.FLOAT64,
 		// 	Plot:  elog.DFalse,
 		// 	Range: minmax.F64{Max: 1},
 		// 	Write: elog.WriteMap{
-		// 		elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
+		// 		elog.Scope(elog.Train, elog.Epoch): func(ctx *elog.Context) {
 		// 			ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-		// 			ctx.SetFloat32(ly.Pools[0].GiM.Max)
-		// 		}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
-		// 			ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-		// 			ctx.SetFloat32(ly.ActAvg.AvgMaxGiM)
+		// 			ctx.SetFloat32(ly.Pools[0].AvgDif.Avg)
 		// 		}}})
-		ss.Logs.AddItem(&elog.Item{
-			Name:  clnm + "_AvgDifAvg",
-			Type:  etensor.FLOAT64,
-			Plot:  elog.DFalse,
-			Range: minmax.F64{Max: 1},
-			Write: elog.WriteMap{
-				elog.Scope(elog.Train, elog.Epoch): func(ctx *elog.Context) {
-					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.Pools[0].AvgDif.Avg)
-				}}})
-		ss.Logs.AddItem(&elog.Item{
-			Name:  clnm + "_AvgDifMax",
-			Type:  etensor.FLOAT64,
-			Plot:  elog.DFalse,
-			Range: minmax.F64{Max: 1},
-			Write: elog.WriteMap{
-				elog.Scope(elog.Train, elog.Epoch): func(ctx *elog.Context) {
-					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.Pools[0].AvgDif.Max)
-				}}})
+		// ss.Logs.AddItem(&elog.Item{
+		// 	Name:  clnm + "_AvgDifMax",
+		// 	Type:  etensor.FLOAT64,
+		// 	Plot:  elog.DFalse,
+		// 	Range: minmax.F64{Max: 1},
+		// 	Write: elog.WriteMap{
+		// 		elog.Scope(elog.Train, elog.Epoch): func(ctx *elog.Context) {
+		// 			ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+		// 			ctx.SetFloat32(ly.Pools[0].AvgDif.Max)
+		// 		}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + "_DWtRaw_Max",
 			Type:  etensor.FLOAT64,
@@ -347,6 +459,45 @@ func (ss *Sim) ConfigLogItems() {
 				elog.Scope(elog.Train, elog.Epoch): func(ctx *elog.Context) {
 					ctx.SetFloat64(ss.Logs.MiscTables["TrainErrStats"].CellFloat(lnm+"_CosDiff:Mean", 1))
 				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:  clnm + "_FirstCyc",
+			Type:  etensor.FLOAT64,
+			Plot:  elog.DFalse,
+			Range: minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				elog.Scope(elog.Train, elog.Trial): func(ctx *elog.Context) {
+					fcyc := ss.FirstActStat(ctx.Logs.Table(ctx.Mode, elog.Cycle), clnm)
+					ctx.SetInt(fcyc)
+				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:  clnm + "_FF_AvgMaxG",
+			Type:  etensor.FLOAT64,
+			Plot:  elog.DFalse,
+			Range: minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				elog.Scope(elog.Train, elog.Trial): func(ctx *elog.Context) {
+					ffpj := cly.RecvPrjn(0).(*axon.Prjn)
+					ctx.SetFloat32(ffpj.GScale.AvgMax)
+				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:  clnm + "_FB_AvgMaxG",
+			Type:  etensor.FLOAT64,
+			Plot:  elog.DFalse,
+			Range: minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				elog.Scope(elog.Train, elog.Trial): func(ctx *elog.Context) {
+					if cly.NRecvPrjns() > 1 {
+						fbpj := cly.RecvPrjn(1).(*axon.Prjn)
+						ctx.SetFloat32(fbpj.GScale.AvgMax)
+					}
+				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+				}}})
+
 		// PCA Analyze
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_ActM",
@@ -402,25 +553,23 @@ func (ss *Sim) ConfigLogItems() {
 					ix := ctx.LastNRows(ctx.Mode, elog.Epoch, 5)
 					ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
 				}}})
-		// // Test Cycle activity plot
-		// ss.Logs.AddItem(&elog.Item{
-		// 	Name:  clnm + " Ge.Avg",
-		// 	Type:  etensor.FLOAT64,
-		// 	Range: minmax.F64{Max: 1},
-		// 	Write: elog.WriteMap{
-		// 		elog.Scope(elog.Test, elog.Cycle): func(ctx *elog.Context) {
-		// 			ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-		// 			ctx.SetFloat32(ly.Pools[0].Inhib.Ge.Avg)
-		// 		}}})
-		// ss.Logs.AddItem(&elog.Item{
-		// 	Name:  clnm + " Act.Avg",
-		// 	Type:  etensor.FLOAT64,
-		// 	Range: minmax.F64{Max: 1},
-		// 	Write: elog.WriteMap{
-		// 		elog.Scope(elog.Test, elog.Cycle): func(ctx *elog.Context) {
-		// 			ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-		// 			ctx.SetFloat32(ly.Pools[0].Inhib.Act.Avg)
-		// 		}}})
+	}
+	layers = ss.Net.LayersByClass("Target")
+	for _, lnm := range layers {
+		clnm := lnm
+		cly := ss.Net.LayerByName(clnm)
+		uvals := ss.Stats.F32Tensor(clnm)
+		cly.UnitValsRepTensor(uvals, "Act") // for sizing
+		ss.Logs.AddItem(&elog.Item{
+			Name:      clnm + "_Act",
+			Type:      etensor.FLOAT32,
+			CellShape: uvals.Shape.Shp,
+			FixMax:    elog.DTrue,
+			Range:     minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				elog.Scope(elog.AllModes, elog.Cycle): func(ctx *elog.Context) {
+					ctx.SetLayerRepTensor(clnm, "Act")
+				}}})
 	}
 
 	// input layer average activity -- important for tuning
