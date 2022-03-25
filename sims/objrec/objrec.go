@@ -75,23 +75,25 @@ var ParamSets = params.Sets{
 					"Layer.Act.Decay.Act":   "0.0", // 0.2 with glong .6 best in lvis, slows learning here
 					"Layer.Act.Decay.Glong": "0.6", // 0.6 def
 					// .2, 3 sig better for both Neur and Syn
-					"Layer.Act.Dend.GbarExp":    "0.2", // 0.2 > 0.5 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":      "3",   // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
-					"Layer.Act.Dt.GeTau":        "5",   // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.LongAvgTau":   "20",  // 20 > 50 > 100
-					"Layer.Act.Dt.VmDendTau":    "5",   // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":        "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":       "5",   // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Learn.NeurCa.SynTau": "30",  // 30 best on lvis
-					"Layer.Learn.NeurCa.MTau":   "10",  // 40, 10 same as 10, 40 for Neur
+					"Layer.Act.Dend.GbarExp":    "0.2",  // 0.2 > 0.5 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":      "3",    // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
+					"Layer.Act.Dt.GeTau":        "5",    // 5 = 4 (bit slower) > 6 > 7 @176
+					"Layer.Act.Dt.LongAvgTau":   "20",   // 20 > 50 > 100
+					"Layer.Act.Dt.VmDendTau":    "5",    // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":        "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":       "5",    // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.VGCC.Gbar":       "0.02", // non nmda: 0.15 good, 0.3 blows up
+					"Layer.Act.AK.Gbar":         "1",    // 1 >= 0 > 2
+					"Layer.Learn.NeurCa.SpikeG": "8",    // 8 def
+					"Layer.Learn.NeurCa.SynTau": "30",   // 30 best on lvis
+					"Layer.Learn.NeurCa.MTau":   "10",   // 40, 10 same as 10, 40 for Neur
 					"Layer.Learn.NeurCa.PTau":   "40",
 					"Layer.Learn.NeurCa.DTau":   "40",
-					"Layer.Learn.NeurCa.LrnThr": "0.01", // .01 faster & better > .02 > .05 (bad) > .1 (very bad)
-					"Layer.Learn.NeurCa.VGCCCa": "10",   // 10 == 0 > 20
-					"Layer.Learn.NeurCa.CaMax":  "200",  // 140 for Tau 50
-					"Layer.Learn.NeurCa.CaThr":  "0.05", // 0.05 is max, benefits PCA
-					"Layer.Learn.LrnNMDA.ITau":  "1",    // urakubo = 100, does not work here..
-					"Layer.Learn.LrnNMDA.Tau":   "50",   // 50 > 40 > 30
+					"Layer.Learn.NeurCa.CaMax":  "100",  // 200 for Tau 50
+					"Layer.Learn.NeurCa.CaThr":  "0.05", // 0.05 > 0.02 -- is max, benefits PCA
+					"Layer.Learn.NeurCa.Decay":  "false",
+					"Layer.Learn.LrnNMDA.ITau":  "1",  // urakubo = 100, does not work here..
+					"Layer.Learn.LrnNMDA.Tau":   "50", // 50 > 40 > 30
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -122,20 +124,24 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.Lrate.Base":      "0.1",   // SynSpk: .1 > .15 > 0.05 > 0.08 > .2 (.2 for NeurSpk)
-					"Prjn.SWt.Adapt.Lrate":       "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
-					"Prjn.SWt.Init.SPct":         "1",     // 1 >= lower
-					"Prjn.Com.PFail":             "0.0",
-					"Prjn.Learn.Kinase.SpikeG":   "12",        // SynSpk: 14
-					"Prjn.Learn.Kinase.Rule":     "SynNMDACa", // NMDACa",
-					"Prjn.Learn.Kinase.OptInteg": "true",
-					"Prjn.Learn.Kinase.MTau":     "5", // 5 > 2 > 1 for PCA Top5, no perf diff
-					"Prjn.Learn.Kinase.PTau":     "40",
-					"Prjn.Learn.Kinase.DTau":     "40",
-					"Prjn.Learn.Kinase.DScale":   "1",
-					"Prjn.Learn.Kinase.MaxISI":   "100", // 50 = 80 = 100, but 50 slightly faster
-					"Prjn.Learn.XCal.On":         "true",
-					"Prjn.Learn.XCal.PThrMin":    "0.05", // .1 (at end) > 0.05 > 0.02 > 0.01
+					"Prjn.Learn.Lrate.Base":        "0.1",   // SynSpk* 0.12 (0.15 too high); 0.1 otherwise
+					"Prjn.SWt.Adapt.Lrate":         "0.005", // 0.005 > others maybe?  0.02 > 0.05 > .1
+					"Prjn.SWt.Init.SPct":           "1",     // 1 >= lower
+					"Prjn.Com.PFail":               "0.0",
+					"Prjn.Learn.KinaseCa.SpikeG":   "12", // 12 better, higher dwtavg but ok
+					"Prjn.Learn.KinaseCa.NMDAG":    "1",  // 1 just too hi
+					"Prjn.Learn.KinaseCa.Rule":     "SynNMDACont",
+					"Prjn.Learn.KinaseCa.MTau":     "5", // 5 > 10 test more
+					"Prjn.Learn.KinaseCa.PTau":     "40",
+					"Prjn.Learn.KinaseCa.DTau":     "40",
+					"Prjn.Learn.KinaseCa.UpdtThr":  "0.01", // 0.01 > 0.02 max tolerable
+					"Prjn.Learn.KinaseCa.Decay":    "true",
+					"Prjn.Learn.KinaseDWt.TWindow": "10", // 5 or 10 is identical
+					"Prjn.Learn.KinaseDWt.DMaxPct": "0.5",
+					"Prjn.Learn.KinaseDWt.DScale":  "1",
+					"Prjn.Learn.XCal.On":           "true",
+					"Prjn.Learn.XCal.PThrMin":      "0.05", // .1 (at end) > 0.05 > 0.02 > 0.01
+					"Prjn.Learn.XCal.LrnThr":       "0.01", // 0.05 best for objrec, higher worse
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -513,7 +519,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 	if train {
 		ss.Net.DWt(&ss.Time)
 	}
-	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
+	if ss.ViewOn && viewUpdt <= axon.ThetaCycle {
 		ss.GUI.UpdateNetView()
 	}
 

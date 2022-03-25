@@ -394,6 +394,19 @@ func (ss *Sim) ConfigLogItems() {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.ActAvg.AvgMaxGiM)
 				}}})
+		if clnm == "Output" {
+			ss.Logs.AddItem(&elog.Item{
+				Name:   clnm + "_GiMult",
+				Type:   etensor.FLOAT64,
+				Plot:   elog.DFalse,
+				FixMax: elog.DFalse,
+				Range:  minmax.F64{Max: 1},
+				Write: elog.WriteMap{
+					elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+						ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+						ctx.SetFloat32(ly.ActAvg.GiMult)
+					}}})
+		}
 		// ss.Logs.AddItem(&elog.Item{
 		// 	Name:  clnm + "_AvgDifAvg",
 		// 	Type:  etensor.FLOAT64,
@@ -497,7 +510,34 @@ func (ss *Sim) ConfigLogItems() {
 				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
 				}}})
-
+		if clnm == "Output" {
+			ss.Logs.AddItem(&elog.Item{
+				Name:  clnm + "_FF_Scale",
+				Type:  etensor.FLOAT64,
+				Plot:  elog.DFalse,
+				Range: minmax.F64{Max: 1},
+				Write: elog.WriteMap{
+					elog.Scope(elog.Train, elog.Trial): func(ctx *elog.Context) {
+						ffpj := cly.RecvPrjn(0).(*axon.Prjn)
+						ctx.SetFloat32(ffpj.GScale.Scale)
+					}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+						ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+					}}})
+			ss.Logs.AddItem(&elog.Item{
+				Name:  clnm + "_FB_Scale",
+				Type:  etensor.FLOAT64,
+				Plot:  elog.DFalse,
+				Range: minmax.F64{Max: 1},
+				Write: elog.WriteMap{
+					elog.Scope(elog.Train, elog.Trial): func(ctx *elog.Context) {
+						if cly.NRecvPrjns() > 1 {
+							fbpj := cly.RecvPrjn(1).(*axon.Prjn)
+							ctx.SetFloat32(fbpj.GScale.Scale)
+						}
+					}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
+						ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
+					}}})
+		}
 		// PCA Analyze
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_ActM",
