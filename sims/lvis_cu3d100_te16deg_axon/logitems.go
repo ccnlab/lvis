@@ -349,8 +349,7 @@ func (ss *Sim) ConfigLogItems() {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Avg)
 				}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
-					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.ActAvg.ActMAvg)
+					ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:   clnm + "_ActMax",

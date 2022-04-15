@@ -27,18 +27,18 @@ var ParamSets = params.Sets{
 					"Layer.Act.Dt.VmDendTau":    "5",    // 5 much better in fsa!
 					"Layer.Act.NMDA.MgC":        "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
 					"Layer.Act.NMDA.Voff":       "5",    // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.VGCC.Gbar":       "0.1",  // non nmda: 0.15 good, 0.3 blows up
+					"Layer.Act.VGCC.Gbar":       "0.1",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
 					"Layer.Act.AK.Gbar":         "1",    // 1 >= 0 > 2
 					"Layer.Learn.NeurCa.SpikeG": "8",    // 8 def
-					"Layer.Learn.NeurCa.SynTau": "40",   // 40 > 30 overall..
+					"Layer.Learn.NeurCa.SynTau": "30",   // 30 > 40 with better out adapt
 					"Layer.Learn.NeurCa.MTau":   "10",
 					"Layer.Learn.NeurCa.PTau":   "40",
 					"Layer.Learn.NeurCa.DTau":   "40",
 					"Layer.Learn.NeurCa.CaMax":  "100",
 					"Layer.Learn.NeurCa.CaThr":  "0.05",
-					"Layer.Learn.NeurCa.Decay":  "true",
-					"Layer.Learn.LrnNMDA.ITau":  "1",  // urakubo = 100, does not work here..
-					"Layer.Learn.LrnNMDA.Tau":   "50", // 50 > 40 > 30
+					"Layer.Learn.NeurCa.Decay":  "true", // syntheta false > true -- cont, nmda = true essential?
+					"Layer.Learn.LrnNMDA.ITau":  "1",    // urakubo = 100, does not work here..
+					"Layer.Learn.LrnNMDA.Tau":   "50",   // 50 > 40 > 30
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
@@ -103,17 +103,19 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
-					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.ActAvg.Init": "0.06",  // .06 > .05 = .04
-					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
+					"Layer.Inhib.Pool.On":       "true",  // needs pool-level
+					"Layer.Inhib.Layer.On":      "false", // no layer!
+					"Layer.Inhib.ActAvg.Init":   "0.06",  // .06 > .05 = .04
+					"Layer.Inhib.Pool.Gi":       "1.1",   // was 1.1
+					"Layer.Learn.NeurCa.SynTau": "30",    // 40 > 30 here with bad output adapt
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
-					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.ActAvg.Init": "0.06",  // .03 actual with gi 1.2, was .06
-					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
+					"Layer.Inhib.Pool.On":       "true",  // needs pool-level
+					"Layer.Inhib.Layer.On":      "false", // no layer!
+					"Layer.Inhib.ActAvg.Init":   "0.06",  // .03 actual with gi 1.2, was .06
+					"Layer.Inhib.Pool.Gi":       "1.1",   // was 1.1
+					"Layer.Learn.NeurCa.SynTau": "30",    // 40 > 30 here with bad output adapt
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
@@ -121,17 +123,18 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":      "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
 					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .01 -- .005, .008 too low -- maybe not nec?
 					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true: it is essential -- too hard to balance manually
-					"Layer.Inhib.ActAvg.LoTol":     "0.5",
-					"Layer.Inhib.ActAvg.AdaptRate": "0.02", // 0.01 >= 0.02 best in range 0.01..0.1
+					"Layer.Inhib.ActAvg.LoTol":     "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
+					"Layer.Inhib.ActAvg.AdaptRate": "0.02",  // 0.02 >= 0.01 -- 0.005 worse, tol 0.1
 					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
 					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
 					"Layer.Act.Clamp.Ge": "0.6", // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					// "Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
 					// "Layer.Act.GABAB.Gbar":   "0.005", // .005 > .01 > .02 > .05 > .1 > .2
 					// "Layer.Act.NMDA.Gbar":    "0.03",  // was .02
-					"Layer.Learn.RLrate.On":  "true", // todo: try false
-					"Layer.Inhib.Pool.FFEx":  "0.0",  // no
-					"Layer.Inhib.Layer.FFEx": "0.0",  //
+					"Layer.Learn.NeurCa.SynTau": "30",   // 40 > 30  here with bad output adapt
+					"Layer.Learn.RLrate.On":     "true", // todo: try false
+					"Layer.Inhib.Pool.FFEx":     "0.0",  // no
+					"Layer.Inhib.Layer.FFEx":    "0.0",  //
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
 				Params: params.Params{
@@ -151,7 +154,7 @@ var ParamSets = params.Sets{
 					"Prjn.Com.PFail":               "0.0",
 					"Prjn.Learn.KinaseCa.SpikeG":   "12", // 12 matches theta exactly, higher dwtavg but ok
 					"Prjn.Learn.KinaseCa.NMDAG":    "1",
-					"Prjn.Learn.KinaseCa.Rule":     "SynSpkCont",
+					"Prjn.Learn.KinaseCa.Rule":     "NeurSpkTheta",
 					"Prjn.Learn.KinaseCa.MTau":     "5", // 5 > 10 test more
 					"Prjn.Learn.KinaseCa.PTau":     "40",
 					"Prjn.Learn.KinaseCa.DTau":     "40",
@@ -162,7 +165,7 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.KinaseDWt.DMaxPct": "0.5",
 					"Prjn.Learn.KinaseDWt.DScale":  "1",
 					"Prjn.Learn.XCal.On":           "true",
-					"Prjn.Learn.XCal.PThrMin":      "0.05", // .05 > .01 for PCA for SynSpk, bad for NeurSpk
+					"Prjn.Learn.XCal.PThrMin":      "0.05", // .05 > .01 for all rules..
 					"Prjn.Learn.XCal.LrnThr":       "0.05", // .05 > .01 here but not smaller nets -- should match NeurCa.LrnThr 0.05 also good
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",

@@ -984,7 +984,7 @@ func (ss *Sim) EpochSched(epc int) {
 		ss.SaveWeights()
 		// ss.Net.LrateSched(0.2)
 		// mpi.Printf("dropped lrate to 0.2 at epoch: %d\n", epc)
-		ss.Params.SetObjectSet("Network", "ToOutTol") // increase LoTol
+		// ss.Params.SetObjectSet("Network", "ToOutTol") // increase LoTol
 		// ss.Params.SetObjectSet("Network", "OutAdapt") // increase LoTol
 	case 600:
 		// ss.Net.LrateSched(0.1)
