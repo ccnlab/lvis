@@ -36,9 +36,9 @@ var ParamSets = params.Sets{
 					"Layer.Learn.NeurCa.DTau":   "40",
 					"Layer.Learn.NeurCa.CaMax":  "100",
 					"Layer.Learn.NeurCa.CaThr":  "0.05",
-					"Layer.Learn.NeurCa.Decay":  "true", // syntheta false > true -- cont, nmda = true essential?
-					"Layer.Learn.LrnNMDA.ITau":  "1",    // urakubo = 100, does not work here..
-					"Layer.Learn.LrnNMDA.Tau":   "50",   // 50 > 40 > 30
+					"Layer.Learn.NeurCa.Decay":  "false", // syntheta false > true -- cont, nmda = true essential?
+					"Layer.Learn.LrnNMDA.ITau":  "1",     // urakubo = 100, does not work here..
+					"Layer.Learn.LrnNMDA.Tau":   "50",    // 50 > 40 > 30
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
@@ -154,7 +154,7 @@ var ParamSets = params.Sets{
 					"Prjn.Com.PFail":               "0.0",
 					"Prjn.Learn.KinaseCa.SpikeG":   "12", // 12 matches theta exactly, higher dwtavg but ok
 					"Prjn.Learn.KinaseCa.NMDAG":    "1",
-					"Prjn.Learn.KinaseCa.Rule":     "NeurSpkTheta",
+					"Prjn.Learn.KinaseCa.Rule":     "SynSpkTheta",
 					"Prjn.Learn.KinaseCa.MTau":     "5", // 5 > 10 test more
 					"Prjn.Learn.KinaseCa.PTau":     "40",
 					"Prjn.Learn.KinaseCa.DTau":     "40",

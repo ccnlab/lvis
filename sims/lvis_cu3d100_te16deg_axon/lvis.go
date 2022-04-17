@@ -25,6 +25,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/estats"
+	"github.com/emer/emergent/etime"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
@@ -98,8 +99,8 @@ type Sim struct {
 	Time         axon.Time       `desc:"axon timing parameters and state"`
 	TestInterval int             `desc:"how often to run through the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
 	ViewOn       bool            `desc:"whether to update the network view while running"`
-	TrainUpdt    axon.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
-	TestUpdt     axon.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
+	TrainUpdt    etime.Times     `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
+	TestUpdt     etime.Times     `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
 
 	GUI          egui.GUI `view:"-" desc:"manages all the gui elements"`
 	SaveWts      bool     `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
@@ -151,8 +152,8 @@ func (ss *Sim) New() {
 		ss.RndSeeds[i] = int64(i) + 1 // exclude 0
 	}
 	ss.ViewOn = true
-	ss.TrainUpdt = axon.AlphaCycle
-	ss.TestUpdt = axon.GammaCycle
+	ss.TrainUpdt = etime.AlphaCycle
+	ss.TestUpdt = etime.GammaCycle
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -682,19 +683,19 @@ func (ss *Sim) NewRndSeed() {
 	}
 }
 
-func (ss *Sim) UpdateViewTime(viewUpdt axon.TimeScales) {
+func (ss *Sim) UpdateViewTime(viewUpdt etime.Times) {
 	switch viewUpdt {
-	case axon.Cycle:
+	case etime.Cycle:
 		ss.GUI.UpdateNetView()
-	case axon.FastSpike:
+	case etime.FastSpike:
 		if ss.Time.Cycle%10 == 0 {
 			ss.GUI.UpdateNetView()
 		}
-	case axon.GammaCycle:
+	case etime.GammaCycle:
 		if ss.Time.Cycle%25 == 0 {
 			ss.GUI.UpdateNetView()
 		}
-	case axon.AlphaCycle:
+	case etime.AlphaCycle:
 		if ss.Time.Cycle%100 == 0 {
 			ss.GUI.UpdateNetView()
 		}
@@ -712,8 +713,10 @@ func (ss *Sim) UpdateViewTime(viewUpdt axon.TimeScales) {
 func (ss *Sim) ThetaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
 	viewUpdt := ss.TrainUpdt
+	mode := etime.Train.String()
 	if !train {
 		viewUpdt = ss.TestUpdt
+		mode = etime.Test.String()
 	}
 
 	// update prior weight changes at start, so any DWt values remain visible at end
@@ -728,12 +731,12 @@ func (ss *Sim) ThetaCyc(train bool) {
 	plusCyc := ss.PlusCycles
 
 	ss.Net.NewState()
-	ss.Time.NewState(train)
+	ss.Time.NewState(mode)
 	for cyc := 0; cyc < minusCyc; cyc++ { // do the minus phase
 		ss.Net.Cycle(&ss.Time)
 		ss.StatCounters(train)
 		if train {
-			ss.Log(elog.Train, elog.Cycle) // used for First* stats
+			ss.Log(etime.Train, etime.Cycle) // used for First* stats
 		}
 		if ss.GUI.Active {
 			ss.RasterRec(ss.Time.Cycle)
@@ -759,16 +762,16 @@ func (ss *Sim) ThetaCyc(train bool) {
 			ss.UpdateViewTime(viewUpdt)
 		}
 	}
-	ss.Time.NewPhase()
+	ss.Time.NewPhase(true)
 	ss.StatCounters(train)
-	if viewUpdt == axon.Phase {
+	if viewUpdt == etime.Phase {
 		ss.GUI.UpdateNetView()
 	}
 	for cyc := 0; cyc < plusCyc; cyc++ { // do the plus phase
 		ss.Net.Cycle(&ss.Time)
 		ss.StatCounters(train)
 		if train {
-			ss.Log(elog.Train, elog.Cycle) // used for First* stats
+			ss.Log(etime.Train, etime.Cycle) // used for First* stats
 		}
 		if ss.GUI.Active {
 			ss.RasterRec(ss.Time.Cycle)
@@ -790,7 +793,7 @@ func (ss *Sim) ThetaCyc(train bool) {
 		ss.Net.DWt(&ss.Time)
 	}
 
-	if viewUpdt == axon.Phase || viewUpdt == axon.AlphaCycle || viewUpdt == axon.ThetaCycle {
+	if viewUpdt == etime.Phase || viewUpdt == etime.AlphaCycle || viewUpdt == etime.ThetaCycle {
 		ss.GUI.UpdateNetView()
 	}
 
@@ -844,9 +847,9 @@ func (ss *Sim) TrainTrial() {
 	// if epoch counter has changed
 	epc, _, chg := ss.TrainEnv.Counter(env.Epoch)
 	if chg {
-		ss.Log(elog.Train, elog.Epoch)
+		ss.Log(etime.Train, etime.Epoch)
 		ss.EpochSched(epc)
-		if ss.ViewOn && ss.TrainUpdt > axon.AlphaCycle {
+		if ss.ViewOn && ss.TrainUpdt > etime.AlphaCycle {
 			ss.GUI.UpdateNetView()
 		}
 		if ss.TestInterval > 0 && epc%ss.TestInterval == 0 { // note: epc is *next* so won't trigger first time
@@ -869,7 +872,7 @@ func (ss *Sim) TrainTrial() {
 	ss.Net.LayerByName("Output").SetType(emer.Target)
 	ss.ApplyInputs(&ss.TrainEnv)
 	ss.ThetaCyc(true) // train
-	ss.Log(elog.Train, elog.Trial)
+	ss.Log(etime.Train, etime.Trial)
 	if ss.GUI.IsRunning {
 		ss.GUI.Grid("Image").SetTensor(&ss.TrainEnv.Img.Tsr)
 	}
@@ -877,7 +880,7 @@ func (ss *Sim) TrainTrial() {
 
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
-	ss.Log(elog.Train, elog.Run)
+	ss.Log(etime.Train, etime.Run)
 	if ss.SaveWts {
 		ss.SaveWeights()
 	}
@@ -894,10 +897,10 @@ func (ss *Sim) NewRun() {
 	ss.InitWts(ss.Net)
 	ss.InitStats()
 	ss.StatCounters(true)
-	ss.Logs.ResetLog(elog.Train, elog.Trial)
-	ss.Logs.ResetLog(elog.Train, elog.Epoch)
-	ss.Logs.ResetLog(elog.Test, elog.Trial)
-	ss.Logs.ResetLog(elog.Test, elog.Epoch)
+	ss.Logs.ResetLog(etime.Train, etime.Trial)
+	ss.Logs.ResetLog(etime.Train, etime.Epoch)
+	ss.Logs.ResetLog(etime.Test, etime.Trial)
+	ss.Logs.ResetLog(etime.Test, etime.Epoch)
 	ss.NeedsNewRun = false
 }
 
@@ -1024,10 +1027,10 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// Query counters FIRST
 	_, _, chg := ss.TestEnv.Counter(env.Epoch)
 	if chg {
-		if ss.ViewOn && ss.TestUpdt > axon.AlphaCycle {
+		if ss.ViewOn && ss.TestUpdt > etime.AlphaCycle {
 			ss.GUI.UpdateNetView()
 		}
-		ss.Log(elog.Test, elog.Epoch)
+		ss.Log(etime.Test, etime.Epoch)
 		if returnOnChg {
 			return
 		}
@@ -1037,7 +1040,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.Net.LayerByName("Output").SetType(emer.Compare)
 	ss.ApplyInputs(&ss.TestEnv)
 	ss.ThetaCyc(false) // !train
-	ss.Log(elog.Test, elog.Trial)
+	ss.Log(etime.Test, etime.Trial)
 	if ss.GUI.IsRunning {
 		ss.GUI.Grid("Image").SetTensor(&ss.TestEnv.Img.Tsr)
 	}
@@ -1068,7 +1071,7 @@ func (ss *Sim) RunTestAll() {
 // otherwise it is the confusion row for given category.
 // data goes in the TrlErr = Err column.
 func (ss *Sim) ConfusionTstPlot(cat string) {
-	ss.Logs.ResetLog(elog.Test, elog.Trial)
+	ss.Logs.ResetLog(etime.Test, etime.Trial)
 	nc := ss.Stats.Confusion.N.Len()
 	ti := -1
 	if cat != "" {
@@ -1082,9 +1085,9 @@ func (ss *Sim) ConfusionTstPlot(cat string) {
 		} else {
 			ss.Stats.SetFloat("TrlErr", ss.Stats.Confusion.Prob.Value([]int{i, i}))
 		}
-		ss.Log(elog.Test, elog.Trial)
+		ss.Log(etime.Test, etime.Trial)
 	}
-	plt := ss.GUI.Plot(elog.Test, elog.Trial)
+	plt := ss.GUI.Plot(etime.Test, etime.Trial)
 	plt.Params.XAxisCol = "Cat"
 	plt.Params.Type = eplot.Bar
 	plt.Params.XAxisRot = 45
@@ -1200,7 +1203,7 @@ func (ss *Sim) TrialStats(train bool) {
 	}
 	ss.Stats.SetFloat("TrlDecErr2", decErr2)
 
-	cyclog := ss.Logs.Log(elog.Train, elog.Cycle)
+	cyclog := ss.Logs.Log(etime.Train, etime.Cycle)
 	var fcyc int
 	fcyc, rsp, trlErr, trlErr2 = ss.FirstOut(cyclog)
 	ss.Stats.SetInt("TrlOutFirstCyc", fcyc)
@@ -1322,11 +1325,11 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.CreateTables()
 	ss.Logs.SetContext(&ss.Stats, ss.Net)
 	// don't plot certain combinations we don't use
-	ss.Logs.NoPlot(elog.Test, elog.Cycle)
-	// ss.Logs.NoPlot(elog.Train, elog.Cycle)
-	ss.Logs.NoPlot(elog.Test, elog.Run)
+	ss.Logs.NoPlot(etime.Test, etime.Cycle)
+	// ss.Logs.NoPlot(etime.Train, etime.Cycle)
+	ss.Logs.NoPlot(etime.Test, etime.Run)
 	// note: Analyze not plotted by default
-	ss.Logs.SetMeta(elog.Train, elog.Run, "LegendCol", "Params")
+	ss.Logs.SetMeta(etime.Train, etime.Run, "LegendCol", "Params")
 	ss.Stats.ConfigRasters(ss.Net, ss.MinusCycles+ss.PlusCycles+ss.PostCycs, []string{"V1l16", "V2l16", "V4f16", "TEOf16", "TE", "Output"})
 
 	ss.Stats.SetF32Tensor("Image", &ss.TestEnv.Img.Tsr) // image used for actrfs, must be there first
@@ -1338,50 +1341,50 @@ func (ss *Sim) ConfigLogs() {
 }
 
 // Log is the main logging function, handles special things for different scopes
-func (ss *Sim) Log(mode elog.EvalModes, time elog.Times) {
-	if ss.UseMPI && time == elog.Epoch { // Must gather data for trial level if doing epoch level
-		ss.Logs.MPIGatherTableRows(mode, elog.Trial, ss.Comm)
+func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
+	if ss.UseMPI && time == etime.Epoch { // Must gather data for trial level if doing epoch level
+		ss.Logs.MPIGatherTableRows(mode, etime.Trial, ss.Comm)
 	}
 
 	dt := ss.Logs.Table(mode, time)
 	row := dt.Rows
 	switch {
-	case mode == elog.Test && time == elog.Epoch:
+	case mode == etime.Test && time == etime.Epoch:
 		ss.LogTestErrors()
-	case mode == elog.Train && time == elog.Epoch:
+	case mode == etime.Train && time == etime.Epoch:
 		epc := ss.TrainEnv.Epoch.Cur
 		if (ss.RepsInterval > 0) && ((epc-1)%ss.RepsInterval == 0) { // -1 so runs on first epc
 			ss.PCAStats()
 		}
 		ss.LogTrainErrStats()
-	case time == elog.Cycle:
+	case time == etime.Cycle:
 		row = ss.Stats.Int("Cycle")
 	}
 
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
-	if time == elog.Cycle {
-		ss.GUI.UpdateCyclePlot(elog.Test, ss.Time.Cycle)
+	if time == etime.Cycle {
+		ss.GUI.UpdateCyclePlot(etime.Test, ss.Time.Cycle)
 	} else {
 		ss.GUI.UpdatePlot(mode, time)
 	}
 
 	switch {
-	case mode == elog.Train && time == elog.Run:
+	case mode == etime.Train && time == etime.Run:
 		ss.LogRunStats()
-	case mode == elog.Train && time == elog.Trial:
+	case mode == etime.Train && time == etime.Trial:
 		epc := ss.TrainEnv.Epoch.Cur
 		if ss.RepsInterval > 0 && epc%ss.RepsInterval == 0 {
-			ss.Log(elog.Analyze, elog.Trial)
+			ss.Log(etime.Analyze, etime.Trial)
 		}
 	}
-	if time == elog.Epoch { // Reset Trial log after Epoch
-		ss.Logs.ResetLog(mode, elog.Trial)
+	if time == etime.Epoch { // Reset Trial log after Epoch
+		ss.Logs.ResetLog(mode, etime.Trial)
 	}
 }
 
 // LogTrainErrorStats summarizes train errors
 func (ss *Sim) LogTrainErrStats() {
-	sk := elog.Scope(elog.Train, elog.Trial)
+	sk := etime.Scope(etime.Train, etime.Trial)
 	lt := ss.Logs.TableDetailsScope(sk)
 	ix, _ := lt.NamedIdxView("TrainErrors")
 
@@ -1404,7 +1407,7 @@ func (ss *Sim) LogTrainErrStats() {
 
 // LogTestErrors records all errors made across TestTrials, at Test Epoch scope
 func (ss *Sim) LogTestErrors() {
-	sk := elog.Scope(elog.Test, elog.Trial)
+	sk := etime.Scope(etime.Test, etime.Trial)
 	lt := ss.Logs.TableDetailsScope(sk)
 	ix, _ := lt.NamedIdxView("TestErrors")
 	ix.Filter(func(et *etable.Table, row int) bool {
@@ -1421,7 +1424,7 @@ func (ss *Sim) LogTestErrors() {
 
 // LogRunStats records stats across all runs, at Train Run scope
 func (ss *Sim) LogRunStats() {
-	sk := elog.Scope(elog.Train, elog.Run)
+	sk := etime.Scope(etime.Train, etime.Run)
 	lt := ss.Logs.TableDetailsScope(sk)
 	ix, _ := lt.NamedIdxView("RunStats")
 
@@ -1435,11 +1438,11 @@ func (ss *Sim) LogRunStats() {
 // from Analyze, Trial log data
 func (ss *Sim) PCAStats() {
 	if ss.UseMPI {
-		ss.Logs.MPIGatherTableRows(elog.Analyze, elog.Trial, ss.Comm)
+		ss.Logs.MPIGatherTableRows(etime.Analyze, etime.Trial, ss.Comm)
 	}
-	reps := ss.Logs.IdxView(elog.Analyze, elog.Trial)
+	reps := ss.Logs.IdxView(etime.Analyze, etime.Trial)
 	ss.Stats.PCAStats(reps, "ActM", ss.Net.LayersByClass("Hidden", "Target"))
-	ss.Logs.ResetLog(elog.Analyze, elog.Trial)
+	ss.Logs.ResetLog(etime.Analyze, etime.Trial)
 }
 
 // RasterRec updates spike raster record for given cycle
@@ -1487,7 +1490,6 @@ func (ss *Sim) LogFileName(lognm string) string {
 
 func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.ViewDefaults()
-	nv.Params.MaxRecs = 300
 	// cam := &(nv.Scene().Camera)
 	// cam.Pose.Pos.Set(0.0, 1.733, 2.3)
 	// cam.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
@@ -1499,8 +1501,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	title := "LVis Object Recognition"
 	ss.GUI.MakeWindow(ss, "lvis", title, `This simulation explores how a hierarchy of areas in the ventral stream of visual processing (up to inferotemporal (IT) cortex) can produce robust object recognition that is invariant to changes in position, size, etc of retinal input images. See <a href="https://github.com/ccnlab/lvis/blob/master/sims/lvis_cu3d100_te16deg_axon/README.md">README.md on GitHub</a>.</p>`)
 	ss.GUI.CycleUpdateInterval = 10
-	ss.GUI.NetView.SetNet(ss.Net)
-	ss.ConfigNetView(ss.GUI.NetView)
+
+	nv := ss.GUI.AddNetView("NetView")
+	nv.Params.MaxRecs = 300
+	nv.SetNet(ss.Net)
+	ss.ConfigNetView(nv)
 
 	ss.GUI.AddPlots(title, &ss.Logs)
 
@@ -1642,8 +1647,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
 		Active:  egui.ActiveAlways,
 		Func: func() {
-			ss.Logs.ResetLog(elog.Train, elog.Run)
-			ss.GUI.UpdatePlot(elog.Train, elog.Run)
+			ss.Logs.ResetLog(etime.Train, etime.Run)
+			ss.GUI.UpdatePlot(etime.Train, etime.Run)
 		},
 	})
 	////////////////////////////////////////////////
@@ -1735,21 +1740,21 @@ func (ss *Sim) CmdArgs() {
 
 	if saveEpcLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
 		fnm := ss.LogFileName("trn_epc")
-		ss.Logs.SetLogFile(elog.Train, elog.Epoch, fnm)
+		ss.Logs.SetLogFile(etime.Train, etime.Epoch, fnm)
 		fnm = ss.LogFileName("tst_epc")
-		ss.Logs.SetLogFile(elog.Test, elog.Epoch, fnm)
+		ss.Logs.SetLogFile(etime.Test, etime.Epoch, fnm)
 	}
 	if saveTrnTrlLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
 		fnm := ss.LogFileName("trn_trl")
-		ss.Logs.SetLogFile(elog.Train, elog.Trial, fnm)
+		ss.Logs.SetLogFile(etime.Train, etime.Trial, fnm)
 	}
 	if saveTstTrlLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
 		fnm := ss.LogFileName("tst_trl")
-		ss.Logs.SetLogFile(elog.Test, elog.Trial, fnm)
+		ss.Logs.SetLogFile(etime.Test, etime.Trial, fnm)
 	}
 	if saveRunLog && (ss.SaveProcLog || mpi.WorldRank() == 0) {
 		fnm := ss.LogFileName("run")
-		ss.Logs.SetLogFile(elog.Train, elog.Run, fnm)
+		ss.Logs.SetLogFile(etime.Train, etime.Run, fnm)
 	}
 	if ss.SaveWts {
 		if mpi.WorldRank() != 0 {
