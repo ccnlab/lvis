@@ -481,7 +481,7 @@ func (ss *Sim) ConfigLogItems() {
 				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
 					fcyc := ss.FirstActStat(ctx.Logs.Table(ctx.Mode, etime.Cycle), clnm)
 					ctx.SetInt(fcyc)
-				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
+				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
@@ -490,7 +490,7 @@ func (ss *Sim) ConfigLogItems() {
 			Plot:  elog.DFalse,
 			Range: minmax.F64{Max: 1},
 			Write: elog.WriteMap{
-				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+				etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 					ffpj := cly.RecvPrjn(0).(*axon.Prjn)
 					ctx.SetFloat32(ffpj.GScale.AvgMax)
 				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
@@ -502,7 +502,7 @@ func (ss *Sim) ConfigLogItems() {
 			Plot:  elog.DFalse,
 			Range: minmax.F64{Max: 1},
 			Write: elog.WriteMap{
-				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+				etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 					if cly.NRecvPrjns() > 1 {
 						fbpj := cly.RecvPrjn(1).(*axon.Prjn)
 						ctx.SetFloat32(fbpj.GScale.AvgMax)
@@ -510,34 +510,36 @@ func (ss *Sim) ConfigLogItems() {
 				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
 				}}})
-		if clnm == "Output" {
-			ss.Logs.AddItem(&elog.Item{
-				Name:  clnm + "_FF_Scale",
-				Type:  etensor.FLOAT64,
-				Plot:  elog.DFalse,
-				Range: minmax.F64{Max: 1},
-				Write: elog.WriteMap{
-					etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
-						ffpj := cly.RecvPrjn(0).(*axon.Prjn)
-						ctx.SetFloat32(ffpj.GScale.Scale)
-					}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-						ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
-					}}})
-			ss.Logs.AddItem(&elog.Item{
-				Name:  clnm + "_FB_Scale",
-				Type:  etensor.FLOAT64,
-				Plot:  elog.DFalse,
-				Range: minmax.F64{Max: 1},
-				Write: elog.WriteMap{
-					etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
-						if cly.NRecvPrjns() > 1 {
-							fbpj := cly.RecvPrjn(1).(*axon.Prjn)
-							ctx.SetFloat32(fbpj.GScale.Scale)
-						}
-					}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-						ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
-					}}})
-		}
+		/*
+			if clnm == "Output" {
+				ss.Logs.AddItem(&elog.Item{
+					Name:  clnm + "_FF_Scale",
+					Type:  etensor.FLOAT64,
+					Plot:  elog.DFalse,
+					Range: minmax.F64{Max: 1},
+					Write: elog.WriteMap{
+						etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+							ffpj := cly.RecvPrjn(0).(*axon.Prjn)
+							ctx.SetFloat32(ffpj.GScale.Scale)
+						}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+							ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+						}}})
+				ss.Logs.AddItem(&elog.Item{
+					Name:  clnm + "_FB_Scale",
+					Type:  etensor.FLOAT64,
+					Plot:  elog.DFalse,
+					Range: minmax.F64{Max: 1},
+					Write: elog.WriteMap{
+						etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+							if cly.NRecvPrjns() > 1 {
+								fbpj := cly.RecvPrjn(1).(*axon.Prjn)
+								ctx.SetFloat32(fbpj.GScale.Scale)
+							}
+						}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+							ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+						}}})
+			}
+		*/
 		// PCA Analyze
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_ActM",

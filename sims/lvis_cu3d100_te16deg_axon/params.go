@@ -86,7 +86,6 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    // 0 possibly causes blowup at some point, no bene
 					"Layer.Inhib.ActAvg.Init": "0.02", // .02 > .04
-					"Layer.Act.GTarg.GeMax":   "1.2",  // these need to get stronger?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -103,38 +102,31 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":       "true",  // needs pool-level
-					"Layer.Inhib.Layer.On":      "false", // no layer!
-					"Layer.Inhib.ActAvg.Init":   "0.06",  // .06 > .05 = .04
-					"Layer.Inhib.Pool.Gi":       "1.1",   // was 1.1
-					"Layer.Learn.NeurCa.SynTau": "30",    // 40 > 30 here with bad output adapt
+					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
+					"Layer.Inhib.Layer.On":    "false", // no layer!
+					"Layer.Inhib.ActAvg.Init": "0.06",  // .06 > .05 = .04
+					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.Pool.On":       "true",  // needs pool-level
-					"Layer.Inhib.Layer.On":      "false", // no layer!
-					"Layer.Inhib.ActAvg.Init":   "0.06",  // .03 actual with gi 1.2, was .06
-					"Layer.Inhib.Pool.Gi":       "1.1",   // was 1.1
-					"Layer.Learn.NeurCa.SynTau": "30",    // 40 > 30 here with bad output adapt
+					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
+					"Layer.Inhib.Layer.On":    "false", // no layer!
+					"Layer.Inhib.ActAvg.Init": "0.06",  // .03 actual with gi 1.2, was .06
+					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":         "1.3",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
 					"Layer.Inhib.ActAvg.Init":      "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .01 -- .005, .008 too low -- maybe not nec?
+					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .01 > 0.011 > 0.012 > 0.009
 					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true: it is essential -- too hard to balance manually
 					"Layer.Inhib.ActAvg.LoTol":     "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
+					"Layer.Inhib.ActAvg.HiTol":     "0.2",   // 0.1 > 0 def
 					"Layer.Inhib.ActAvg.AdaptRate": "0.02",  // 0.02 >= 0.01 -- 0.005 worse, tol 0.1
-					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
-					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
-					"Layer.Act.Clamp.Ge": "0.6", // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
-					// "Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
-					// "Layer.Act.GABAB.Gbar":   "0.005", // .005 > .01 > .02 > .05 > .1 > .2
-					// "Layer.Act.NMDA.Gbar":    "0.03",  // was .02
-					"Layer.Learn.NeurCa.SynTau": "30",   // 40 > 30  here with bad output adapt
-					"Layer.Learn.RLrate.On":     "true", // todo: try false
-					"Layer.Inhib.Pool.FFEx":     "0.0",  // no
-					"Layer.Inhib.Layer.FFEx":    "0.0",  //
+					"Layer.Act.Clamp.Ge":           "0.6",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
+					"Layer.Learn.RLrate.On":        "true",  // todo: try false
+					"Layer.Inhib.Pool.FFEx":        "0.0",   // no
+					"Layer.Inhib.Layer.FFEx":       "0.0",   //
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
 				Params: params.Params{
@@ -185,8 +177,6 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
-					"Prjn.PrjnScale.LoTol":    "0.5",   // .5 > .8 -- needs extra kick at start!
-					"Prjn.PrjnScale.Adapt":    "false", // was essential here
 					"Prjn.PrjnScale.Abs":      "1.2",   // 1.2 > 1.0 > 1.5 > 2.0
 					"Prjn.Learn.XCal.SubMean": "0",     // this is automatic anyway
 				}},
@@ -203,8 +193,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Sym":     "false",
 					"Prjn.SWt.Adapt.On":     "false",
 					"Prjn.PrjnScale.Abs":    "0.2", // .2 > .1 for controlling PCA; .3 or.4 with GiSynThr .01
-					"Prjn.PrjnScale.Adapt":  "false",
-					"Prjn.IncGain":          "1", // .5 def
+					"Prjn.IncGain":          "1",   // .5 def
 				}},
 			{Sel: ".V1V2", Desc: "special SWt params",
 				Params: params.Params{
@@ -492,7 +481,6 @@ var ParamSetsAll = params.Sets{
 					"Layer.Act.Noise.On":                 "false",
 					"Layer.Act.Noise.Ge":                 "0.005", // 0.002 has sig effects..
 					"Layer.Act.Noise.Gi":                 "0.0",
-					"Layer.Act.GTarg.GeMax":              "1.2",  // 1 > .8 -- rescaling not very useful.
 					"Layer.Act.Dt.LongAvgTau":            "20",   // 50 > 20 in terms of stability, but weird effect late
 					"Layer.Learn.ActAvg.MinLrn":          "0.02", // sig improves "top5" hogging in pca strength
 					"Layer.Learn.ActAvg.SSTau":           "40",
@@ -552,7 +540,6 @@ var ParamSetsAll = params.Sets{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    // 0 possibly causes blowup at some point, no bene
 					"Layer.Inhib.ActAvg.Init": "0.02", // .02 > .04
-					"Layer.Act.GTarg.GeMax":   "1.2",  // these need to get stronger?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -881,7 +868,6 @@ var ParamSetsOld = params.Sets{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    // 0 possibly causes blowup at some point, no bene
 					"Layer.Inhib.ActAvg.Init": "0.02", // .02 > .04
-					"Layer.Act.GTarg.GeMax":   "1.2",  // these need to get stronger?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
