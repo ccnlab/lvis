@@ -445,11 +445,14 @@ func (ss *Sim) TrialStats() {
 	ss.Stats.SetFloat("TrlCorSim", float64(out.CorSim.Cor))
 	ss.Stats.SetFloat("TrlUnitErr", out.PctUnitErr())
 
-	if ss.Stats.Float("TrlUnitErr") > 0 {
-		ss.Stats.SetFloat("TrlErr", 1)
-	} else {
-		ss.Stats.SetFloat("TrlErr", 0)
-	}
+	ev := ss.Envs[ss.Time.Mode].(*LEDEnv)
+	ovt := ss.Stats.SetLayerTensor(ss.Net, "Output", "ActM")
+	rsp, trlErr, trlErr2 := ev.OutErr(ovt)
+	ss.Stats.SetFloat("TrlErr", trlErr)
+	ss.Stats.SetFloat("TrlErr2", trlErr2)
+	ss.Stats.SetString("TrlOut", fmt.Sprintf("%d", rsp))
+	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].ActP.Avg))
+	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -465,8 +468,7 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.AddErrStatAggItems("TrlErr", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
 
-	ss.LogAddTestCatErr()
-
+	ss.ConfigLogItems()
 	ss.ConfigActRFs()
 
 	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
@@ -485,7 +487,28 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.SetMeta(etime.Test, etime.Epoch, "Type", "Bar")
 }
 
-func (ss *Sim) LogAddTestCatErr() {
+// ConfigLogItems specifies extra logging items
+func (ss *Sim) ConfigLogItems() {
+	ss.Logs.AddItem(&elog.Item{
+		Name: "Err2",
+		Type: etensor.FLOAT64,
+		Plot: elog.DTrue,
+		Write: elog.WriteMap{
+			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
+				ctx.SetStatFloat("TrlErr2")
+			}}})
+	ss.Logs.AddItem(&elog.Item{
+		Name: "PctErr2",
+		Type: etensor.FLOAT64,
+		Plot: elog.DFalse,
+		Write: elog.WriteMap{
+			etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
+				ctx.SetAggItem(ctx.Mode, etime.Trial, "Err2", agg.AggMean)
+			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
+				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5)
+				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+			}}})
+
 	ss.Logs.AddItem(&elog.Item{
 		Name:      "CatErr",
 		Type:      etensor.FLOAT64,
@@ -636,8 +659,8 @@ func (ss *Sim) ConfigArgs() {
 	ss.Args.AddStd()
 	ss.Args.AddInt("nzero", 2, "number of zero error epochs in a row to count as full training")
 	ss.Args.AddInt("iticycles", 0, "number of cycles to run between trials (inter-trial-interval)")
-	ss.Args.SetInt("epochs", 100)
-	ss.Args.SetInt("runs", 5)
+	ss.Args.SetInt("epochs", 50)
+	ss.Args.SetInt("runs", 1)
 	ss.Args.Parse() // always parse
 }
 
@@ -658,6 +681,9 @@ func (ss *Sim) CmdArgs() {
 	rc := &ss.Loops.GetLoop(etime.Train, etime.Run).Counter
 	rc.Set(run)
 	rc.Max = run + runs
+
+	ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Max = ss.Args.Int("epochs")
+
 	ss.NewRun()
 	ss.Loops.Run()
 
