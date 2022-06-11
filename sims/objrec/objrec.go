@@ -28,8 +28,13 @@ import (
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
+	"github.com/emer/etable/agg"
 	"github.com/emer/etable/etable"
+	"github.com/emer/etable/etensor"
+	"github.com/emer/etable/etview"
 	_ "github.com/emer/etable/etview" // include to get gui views
+	"github.com/emer/etable/minmax"
+	"github.com/emer/etable/split"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/mat32"
@@ -330,6 +335,10 @@ func (ss *Sim) ConfigLoops() {
 		axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
 	})
 
+	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("Test:Trial:ActRFs", func() {
+		ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
+	})
+
 	////////////////////////////////////////////
 	// GUI
 	if ss.Args.Bool("nogui") == false {
@@ -384,8 +393,20 @@ func (ss *Sim) NewRun() {
 func (ss *Sim) TestAll() {
 	ss.Envs.ByMode(etime.Test).Init(0)
 	ss.Loops.Mode = etime.Test
+	ss.Stats.ActRFs.Reset()
 	ss.Loops.Run()
 	ss.Loops.Mode = etime.Train // Important to reset Mode back to Train because this is called from within the Train Run.
+	ss.Stats.ActRFsAvgNorm()
+	ss.GUI.ViewActRFs(&ss.Stats.ActRFs)
+
+}
+
+// RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
+func (ss *Sim) RunTestAll() {
+	ss.Logs.ResetLog(etime.Test, etime.Epoch) // only show last row
+	ss.GUI.StopNow = false
+	ss.TestAll()
+	ss.GUI.Stopped()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -396,6 +417,7 @@ func (ss *Sim) TestAll() {
 func (ss *Sim) InitStats() {
 	ss.Stats.SetFloat("TrlUnitErr", 0.0)
 	ss.Stats.SetFloat("TrlCorSim", 0.0)
+	ss.Stats.SetString("Cat", "0")
 	ss.Logs.InitErrStats() // inits TrlErr, FirstZero, LastZero, NZero
 }
 
@@ -409,9 +431,10 @@ func (ss *Sim) StatCounters() {
 	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 	ss.Stats.SetInt("Epoch", trnEpc)
 	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ev := ss.Envs[ss.Time.Mode]
-	ss.Stats.SetString("TrialName", ev.(*LEDEnv).String())
-	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "TrlUnitErr", "TrlErr", "TrlCorSim"})
+	ev := ss.Envs[ss.Time.Mode].(*LEDEnv)
+	ss.Stats.SetString("TrialName", ev.String())
+	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
+	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "Cat", "TrialName", "Cycle", "TrlUnitErr", "TrlErr", "TrlCorSim"})
 }
 
 // TrialStats computes the trial-level statistics.
@@ -431,15 +454,20 @@ func (ss *Sim) TrialStats() {
 
 //////////////////////////////////////////////////////////////////////////////
 // 		Logging
+
 func (ss *Sim) ConfigLogs() {
 	ss.Stats.SetString("RunName", ss.Params.RunName(0)) // used for naming logs, stats, etc
 
-	ss.Logs.AddCounterItems([]etime.Times{etime.Run, etime.Epoch, etime.Trial, etime.Cycle}, []string{"TrialName", "RunName"})
+	ss.Logs.AddCounterItems([]etime.Times{etime.Run, etime.Epoch, etime.Trial, etime.Cycle}, []string{"Cat", "TrialName", "RunName"})
 
 	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", elog.DTrue, etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", elog.DFalse, etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddErrStatAggItems("TrlErr", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
+
+	ss.LogAddTestCatErr()
+
+	ss.ConfigActRFs()
 
 	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
 	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Run, etime.Epoch, etime.Trial)
@@ -454,6 +482,27 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.NoPlot(etime.Test, etime.Run)
 	// note: Analyze not plotted by default
 	ss.Logs.SetMeta(etime.Train, etime.Run, "LegendCol", "RunName")
+	ss.Logs.SetMeta(etime.Test, etime.Epoch, "Type", "Bar")
+}
+
+func (ss *Sim) LogAddTestCatErr() {
+	ss.Logs.AddItem(&elog.Item{
+		Name:      "CatErr",
+		Type:      etensor.FLOAT64,
+		CellShape: []int{20},
+		DimNames:  []string{"Cat"},
+		Plot:      elog.DTrue,
+		Range:     minmax.F64{Min: 0},
+		TensorIdx: -1, // plot all values
+		Write: elog.WriteMap{
+			etime.Scope(etime.Test, etime.Epoch): func(ctx *elog.Context) {
+				ix := ctx.Logs.IdxView(etime.Test, etime.Trial)
+				spl := split.GroupBy(ix, []string{"Cat"})
+				split.AggTry(spl, "Err", agg.AggMean)
+				cats := spl.AggsToTable(etable.ColNameOnly)
+				ss.Logs.MiscTables[ctx.Item.Name] = cats
+				ctx.SetTensor(cats.Cols[1])
+			}}})
 }
 
 // Log is the main logging function, handles special things for different scopes
@@ -473,6 +522,23 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 	}
 
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
+}
+
+// ConfigActRFs
+func (ss *Sim) ConfigActRFs() {
+	ss.Stats.SetF32Tensor("Image", &ss.Envs[etime.Test.String()].(*LEDEnv).Vis.ImgTsr) // image used for actrfs, must be there first
+	ss.Stats.InitActRFs(ss.Net, []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}, "ActM")
+
+	layers := ss.Net.LayersByClass("Hidden", "Target")
+	for _, lnm := range layers {
+		clnm := lnm
+		cly := ss.Net.LayerByName(clnm)
+		uvals := ss.Stats.F32Tensor(clnm)
+		cly.UnitValsRepTensor(uvals, "Act")               // for sizing
+		if len(uvals.Shape.Shp) != len(cly.Shape().Shp) { // reshape
+			uvals.SetShape([]int{2, 2, cly.Shape().Dim(2), cly.Shape().Dim(3)}, nil, cly.Shape().DimNames())
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -501,6 +567,13 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	ss.GUI.AddPlots(title, &ss.Logs)
 
+	tg := ss.GUI.TabView.AddNewTab(etview.KiT_TensorGrid, "Image").(*etview.TensorGrid)
+	tg.SetStretchMax()
+	ss.GUI.SetGrid("Image", tg)
+	tg.SetTensor(&ss.Envs[etime.Train.String()].(*LEDEnv).Vis.ImgTsr)
+
+	ss.GUI.AddActRFGridTabs(&ss.Stats.ActRFs)
+
 	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Init", Icon: "update",
 		Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
 		Active:  egui.ActiveStopped,
@@ -511,6 +584,19 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	})
 
 	ss.GUI.AddLooperCtrl(ss.Loops, []etime.Modes{etime.Train, etime.Test})
+
+	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test All",
+		Icon:    "step-fwd",
+		Tooltip: "Tests a large same of testing items and records ActRFs.",
+		Active:  egui.ActiveStopped,
+		Func: func() {
+			if !ss.GUI.IsRunning {
+				ss.GUI.IsRunning = true
+				ss.GUI.ToolBar.UpdateActions()
+				go ss.RunTestAll()
+			}
+		},
+	})
 
 	////////////////////////////////////////////////
 	ss.GUI.ToolBar.AddSeparator("log")

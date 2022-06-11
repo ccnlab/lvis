@@ -68,7 +68,7 @@ var ParamSets = params.Sets{
 					"Prjn.Com.PFail":               "0.0",
 					"Prjn.Learn.KinaseCa.SpikeG":   "12", // 12 better, higher dwtavg but ok
 					"Prjn.Learn.KinaseCa.NMDAG":    "1",  // 1 just too hi
-					"Prjn.Learn.KinaseCa.Rule":     "SynNMDACont",
+					"Prjn.Learn.KinaseCa.Rule":     "SynSpkTheta",
 					"Prjn.Learn.KinaseCa.MTau":     "5", // 5 > 10 test more
 					"Prjn.Learn.KinaseCa.PTau":     "40",
 					"Prjn.Learn.KinaseCa.DTau":     "40",
