@@ -7,7 +7,8 @@
 # script is run in the jobs path:
 # ~/grunt/wc/server/username/projname/jobs/active/jobid/projname
 #
-# this sample version includes slurm status and cancel commands
+# this sample version includes slurm status and cancel commands and is used for
+# launching multiple jobs in parallel (array jobs)
 
 import sys
 import os
@@ -25,7 +26,7 @@ import getpass
 # max number of hours -- slurm will terminate if longer, so be generous
 # 2d = 48, 3d = 72, 4d = 96, 5d = 120, 6d = 144, 7d = 168
 # full run taking about 60 hrs, so use 72
-hours = 2
+hours = 12
 
 # memory per CPU, which is only way to allocate on hpc2 (otherwise per node and doesn't fit)
 # to tune, look at AveRSS from salloc report
@@ -38,7 +39,7 @@ mem = "1G" # 3G @ 2 thr is minimum, 5G reserves a node and is sig faster
 tasks = 1
 
 # number of cpu cores (threads) per task
-cpus_per_task = 1
+cpus_per_task = 2
 
 # how to allocate tasks within compute nodes
 # cpus_per_task * tasks_per_node <= total cores per node
@@ -73,11 +74,19 @@ grunt_user = getpass.getuser()
 # grunt_proj is the project name
 grunt_proj = os.path.split(grunt_jobpath)[1]
 
+# grunt_jobid is the jobid assigned to this job in grunt
+grunt_jobid = os.path.split(os.path.split(grunt_jobpath)[0])[1]
+
+
 ##############################################################
 # utility functions
 
 def write_string(fnm, stval):
     with open(fnm,"w") as f:
+        f.write(stval + "\n")
+
+def write_string_apend(fnm, stval):
+    with open(fnm,"a") as f:
         f.write(stval + "\n")
 
 def read_string(fnm):
@@ -145,115 +154,215 @@ def read_timestamp_to_local(fnm):
         return dstr
     return timestamp_local(dt)
     
-# write_sbatch writes the job submission script: job.sbatch
-def write_sbatch():
-    args = " ".join(read_strings_strip("job.args"))
-    f = open('job.sbatch', 'w')
-    f.write("#!/bin/bash -l\n")  # -l = login session, sources your .bash_profile
+# write_sbatch_headers defines the sbatch parameters shared accross startup,
+# cleanup and main array jobs
+def write_sbatch_header(f):
+    f.write("#SBATCH --job-name=" + grunt_proj + "_" + grunt_jobid + "\n")
     f.write("#SBATCH --mem-per-cpu=" + mem + "\n")
     f.write("#SBATCH --time=" + str(hours) + ":00:00\n") 
     f.write("#SBATCH --ntasks=" + str(tasks) + "\n")
     f.write("#SBATCH --cpus-per-task=" + str(cpus_per_task) + "\n")
     f.write("#SBATCH --ntasks-per-node=" + str(tasks_per_node) + "\n")
-    f.write("#SBATCH --array=" + array + "\n")    
+    f.write("#SBATCH --exclude=agate-[2,4-7,37-40]\n")
     # f.write("#SBATCH --qos=" + qos + "\n")
     # f.write("#SBATCH --partition=" + partition + "\n")
-    # f.write("#SBATCH --output=job.out\n")
     f.write("#SBATCH --mail-type=FAIL\n")
     f.write("#SBATCH --mail-user=" + grunt_user + "\n")
-    f.write("#SBATCH --output=job.%A_%a.out\n")
-    f.write("#SBATCH --error=job.%A_%a.error\n")
     # these might be needed depending on environment in head node vs. compute nodes
     # f.write("#SBATCH --export=NONE\n")
     # f.write("unset SLURM_EXPORT_ENV\n")
-    f.write("echo $SLURM_ARRAY_JOB_ID\n")
-    f.write("\n\n")
-    f.write("if [ \"$SLURM_ARRAY_TASK_ID\" == \"0\" ]; then\n")
-    f.write("go build -mod=mod\n")  # add anything here needed to prepare code. This part will only be executed by the first array job
-    f.write("else\n")
-    f.write("wait_seconds=\"180\"\n")
-    f.write("until test $((wait_seconds--)) -eq 0 -o -e \"job.start\" ; do sleep 1; done\n") #Wait for array job 0 to complete prepatory work before continuing
-    f.write("fi\n")
-    f.write("if [ ! -f \"job.start\" ]; then\n")
-    f.write("   date -u '+%Y-%m-%d %T %Z' > job.start\n")
-    f.write("fi\n")
-    f.write("srun ./" + grunt_proj + " -nogui -run $SLURM_ARRAY_TASK_ID -runs $((SLURM_ARRAY_TASK_ID + " + str(runs) +")) " +  args + "\n")
-    # Once job is complete, check which other array jobs are still pending or running
-    f.write("squeue -j $SLURM_ARRAY_JOB_ID -o %T | grep -E \"(RUNNING|PENDING)\"\n")
-    f.write("if [ \"`squeue -j $SLURM_ARRAY_JOB_ID -o %T | grep -c -E \"(RUNNING|PENDING)\"`\" == \"1\" ]; then\n")
-    #This is the last array job still running
-    f.write("date -u '+%Y-%m-%d %T %Z' > job.end\n")
-    f.write("else\n")
-    f.write("echo \"Not all other jobs have completed yet:\n\"")
-    f.write("squeue -j $SLURM_ARRAY_JOB_ID -o %T | grep -c -E \"(RUNNING|PENDING)\"\n")
-    f.write("fi\n")
+    
+# This job is a singelton job before launching the main arrray job used to setup the array job
+# such as compiling the code, or other setup work that should only run once per array job
+def write_sbatch_setup():
+    args = " ".join(read_strings_strip("job.args"))
+    f = open('job.setup.sbatch', 'w')
+    f.write("#!/bin/bash -l\n")  # -l = login session, sources your .bash_profile
+    f.write("#SBATCH --output=job.%A.setup.out\n")
+    # f.write("#SBATCH --error=job.%A.setup.err\n")
+    write_sbatch_header(f)
+
+    ####################################################################
+    ####### This is the code that sets up the job such as compiling.
+    ####### This is custom to the job you are running
+
+    f.write("date -u '+%Y-%m-%d %T %Z' > job.start\n")
+    f.write("go build -mod=mod\n")  # add anything here needed to prepare code.
+
     f.flush()
     f.close()
-    
-def submit():
-    if os.path.isfile('job.sbatch'):
-        print("Error: job.sbatch exists -- attempt to submit job twice!")
-        return
-    write_sbatch()
+
+# write_sbatch_array writes out the job.sbatch containing the actual main array job.
+def write_sbatch_array(setup_id):
+    args = " ".join(read_strings_strip("job.args"))
+    f = open('job.sbatch', 'w')
+    f.write("#!/bin/bash -l\n")  # -l = login session, sources your .bash_profile
+    f.write("#SBATCH --array=" + array + "\n")
+    f.write("#SBATCH --output=job.%A_%a.out\n")
+    # f.write("#SBATCH --error=job.%A_%a.err\n")
+    # Only run the main array job once the setup job has completed
+    f.write("#SBATCH --dependency=afterany:" + str(setup_id) + "\n")
+    write_sbatch_header(f)
+
+    ####################################################################
+    ####### This is the code that lauches the actual main work job.
+    ####### This is custom to the job you are running
+
+    f.write("echo $SLURM_ARRAY_JOB_ID\n")
+    f.write("\n\n")
+    f.write("srun ./" + grunt_proj + " --nogui --run $SLURM_ARRAY_TASK_ID --runs " +  str(runs) + " " +  args + "\n")
+    f.flush()
+    f.close()
+
+# write_sbatch_cleanup runs for cleanup once all jobs of the main arrray job have completed
+def write_sbatch_cleanup(array_id):
+    args = " ".join(read_strings_strip("job.args"))
+    f = open('job.cleanup.sbatch', 'w')
+    f.write("#!/bin/bash -l\n")  # -l = login session, sources your .bash_profile
+    f.write("#SBATCH --output=job.%A.cleanup.out\n")
+    # f.write("#SBATCH --error=job.%A.cleanup.err\n")
+    f.write("#SBATCH --dependency=afterany:" + str(array_id) + "\n")
+    write_sbatch_header(f)
+
+    ####################################################################
+    ####### This is the code that runs as a singleton once all array jobs have completed.
+    ####### This can be used to collate results or used for other cleanup work
+    ####### This is custom to the job you are running
+
+    ### Make sure to write the job.end file to let grunt know that the job has completd
+    f.write("date -u '+%Y-%m-%d %T %Z' > job.end\n")
+
+    f.flush()
+    f.close()
+
+def sbatch_submit(sbatch_fn):
     try:
-        result = subprocess.check_output(["sbatch","job.sbatch"])
+        result = subprocess.check_output(["sbatch",sbatch_fn])
     except subprocess.CalledProcessError:
-        print("Failed to submit job.sbatch script")
+        print("Failed to submit " + sbatch_fn + " script")
         return
     prog = re.compile('.*Submitted batch job (\d+).*')
     result = prog.match(str(result))
     slurmid = result.group(1)
-    write_string("job.slurmid", slurmid)
-    print("submitted successfully -- slurm job id: " + slurmid)
+    if os.path.isfile('job.slurmid'):
+        write_string_apend("job.slurmid", slurmid)
+    else:
+        write_string("job.slurmid", slurmid)
+    return slurmid
 
+
+def submit():
+    if os.path.isfile('job.sbatch'):
+        print("Error: job.sbatch exists -- attempt to submit job twice!")
+        return
+    write_sbatch_setup()
+    slurmid_setup = sbatch_submit("job.setup.sbatch")
+
+    write_sbatch_array(slurmid_setup)
+    slurmid_array = sbatch_submit("job.sbatch")
+
+    write_sbatch_cleanup(slurmid_array)
+    slurmid_cleanup = sbatch_submit("job.cleanup.sbatch")
+    
+    print("submitted successfully -- slurm job id: " + slurmid_array)
+    
 def results():
     # important: update this to include any results you want to add to results repo
     print("\n".join(glob.glob('*.tsv')))
 
 def status():
-    slid = read_string("job.slurmid")
+    slids = read_strings_strip("job.slurmid")
     stat = "NOSLURMID"
-    if slid == "" or slid == None:
+    if len(slids) == 0 or slids == None:
         print("No slurm id found -- maybe didn't submit properly?")
-    else:    
-        print("slurm id to stat: ", slid)
-        result = ""
-        try:
-            result = subprocess.check_output(["squeue","-j",slid,"-o","%T"], universal_newlines=True)
-        except subprocess.CalledProcessError:
-            print("Failed to stat job")
-        res = result.splitlines()
-        if len(res) == 2:
-            stat = res[1].rstrip()
-        elif len(res) > 2: 
-            stati = {} 
-            for status in res: 
-                if status == "STATE": 
-                    continue 
-                if status in stati.keys(): 
-                    stati[status] = stati[status] + 1 
-                else: 
-                    stati[status] = 1 
-            stat = "" 
-            for status in stati: 
-                stat = stat + status + str(stati[status]) + " " 
-        else: 
-            stat = "NOTFOUND" 
+    else:
+        if len(slids) == 1:
+            print("slurm id to stat: ", slid)
+            result = ""
+            try:
+                result = subprocess.check_output(["squeue","-j",slid,"-o","%T"], universal_newlines=True)
+            except subprocess.CalledProcessError:
+                print("Failed to stat job")
+            res = result.splitlines()
+            if len(res) == 2:
+                stat = res[1].rstrip()
+            elif len(res) > 2: 
+                stati = {} 
+                for status in res: 
+                    if status == "STATE": 
+                        continue 
+                    if status in stati.keys(): 
+                        stati[status] = stati[status] + 1 
+                    else: 
+                        stati[status] = 1 
+                    stat = "" 
+                    for status in stati: 
+                        stat = stat + status + str(stati[status]) + " " 
+            else: 
+                stat = "NOTFOUND"
+        else:
+            if len(slids) == 3:
+                result = ""
+                try:
+                    result = subprocess.check_output(["squeue","-j",slids[0],"-o","%T"], universal_newlines=True)
+                except subprocess.CalledProcessError:
+                    print("Failed to stat job")
+                res = result.splitlines()
+                if len(res) == 2:
+                    if res[1].rstrip() == "RUNNING":
+                        stat = "COMPILING"
+                    else:
+                        stat = res[1].rstrip()
+                else:
+                    try:
+                        result = subprocess.check_output(["squeue","-j",slids[1],"-o","%T"], universal_newlines=True)
+                    except subprocess.CalledProcessError:
+                        print("Failed to stat job")
+                    res = result.splitlines()
+                    if len(res) == 2:
+                        stat = res[1].rstrip()
+                    elif len(res) > 2: 
+                        stati = {} 
+                        for status in res: 
+                            if status == "STATE": 
+                                continue 
+                            if status in stati.keys(): 
+                                stati[status] = stati[status] + 1 
+                            else: 
+                                stati[status] = 1 
+                                stat = "" 
+                        for status in stati: 
+                            stat = stat + status + str(stati[status]) + " "
+                    else:
+                        try:
+                            result = subprocess.check_output(["squeue","-j",slids[2],"-o","%T"], universal_newlines=True)
+                        except subprocess.CalledProcessError:
+                            print("Failed to stat job")
+                        res = result.splitlines()
+                        if len(res) == 2:
+                            if res[1].rstrip() == "RUNNING":
+                                stat = "CLEANUP"
+                            else:
+                                stat = res[1].rstrip()
+                        else:
+                            stat = ""
+        
     print("status: " + stat)
     write_string("job.status", stat)
     
 def cancel():
     write_string("job.canceled", timestamp())
-    slid = read_string("job.slurmid")
-    if slid == "" or slid == None:
-        print("No slurm id found -- maybe didn't submit properly?")
-        return
-    print("canceling slurm id: ", slid)
-    try:
-        result = subprocess.check_output(["scancel",slid])
-    except subprocess.CalledProcessError:
-        print("Failed to cancel job")
-        return
+    slids = read_strings_strip("job.slurmid")
+    for slid in slids:
+        if slid == "" or slid == None:
+            print("No slurm id found -- maybe didn't submit properly?")
+            return
+        print("canceling slurm id: ", slid)
+        try:
+            result = subprocess.check_output(["scancel",slid])
+        except subprocess.CalledProcessError:
+            print("Failed to cancel job")
+            return
 
 # custom command to get info on cluster        
 def queue():
@@ -351,4 +460,5 @@ else:
     print("grunter.py: error: cmd not recognized: " + cmd)
     exit(1)
 exit(0)
+
 

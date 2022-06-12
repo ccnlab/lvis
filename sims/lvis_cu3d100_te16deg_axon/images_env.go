@@ -36,6 +36,7 @@ import (
 type ImagesEnv struct {
 	Nm         string       `desc:"name of this environment"`
 	Dsc        string       `desc:"description of this environment"`
+	ImageFile  string       `desc:"image file name"`
 	Test       bool         `desc:"present test items, else train"`
 	Sequential bool         `desc:"present items in sequential order -- else shuffled"`
 	High16     bool         `desc:"compute high-res full field filtering"`
@@ -205,9 +206,9 @@ func OpenList2JSON(list *[][]string, filename string) error {
 
 // OpenConfig opens saved configuration for current images
 func (ev *ImagesEnv) OpenConfig() bool {
-	cfnm := fmt.Sprintf("%s_cats.json", ev.Nm)
-	tsfnm := fmt.Sprintf("%s_ntest%d_tst.json", ev.Nm, ev.Images.NTestPerCat)
-	trfnm := fmt.Sprintf("%s_ntest%d_trn.json", ev.Nm, ev.Images.NTestPerCat)
+	cfnm := fmt.Sprintf("%s_cats.json", ev.ImageFile)
+	tsfnm := fmt.Sprintf("%s_ntest%d_tst.json", ev.ImageFile, ev.Images.NTestPerCat)
+	trfnm := fmt.Sprintf("%s_ntest%d_trn.json", ev.ImageFile, ev.Images.NTestPerCat)
 	_, err := os.Stat(tsfnm)
 	if !os.IsNotExist(err) {
 		OpenListJSON(&ev.Images.Cats, cfnm)
@@ -222,9 +223,9 @@ func (ev *ImagesEnv) OpenConfig() bool {
 
 // SaveConfig saves configuration for current images
 func (ev *ImagesEnv) SaveConfig() {
-	cfnm := fmt.Sprintf("%s_cats.json", ev.Nm)
-	tsfnm := fmt.Sprintf("%s_ntest%d_tst.json", ev.Nm, ev.Images.NTestPerCat)
-	trfnm := fmt.Sprintf("%s_ntest%d_trn.json", ev.Nm, ev.Images.NTestPerCat)
+	cfnm := fmt.Sprintf("%s_cats.json", ev.ImageFile)
+	tsfnm := fmt.Sprintf("%s_ntest%d_tst.json", ev.ImageFile, ev.Images.NTestPerCat)
+	trfnm := fmt.Sprintf("%s_ntest%d_trn.json", ev.ImageFile, ev.Images.NTestPerCat)
 	SaveListJSON(ev.Images.Cats, cfnm)
 	SaveList2JSON(ev.Images.ImagesTest, tsfnm)
 	SaveList2JSON(ev.Images.ImagesTrain, trfnm)
