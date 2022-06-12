@@ -217,9 +217,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	itOut.SetClass("NovLearn")
 	outIT.SetClass("NovLearn")
 
-	// about the same on mac with and without threading
-	// v4.SetThread(1)
-	// it.SetThread(2)
+	// even with new 1.4.5 threading, no advantage to 2 threads
+	// it.SetThread(1)
+	// out.SetThread(1)
 
 	net.Defaults()
 	ss.Params.SetObject("Network")
@@ -463,8 +463,8 @@ func (ss *Sim) ConfigLogs() {
 
 	ss.Logs.AddCounterItems([]etime.Times{etime.Run, etime.Epoch, etime.Trial, etime.Cycle}, []string{"Cat", "TrialName", "RunName"})
 
-	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", elog.DTrue, etime.Run, etime.Epoch, etime.Trial)
-	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", elog.DFalse, etime.Run, etime.Epoch, etime.Trial)
+	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", true, etime.Run, etime.Epoch, etime.Trial)
+	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", false, etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddErrStatAggItems("TrlErr", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
 
@@ -492,7 +492,7 @@ func (ss *Sim) ConfigLogItems() {
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Err2",
 		Type: etensor.FLOAT64,
-		Plot: elog.DTrue,
+		Plot: true,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatFloat("TrlErr2")
@@ -500,7 +500,7 @@ func (ss *Sim) ConfigLogItems() {
 	ss.Logs.AddItem(&elog.Item{
 		Name: "PctErr2",
 		Type: etensor.FLOAT64,
-		Plot: elog.DFalse,
+		Plot: false,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
 				ctx.SetAggItem(ctx.Mode, etime.Trial, "Err2", agg.AggMean)
@@ -514,7 +514,7 @@ func (ss *Sim) ConfigLogItems() {
 		Type:      etensor.FLOAT64,
 		CellShape: []int{20},
 		DimNames:  []string{"Cat"},
-		Plot:      elog.DTrue,
+		Plot:      true,
 		Range:     minmax.F64{Min: 0},
 		TensorIdx: -1, // plot all values
 		Write: elog.WriteMap{
