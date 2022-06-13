@@ -682,6 +682,9 @@ func (ss *Sim) ConfigLoops() {
 	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("PCAStats", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		if (ss.PCAInterval > 0) && (trnEpc%ss.PCAInterval == 0) {
+			if ss.Args.Bool("mpi") {
+				ss.Logs.MPIGatherTableRows(etime.Analyze, etime.Trial, ss.Comm)
+			}
 			axon.PCAStats(ss.Net.AsAxon(), &ss.Logs, &ss.Stats)
 			ss.Logs.ResetLog(etime.Analyze, etime.Trial)
 		}
