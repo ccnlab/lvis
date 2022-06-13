@@ -118,7 +118,7 @@ func (ss *Sim) New() {
 	ss.Stats.Init()
 	ss.RndSeeds.Init(100) // max 100 runs
 	ss.NOutPer = 5
-	ss.SubPools = false
+	ss.SubPools = true
 	ss.RndOutPats = false
 	ss.TestInterval = 20
 	ss.PCAInterval = 10
@@ -683,6 +683,7 @@ func (ss *Sim) ConfigLoops() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		if (ss.PCAInterval > 0) && (trnEpc%ss.PCAInterval == 0) {
 			axon.PCAStats(ss.Net.AsAxon(), &ss.Logs, &ss.Stats)
+			ss.Logs.ResetLog(etime.Analyze, etime.Trial)
 		}
 	})
 
