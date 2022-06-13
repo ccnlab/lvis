@@ -28,6 +28,7 @@ import (
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
+	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/agg"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
@@ -189,8 +190,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	it := net.AddLayer2D("IT", 16, 16, emer.Hidden)       // 16x16 == 20x20 > 10x10 (orig)
 	out := net.AddLayer4D("Output", 4, 5, ss.NOutPer, 1, emer.Target)
 
-	v1.SetRepIdxs(emer.CenterPoolIdxs(v1, 2))
-	v4.SetRepIdxs(emer.CenterPoolIdxs(v4, 2))
+	v1.SetRepIdxsShape(emer.CenterPoolIdxs(v1, 2), emer.CenterPoolShape(v1, 2))
+	v4.SetRepIdxsShape(emer.CenterPoolIdxs(v4, 2), emer.CenterPoolShape(v4, 2))
 
 	full := prjn.NewFull()
 	_ = full
@@ -271,7 +272,6 @@ func (ss *Sim) ConfigLoops() {
 		})
 		stack.Loops[etime.Trial].OnStart.Add("ApplyInputs", func() {
 			ss.ApplyInputs()
-			// axon.EnvApplyInputs(ss.Net, ss.Envs[ss.Time.Mode])
 		})
 		stack.Loops[etime.Trial].OnEnd.Add("StatCounters", ss.StatCounters)
 		stack.Loops[etime.Trial].OnEnd.Add("TrialStats", ss.TrialStats)
@@ -280,7 +280,7 @@ func (ss *Sim) ConfigLoops() {
 	man.GetLoop(etime.Train, etime.Run).OnStart.Add("NewRun", ss.NewRun)
 
 	// Train stop early condition
-	man.GetLoop(etime.Train, etime.Epoch).IsDone["Epoch:NZeroStop"] = func() bool {
+	man.GetLoop(etime.Train, etime.Epoch).IsDone["ZeroStop"] = func() bool {
 		// This is calculated in TrialStats
 		stopNz := ss.Args.Int("nzero")
 		if stopNz <= 0 {
@@ -293,7 +293,7 @@ func (ss *Sim) ConfigLoops() {
 
 	// Add Testing
 	trainEpoch := man.GetLoop(etime.Train, etime.Epoch)
-	trainEpoch.OnStart.Add("Train:TestAtInterval", func() {
+	trainEpoch.OnStart.Add("TestAtInterval", func() {
 		if (ss.TestInterval > 0) && ((trainEpoch.Counter.Cur+1)%ss.TestInterval == 0) {
 			// Note the +1 so that it doesn't occur at the 0th timestep.
 			ss.TestAll()
@@ -303,10 +303,10 @@ func (ss *Sim) ConfigLoops() {
 	/////////////////////////////////////////////
 	// Logging
 
-	man.GetLoop(etime.Test, etime.Epoch).OnEnd.Add("Test:Epoch:LogTestErrors", func() {
+	man.GetLoop(etime.Test, etime.Epoch).OnEnd.Add("LogTestErrors", func() {
 		axon.LogTestErrors(&ss.Logs)
 	})
-	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("Train:Epoch:PCAStats", func() {
+	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("PCAStats", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		if ss.PCAInterval > 0 && trnEpc%ss.PCAInterval == 0 {
 			axon.PCAStats(ss.Net.AsAxon(), &ss.Logs, &ss.Stats)
@@ -316,39 +316,40 @@ func (ss *Sim) ConfigLoops() {
 	man.AddOnEndToAll("Log", ss.Log)
 	axon.LooperResetLogBelow(man, &ss.Logs)
 
-	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("Train:Trial:LogAnalyze", func() {
+	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("LogAnalyze", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		if (ss.PCAInterval > 0) && (trnEpc%ss.PCAInterval == 0) {
 			ss.Log(etime.Analyze, etime.Trial)
 		}
 	})
 
-	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("Train:Run:RunStats", func() {
+	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("RunStats", func() {
 		ss.Logs.RunStats("PctCor", "FirstZero", "LastZero")
 	})
 
 	// Save weights to file, to look at later
-	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("Train:SaveWeights", func() {
+	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("SaveWeights", func() {
 		ctrString := ss.Stats.PrintVals([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
 		axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
 	})
 
-	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("Test:Trial:ActRFs", func() {
+	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
 		ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
 	})
 
 	////////////////////////////////////////////
 	// GUI
-	if ss.Args.Bool("nogui") == false {
+	if ss.Args.Bool("nogui") {
+		man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
+			ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
+		})
+	} else {
 		axon.LooperUpdtNetView(man, &ss.ViewUpdt)
 		axon.LooperUpdtPlots(man, &ss.GUI)
-		// man.GetLoop(etime.Test, etime.Trial).Main.Add("Log:Test:Trial", func() {
-		// 	ss.GUI.NetDataRecord()
-		// })
 	}
 
 	if Debug {
-		fmt.Println(man.DocString())
+		mpi.Println(man.DocString())
 	}
 	ss.Loops = man
 }
@@ -459,7 +460,9 @@ func (ss *Sim) TrialStats() {
 func (ss *Sim) ConfigLogs() {
 	ss.Stats.SetString("RunName", ss.Params.RunName(0)) // used for naming logs, stats, etc
 
-	ss.Logs.AddCounterItems([]etime.Times{etime.Run, etime.Epoch, etime.Trial, etime.Cycle}, []string{"Cat", "TrialName", "RunName"})
+	ss.Logs.AddCounterItems(etime.Run, etime.Epoch, etime.Trial, etime.Cycle)
+	ss.Logs.AddStatStringItem(etime.AllModes, etime.AllTimes, "RunName")
+	ss.Logs.AddStatStringItem(etime.AllModes, etime.Trial, "Cat", "TrialName")
 
 	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", true, etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", false, etime.Run, etime.Epoch, etime.Trial)
@@ -549,17 +552,6 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 func (ss *Sim) ConfigActRFs() {
 	ss.Stats.SetF32Tensor("Image", &ss.Envs[etime.Test.String()].(*LEDEnv).Vis.ImgTsr) // image used for actrfs, must be there first
 	ss.Stats.InitActRFs(ss.Net, []string{"V4:Image", "V4:Output", "IT:Image", "IT:Output"}, "ActM")
-
-	layers := ss.Net.LayersByClass("Hidden", "Target")
-	for _, lnm := range layers {
-		clnm := lnm
-		cly := ss.Net.LayerByName(clnm)
-		uvals := ss.Stats.F32Tensor(clnm)
-		cly.UnitValsRepTensor(uvals, "Act")               // for sizing
-		if len(uvals.Shape.Shp) != len(cly.Shape().Shp) { // reshape
-			uvals.SetShape([]int{2, 2, cly.Shape().Dim(2), cly.Shape().Dim(3)}, nil, cly.Shape().DimNames())
-		}
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -663,19 +655,20 @@ func (ss *Sim) ConfigArgs() {
 }
 
 func (ss *Sim) CmdArgs() {
-	ss.Args.ProcStd(&ss.Logs, &ss.Params, ss.Net.Name())
+	ss.Args.ProcStd(&ss.Params)
+	ss.Args.ProcStdLogs(&ss.Logs, &ss.Params, ss.Net.Name())
 	ss.Args.SetBool("nogui", true)                                       // by definition if here
 	ss.Stats.SetString("RunName", ss.Params.RunName(ss.Args.Int("run"))) // used for naming logs, stats, etc
 
 	netdata := ss.Args.Bool("netdata")
 	if netdata {
-		fmt.Printf("Saving NetView data from testing\n")
+		mpi.Printf("Saving NetView data from testing\n")
 		ss.GUI.InitNetData(ss.Net, 200)
 	}
 
 	runs := ss.Args.Int("runs")
 	run := ss.Args.Int("run")
-	fmt.Printf("Running %d Runs starting at %d\n", runs, run)
+	mpi.Printf("Running %d Runs starting at %d\n", runs, run)
 	rc := &ss.Loops.GetLoop(etime.Train, etime.Run).Counter
 	rc.Set(run)
 	rc.Max = run + runs

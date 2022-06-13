@@ -11,7 +11,6 @@ input images.
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -119,7 +118,7 @@ func (ss *Sim) New() {
 	ss.Stats.Init()
 	ss.RndSeeds.Init(100) // max 100 runs
 	ss.NOutPer = 5
-	ss.SubPools = true
+	ss.SubPools = false
 	ss.RndOutPats = false
 	ss.TestInterval = 20
 	ss.PCAInterval = 10
@@ -223,6 +222,9 @@ func (ss *Sim) ConfigEnv() {
 	tst.Images.DeleteCats(confuse)
 
 	if ss.Args.Bool("mpi") {
+		if Debug {
+			mpi.Printf("Did Env MPIAlloc\n")
+		}
 		trn.MPIAlloc()
 		tst.MPIAlloc()
 	}
@@ -267,10 +269,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v1m8.SetClass("V1m")
 	v1l8.SetClass("V1l")
 
-	v1m16.SetRepIdxs(ss.CenterPoolIdxs(v1m16, 2))
-	v1l16.SetRepIdxs(ss.CenterPoolIdxs(v1l16, 2))
-	v1m8.SetRepIdxs(ss.CenterPoolIdxs(v1m8, 2))
-	v1l8.SetRepIdxs(ss.CenterPoolIdxs(v1l8, 2))
+	v1m16.SetRepIdxsShape(ss.CenterPoolIdxs(v1m16, 2), emer.CenterPoolShape(v1m16, 2))
+	v1l16.SetRepIdxsShape(ss.CenterPoolIdxs(v1l16, 2), emer.CenterPoolShape(v1l16, 2))
+	v1m8.SetRepIdxsShape(ss.CenterPoolIdxs(v1m8, 2), emer.CenterPoolShape(v1m8, 2))
+	v1l8.SetRepIdxsShape(ss.CenterPoolIdxs(v1l8, 2), emer.CenterPoolShape(v1l8, 2))
 
 	// not useful so far..
 	// clst := net.AddLayer2D("Claustrum", 5, 5, emer.Hidden)
@@ -286,10 +288,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v1cm8.SetClass("V1Cm")
 		v1cl8.SetClass("V1Cl")
 
-		v1cm16.SetRepIdxs(ss.CenterPoolIdxs(v1cm16, 2))
-		v1cl16.SetRepIdxs(ss.CenterPoolIdxs(v1cl16, 2))
-		v1cm8.SetRepIdxs(ss.CenterPoolIdxs(v1cm8, 2))
-		v1cl8.SetRepIdxs(ss.CenterPoolIdxs(v1cm8, 2))
+		v1cm16.SetRepIdxsShape(ss.CenterPoolIdxs(v1cm16, 2), emer.CenterPoolShape(v1cm16, 2))
+		v1cl16.SetRepIdxsShape(ss.CenterPoolIdxs(v1cl16, 2), emer.CenterPoolShape(v1cl16, 2))
+		v1cm8.SetRepIdxsShape(ss.CenterPoolIdxs(v1cm8, 2), emer.CenterPoolShape(v1cm8, 2))
+		v1cl8.SetRepIdxsShape(ss.CenterPoolIdxs(v1cl8, 2), emer.CenterPoolShape(v1cl8, 2))
 	}
 
 	v2m16 := net.AddLayer4D("V2m16", v2mNp, v2mNp, v2Nu, v2Nu, emer.Hidden)
@@ -301,10 +303,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v2m8.SetClass("V2m V2")
 	v2l8.SetClass("V2l V2")
 
-	v2m16.SetRepIdxs(ss.CenterPoolIdxs(v2m16, 2))
-	v2l16.SetRepIdxs(ss.CenterPoolIdxs(v2l16, 2))
-	v2m8.SetRepIdxs(ss.CenterPoolIdxs(v2m8, 2))
-	v2l8.SetRepIdxs(ss.CenterPoolIdxs(v2l8, 2))
+	v2m16.SetRepIdxsShape(ss.CenterPoolIdxs(v2m16, 2), emer.CenterPoolShape(v2m16, 2))
+	v2l16.SetRepIdxsShape(ss.CenterPoolIdxs(v2l16, 2), emer.CenterPoolShape(v2l16, 2))
+	v2m8.SetRepIdxsShape(ss.CenterPoolIdxs(v2m8, 2), emer.CenterPoolShape(v2m8, 2))
+	v2l8.SetRepIdxsShape(ss.CenterPoolIdxs(v2l8, 2), emer.CenterPoolShape(v2l8, 2))
 
 	var v1h16, v2h16, v3h16 emer.Layer
 	if hi16 {
@@ -315,9 +317,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v2h16.SetClass("V2h V2")
 		v3h16.SetClass("V3h")
 
-		v1h16.SetRepIdxs(ss.CenterPoolIdxs(v1h16, 2))
-		v2h16.SetRepIdxs(ss.CenterPoolIdxs(v2h16, 2))
-		v3h16.SetRepIdxs(ss.CenterPoolIdxs(v3h16, 2))
+		v1h16.SetRepIdxsShape(ss.CenterPoolIdxs(v1h16, 2), emer.CenterPoolShape(v1h16, 2))
+		v2h16.SetRepIdxsShape(ss.CenterPoolIdxs(v2h16, 2), emer.CenterPoolShape(v2h16, 2))
+		v3h16.SetRepIdxsShape(ss.CenterPoolIdxs(v3h16, 2), emer.CenterPoolShape(v3h16, 2))
 	}
 
 	v4f16 := net.AddLayer4D("V4f16", v4Np, v4Np, v4Nu, v4Nu, emer.Hidden)
@@ -325,8 +327,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
-	v4f16.SetRepIdxs(ss.CenterPoolIdxs(v4f16, 2))
-	v4f8.SetRepIdxs(ss.CenterPoolIdxs(v4f8, 2))
+	v4f16.SetRepIdxsShape(ss.CenterPoolIdxs(v4f16, 2), emer.CenterPoolShape(v4f16, 2))
+	v4f8.SetRepIdxsShape(ss.CenterPoolIdxs(v4f8, 2), emer.CenterPoolShape(v4f8, 2))
 
 	teo16 := net.AddLayer4D("TEOf16", 2, 2, 15, 15, emer.Hidden)
 	teo8 := net.AddLayer4D("TEOf8", 2, 2, 15, 15, emer.Hidden)
@@ -609,6 +611,9 @@ func (ss *Sim) ConfigLoops() {
 	effTrls := ss.MaxTrls
 	if ss.Args.Bool("mpi") {
 		effTrls /= mpi.WorldSize() // todo: use more robust fun
+		if Debug {
+			mpi.Printf("MPI trials: %d\n", effTrls)
+		}
 	}
 
 	man.AddStack(etime.Train).AddTime(etime.Run, 1).AddTime(etime.Epoch, 2000).AddTime(etime.Trial, effTrls).AddTime(etime.Cycle, 200)
@@ -618,7 +623,7 @@ func (ss *Sim) ConfigLoops() {
 	axon.LooperStdPhases(man, &ss.Time, ss.Net.AsAxon(), 150, 199)            // plus phase timing
 	axon.LooperSimCycleAndLearn(man, ss.Net.AsAxon(), &ss.Time, &ss.ViewUpdt) // std algo code
 
-	man.GetLoop(etime.Train, etime.Trial).OnEnd.Replace("Trial:UpdateWeights", func() {
+	man.GetLoop(etime.Train, etime.Trial).OnEnd.Replace("UpdateWeights", func() {
 		ss.Net.DWt(&ss.Time)
 		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
 		ss.MPIWtFmDWt()
@@ -642,7 +647,7 @@ func (ss *Sim) ConfigLoops() {
 	man.GetLoop(etime.Train, etime.Run).OnStart.Add("NewRun", ss.NewRun)
 
 	// Train stop early condition
-	man.GetLoop(etime.Train, etime.Epoch).IsDone["Epoch:NZeroStop"] = func() bool {
+	man.GetLoop(etime.Train, etime.Epoch).IsDone["NZeroStop"] = func() bool {
 		// This is calculated in TrialStats
 		stopNz := ss.Args.Int("nzero")
 		if stopNz <= 0 {
@@ -655,14 +660,14 @@ func (ss *Sim) ConfigLoops() {
 
 	// Add Testing
 	trainEpoch := man.GetLoop(etime.Train, etime.Epoch)
-	trainEpoch.OnStart.Add("Train:TestAtInterval", func() {
+	trainEpoch.OnStart.Add("TestAtInterval", func() {
 		if (ss.TestInterval > 0) && ((trainEpoch.Counter.Cur+1)%ss.TestInterval == 0) {
 			// Note the +1 so that it doesn't occur at the 0th timestep.
 			ss.TestAll()
 		}
 	})
 
-	trainEpoch.OnEnd.Add("Train:RandCheck", func() {
+	trainEpoch.OnEnd.Add("RandCheck", func() {
 		if ss.Args.Bool("mpi") {
 			empi.RandCheck(ss.Comm) // prints error message
 		}
@@ -671,12 +676,12 @@ func (ss *Sim) ConfigLoops() {
 	/////////////////////////////////////////////
 	// Logging
 
-	man.GetLoop(etime.Test, etime.Epoch).OnEnd.Add("Test:Epoch:LogTestErrors", func() {
+	man.GetLoop(etime.Test, etime.Epoch).OnEnd.Add("LogTestErrors", func() {
 		axon.LogTestErrors(&ss.Logs)
 	})
-	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("Train:Epoch:PCAStats", func() {
+	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("PCAStats", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
-		if ss.PCAInterval > 0 && trnEpc%ss.PCAInterval == 0 {
+		if (ss.PCAInterval > 0) && (trnEpc%ss.PCAInterval == 0) {
 			axon.PCAStats(ss.Net.AsAxon(), &ss.Logs, &ss.Stats)
 		}
 	})
@@ -684,41 +689,42 @@ func (ss *Sim) ConfigLoops() {
 	man.AddOnEndToAll("Log", ss.Log)
 	axon.LooperResetLogBelow(man, &ss.Logs)
 
-	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("Train:Trial:LogAnalyze", func() {
+	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("LogAnalyze", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		if (ss.PCAInterval > 0) && (trnEpc%ss.PCAInterval == 0) {
 			ss.Log(etime.Analyze, etime.Trial)
 		}
 	})
 
-	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("Train:Run:RunStats", func() {
+	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("RunStats", func() {
 		ss.Logs.RunStats("PctCor", "FirstZero", "LastZero")
 	})
 
 	// Save weights to file at end, to look at later
-	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("Train:SaveWeights", func() { ss.SaveWeights() })
+	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("SaveWeights", func() { ss.SaveWeights() })
 
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 100, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 500, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 1000, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 1500, func() { ss.SaveWeights() })
 
-	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("Test:Trial:ActRFs", func() {
+	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
 		ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
 	})
 
 	////////////////////////////////////////////
 	// GUI
-	if !ss.Args.Bool("nogui") {
+	if ss.Args.Bool("nogui") {
+		man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
+			ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
+		})
+	} else {
 		axon.LooperUpdtNetView(man, &ss.ViewUpdt)
 		axon.LooperUpdtPlots(man, &ss.GUI)
-		// man.GetLoop(etime.Test, etime.Trial).Main.Add("Log:Test:Trial", func() {
-		// 	ss.GUI.NetDataRecord()
-		// })
 	}
 
 	if Debug {
-		fmt.Println(man.DocString())
+		mpi.Println(man.DocString())
 	}
 	ss.Loops = man
 }
@@ -729,17 +735,8 @@ func (ss *Sim) SaveWeights() {
 	axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
 }
 
-// CenterPoolShape returns shape for 2x2 center pools (including sub-pools).
-func (ss *Sim) CenterPoolShape(ly emer.Layer, n int) []int {
-	nsp := 1
-	if ss.SubPools {
-		nsp = 2
-	}
-	return []int{n * nsp, n * nsp, ly.Shape().Dim(2), ly.Shape().Dim(3)}
-}
-
 // CenterPoolIdxs returns the unit indexes for 2x2 center pools
-// (including sub-pools).
+// if sub-pools are present, then only first such subpool is used.
 func (ss *Sim) CenterPoolIdxs(ly emer.Layer, n int) []int {
 	npy := ly.Shape().Dim(0)
 	npx := ly.Shape().Dim(1)
@@ -753,23 +750,19 @@ func (ss *Sim) CenterPoolIdxs(ly emer.Layer, n int) []int {
 	}
 	cpy := (npy - n) / 2
 	cpx := (npx - n) / 2
-	nt := n * n * nsp * nsp * nu
+	nt := n * n * nu
 	idxs := make([]int, nt)
 
 	ix := 0
 	for py := 0; py < 2; py++ {
-		for sy := 0; sy < nsp; sy++ {
-			for px := 0; px < 2; px++ {
-				for sx := 0; sx < nsp; sx++ {
-					y := (py+cpy)*nsp + sy
-					x := (px+cpx)*nsp + sx
-					si := (y*npxact + x) * nu
-					for ni := 0; ni < nu; ni++ {
-						idxs[ix+ni] = si + ni
-					}
-					ix += nu
-				}
+		y := (py + cpy) * nsp
+		for px := 0; px < 2; px++ {
+			x := (px + cpx) * nsp
+			si := (y*npxact + x) * nu
+			for ni := 0; ni < nu; ni++ {
+				idxs[ix+ni] = si + ni
 			}
+			ix += nu
 		}
 	}
 	return idxs
@@ -984,6 +977,10 @@ func (ss *Sim) FindPeaks(data []float64) []int {
 // must be passed max act data cycle-by-cycle
 func (ss *Sim) FindActCycle(data []float64) int {
 	mx := 150
+	if len(data) < mx {
+		mpi.Printf("FindActCycle error: data is len: %d\n", len(data))
+		return mx
+	}
 	dt := data  // data is already smooth
 	start := 25 // give time for prior act to decay
 	thr := 0.01 // rise threshold
@@ -1032,7 +1029,9 @@ func (ss *Sim) FirstOut(cyclog *etable.Table) (fcyc, resp int, err float64, err2
 func (ss *Sim) ConfigLogs() {
 	ss.Stats.SetString("RunName", ss.Params.RunName(0)) // used for naming logs, stats, etc
 
-	ss.Logs.AddCounterItems([]etime.Times{etime.Run, etime.Epoch, etime.Trial, etime.Cycle}, []string{"TrlCat", "TrialName", "TrlResp", "RunName"})
+	ss.Logs.AddCounterItems(etime.Run, etime.Epoch, etime.Trial, etime.Cycle)
+	ss.Logs.AddStatStringItem(etime.AllModes, etime.AllTimes, "RunName")
+	ss.Logs.AddStatStringItem(etime.AllModes, etime.Trial, "TrlCat", "TrialName", "TrlResp")
 
 	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", true, etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", false, etime.Run, etime.Epoch, etime.Trial)
@@ -1270,17 +1269,6 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 func (ss *Sim) ConfigActRFs() {
 	ss.Stats.SetF32Tensor("Image", &ss.Envs[etime.Test.String()].(*ImagesEnv).Img.Tsr) // image used for actrfs, must be there first
 	ss.Stats.InitActRFs(ss.Net, []string{"V4f16:Image", "V4f16:Output", "TEOf16:Image", "TEOf16:Output", "TEOf8:Image", "TEOf8:Output"}, "ActM")
-
-	layers := ss.Net.LayersByClass("Hidden", "Target")
-	for _, lnm := range layers {
-		clnm := lnm
-		cly := ss.Net.LayerByName(clnm)
-		uvals := ss.Stats.F32Tensor(clnm)
-		cly.UnitValsRepTensor(uvals, "Act")               // for sizing
-		if len(uvals.Shape.Shp) != len(cly.Shape().Shp) { // reshape
-			uvals.SetShape(ss.CenterPoolShape(cly, 2), nil, cly.Shape().DimNames())
-		}
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
