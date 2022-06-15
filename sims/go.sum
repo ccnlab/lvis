@@ -107,13 +107,13 @@ github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5m
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
-github.com/emer/axon v1.4.9 h1:zuccNJRc7FXZJwowUJTJoohz8pDCz4YLRoNOhOQHE5Q=
-github.com/emer/axon v1.4.9/go.mod h1:2I7AtU4I+omTHW8ftCxrFSuvHcokB2/fDuSrsvYU2Vc=
+github.com/emer/axon v1.4.12 h1:rpBytmNIVhsM8e2anssUkC/iTvhHBDQ7d/7d0AHzF5Y=
+github.com/emer/axon v1.4.12/go.mod h1:zaEWH82R95V03ab/bNbxIP1LXhaWzF01x3BS9kJhF7k=
 github.com/emer/emergent v1.1.26/go.mod h1:XhFMJgoZeOYplTDMDUcmGPuthfTqJPbBLmXEPN6uP8Y=
 github.com/emer/emergent v1.1.39/go.mod h1:0pGqRv7IO7aar56qK2ZmuYOQaz1v+HWG+TxEbuVhCyc=
 github.com/emer/emergent v1.1.55/go.mod h1:mE/779ZtSYDAlJZntjq3tsBYpIgWln+sfa/UvG9s6jo=
-github.com/emer/emergent v1.3.14 h1:C9slFSeh4LMWDI6wRAzmoosYEwLwSvXd0wrWD3Z1TIU=
-github.com/emer/emergent v1.3.14/go.mod h1:463S5oqhJKwehVTC0E4H4v5Y85UjEqBSw4k/zjBR0O8=
+github.com/emer/emergent v1.3.17 h1:JfhZBnA3s25ckaf5kNP4wcJPewy1aSyf3k1A6hzvNkg=
+github.com/emer/emergent v1.3.17/go.mod h1:463S5oqhJKwehVTC0E4H4v5Y85UjEqBSw4k/zjBR0O8=
 github.com/emer/empi v1.0.12/go.mod h1:QJRkECkqMO3/UeuknKEzqH+oEf6MWogBeu5LPi+Y9mU=
 github.com/emer/empi v1.0.13 h1:DVKu3zvqPL4vvw/XtijBnOIC3YcVcVpUTohGXhQnZyU=
 github.com/emer/empi v1.0.13/go.mod h1:2VX+8DvFQBYPCZB31C0sjkKPj2IVF/Ea5T44utZpHpU=
