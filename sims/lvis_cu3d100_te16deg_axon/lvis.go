@@ -712,10 +712,6 @@ func (ss *Sim) ConfigLoops() {
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 1000, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 1500, func() { ss.SaveWeights() })
 
-	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
-		ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
-	})
-
 	////////////////////////////////////////////
 	// GUI
 	if ss.Args.Bool("nogui") {
@@ -723,6 +719,11 @@ func (ss *Sim) ConfigLoops() {
 			ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
 		})
 	} else {
+		// this is actually fairly expensive
+		man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
+			ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
+		})
+
 		axon.LooperUpdtNetView(man, &ss.ViewUpdt)
 		axon.LooperUpdtPlots(man, &ss.GUI)
 	}
@@ -1039,12 +1040,13 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddErrStatAggItems("TrlErr", etime.Run, etime.Epoch, etime.Trial)
-	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
+
+	ss.ConfigLogItems()
 
 	// Copy over Testing items
 	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr", "PctErr2", "DecErr", "DecErr2", "FirstErr", "FirstErr2")
 
-	ss.ConfigLogItems()
+	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
 	ss.ConfigActRFs()
 
 	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)

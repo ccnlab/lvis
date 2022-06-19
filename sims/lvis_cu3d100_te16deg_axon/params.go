@@ -16,29 +16,31 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Pool.FFEx0":    "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
-					"Layer.Inhib.Pool.FFEx":     "0.05", // .05 best so far
-					"Layer.Inhib.Layer.FFEx0":   "0.15",
-					"Layer.Inhib.Layer.FFEx":    "0.05", // .05 best so far
-					"Layer.Inhib.Layer.Bg":      "0.0",  // .2 worse
-					"Layer.Inhib.Pool.Bg":       "0.0",  // "
-					"Layer.Act.Dend.GbarExp":    "0.2",  // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":      "3",    // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":    "5",    // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":        "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":       "5",    // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.VGCC.Gbar":       "0.1",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
-					"Layer.Act.AK.Gbar":         "1",    // 1 >= 0 > 2
-					"Layer.Learn.NeurCa.SpikeG": "8",    // 8 def
-					"Layer.Learn.NeurCa.SynTau": "30",   // 30 > 40 with better out adapt
-					"Layer.Learn.NeurCa.MTau":   "10",
-					"Layer.Learn.NeurCa.PTau":   "40",
-					"Layer.Learn.NeurCa.DTau":   "40",
-					"Layer.Learn.NeurCa.CaMax":  "100",
-					"Layer.Learn.NeurCa.CaThr":  "0.05",
-					"Layer.Learn.NeurCa.Decay":  "false", // syntheta false > true -- cont, nmda = true essential?
-					"Layer.Learn.LrnNMDA.ITau":  "1",     // urakubo = 100, does not work here..
-					"Layer.Learn.LrnNMDA.Tau":   "50",    // 50 > 40 > 30
+					"Layer.Inhib.Pool.FFEx0":      "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
+					"Layer.Inhib.Pool.FFEx":       "0.05", // .05 best so far
+					"Layer.Inhib.Layer.FFEx0":     "0.15",
+					"Layer.Inhib.Layer.FFEx":      "0.05", // .05 best so far
+					"Layer.Inhib.Layer.Bg":        "0.0",  // .2 worse
+					"Layer.Inhib.Pool.Bg":         "0.0",  // "
+					"Layer.Act.Dend.GbarExp":      "0.2",  // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":        "3",    // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":      "5",    // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":          "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":         "5",    // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.VGCC.Gbar":         "0.1",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
+					"Layer.Act.AK.Gbar":           "1",    // 1 >= 0 > 2
+					"Layer.Learn.NeurCa.SpikeG":   "8",    // 8 def
+					"Layer.Learn.NeurCa.SynTau":   "30",   // 30 > 40 with better out adapt
+					"Layer.Learn.NeurCa.MTau":     "10",
+					"Layer.Learn.NeurCa.PTau":     "40",
+					"Layer.Learn.NeurCa.DTau":     "40",
+					"Layer.Learn.NeurCa.CaMax":    "100",
+					"Layer.Learn.NeurCa.CaThr":    "0.05",
+					"Layer.Learn.NeurCa.Decay":    "false", // syntheta false > true -- cont, nmda = true essential?
+					"Layer.Learn.LrnNMDA.ITau":    "1",     // urakubo = 100, does not work here..
+					"Layer.Learn.LrnNMDA.Tau":     "50",    // 50 > 40 > 30
+					"Layer.Act.Dend.SeiDeplete":   "true",  // works fine -- lower pca in higher layers
+					"Layer.Act.Dend.SnmdaDeplete": "true",
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{

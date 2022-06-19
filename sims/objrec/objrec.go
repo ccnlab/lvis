@@ -101,7 +101,7 @@ func (ss *Sim) New() {
 	ss.Stats.Init()
 	ss.RndSeeds.Init(100) // max 100 runs
 	ss.NOutPer = 5
-	ss.TestInterval = 5
+	ss.TestInterval = 10
 	ss.PCAInterval = 5
 	ss.Time.Defaults()
 	ss.ConfigArgs() // do this first, has key defaults
@@ -334,10 +334,6 @@ func (ss *Sim) ConfigLoops() {
 		axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
 	})
 
-	man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
-		ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
-	})
-
 	////////////////////////////////////////////
 	// GUI
 	if ss.Args.Bool("nogui") {
@@ -345,6 +341,10 @@ func (ss *Sim) ConfigLoops() {
 			ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
 		})
 	} else {
+		man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
+			ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01)
+		})
+
 		axon.LooperUpdtNetView(man, &ss.ViewUpdt)
 		axon.LooperUpdtPlots(man, &ss.GUI)
 	}
@@ -467,11 +467,13 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.AddStatAggItem("CorSim", "TrlCorSim", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddStatAggItem("UnitErr", "TrlUnitErr", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddErrStatAggItems("TrlErr", etime.Run, etime.Epoch, etime.Trial)
-	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
-
-	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "PctCor", "PctErr")
 
 	ss.ConfigLogItems()
+
+	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr")
+
+	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
+
 	ss.ConfigActRFs()
 
 	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
