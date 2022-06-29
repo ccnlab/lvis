@@ -39,8 +39,8 @@ var ParamSets = params.Sets{
 					"Layer.Learn.NeurCa.Decay":    "false", // syntheta false > true -- cont, nmda = true essential?
 					"Layer.Learn.LrnNMDA.ITau":    "1",     // urakubo = 100, does not work here..
 					"Layer.Learn.LrnNMDA.Tau":     "50",    // 50 > 40 > 30
-					"Layer.Act.Dend.SeiDeplete":   "true",  // works fine -- lower pca in higher layers
-					"Layer.Act.Dend.SnmdaDeplete": "true",
+					"Layer.Act.Dend.SeiDeplete":   "false", // starts good then falls apart..
+					"Layer.Act.Dend.SnmdaDeplete": "true",  // worse at start -- testing separately from sei
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{

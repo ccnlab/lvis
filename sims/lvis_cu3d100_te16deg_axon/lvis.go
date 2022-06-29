@@ -564,7 +564,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		log.Println(err)
 		return
 	}
-	ss.Net.InitWts()
+	net.InitWts()
 
 	if !ss.Args.Bool("nogui") {
 		sr := net.SizeReport()
@@ -645,18 +645,6 @@ func (ss *Sim) ConfigLoops() {
 	}
 
 	man.GetLoop(etime.Train, etime.Run).OnStart.Add("NewRun", ss.NewRun)
-
-	// Train stop early condition
-	man.GetLoop(etime.Train, etime.Epoch).IsDone["NZeroStop"] = func() bool {
-		// This is calculated in TrialStats
-		stopNz := ss.Args.Int("nzero")
-		if stopNz <= 0 {
-			stopNz = 2
-		}
-		curNZero := ss.Stats.Int("NZero")
-		stop := curNZero >= stopNz
-		return stop
-	}
 
 	// Add Testing
 	trainEpoch := man.GetLoop(etime.Train, etime.Epoch)
