@@ -4,56 +4,52 @@
 
 package main
 
-import (
-	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/prjn"
-)
+import "github.com/emer/emergent/params"
 
-// ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
-// selected to apply on top of that
-var ParamSets = params.Sets{
+///////////////////////////////////////////////////////////////////////////
+//  ParamSetsAll
+
+// ParamSetsAll has all the parameters explored up through 1/2022
+var ParamSetsAll = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Pool.FFEx0":          "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
-					"Layer.Inhib.Pool.FFEx":           "0.0",  // .05 best so far
-					"Layer.Inhib.Layer.FFEx0":         "0.15",
-					"Layer.Inhib.Layer.FFEx":          "0.0",  // .05 best so far
-					"Layer.Inhib.Layer.Bg":            "0.0",  // .2 worse
-					"Layer.Inhib.Pool.Bg":             "0.0",  // "
-					"Layer.Inhib.Layer.Gi":            "1.0",  //
-					"Layer.Inhib.Pool.Gi":             "1.0",  //
-					"Layer.Act.Dend.GbarExp":          "0.2",  // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":            "3",    // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":          "5",    // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":              "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":             "5",    // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.AK.Gbar":               "1",    // 1 >= 0 > 2
-					"Layer.Act.VGCC.Gbar":             "0.02", // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
-					"Layer.Act.VGCC.Ca":               "20",   // 20 / 10tau similar to spk
-					"Layer.Learn.CaLrn.Norm":          "80",   // 60 makes CaLrnMax closer to 1
-					"Layer.Learn.CaLrn.SpkVGCC":       "true", // sig better..
-					"Layer.Learn.CaLrn.SpkVgccCa":     "35",   // 70 / 5 or 35 / 10 both work
-					"Layer.Learn.CaLrn.VgccTau":       "10",   // 10 > 5 ?
-					"Layer.Learn.CaLrn.Dt.MTau":       "2",    // 2 > 1 ?
-					"Layer.Learn.CaSpk.SpikeG":        "12",   // 12 > 8 -- for larger nets
-					"Layer.Learn.CaSpk.SynTau":        "30",   // 30 > 20, 40
-					"Layer.Learn.CaSpk.Dt.MTau":       "5",    // 5 > 10?
-					"Layer.Learn.LrnNMDA.MgC":         "1.4",  // 1.2 for unified Act params, else 1.4
-					"Layer.Learn.LrnNMDA.Voff":        "5",    // 0 for unified Act params, else 5
-					"Layer.Learn.LrnNMDA.Tau":         "100",  // 100 def
-					"Layer.Learn.TrgAvgAct.On":        "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean":   "1",    // 1 > 0 is important
-					"Layer.Learn.RLrate.On":           "true", // beneficial for trace
-					"Layer.Learn.RLrate.NormLayer":    "true",
-					"Layer.Learn.RLrate.MidRange.Min": "0.1", // 0.1, 0.9 best
-					"Layer.Learn.RLrate.MidRange.Max": "0.9", // 0.1, 0.9 best
-					"Layer.Learn.RLrate.NonMid":       "0.05",
-					"Layer.Learn.RLrate.Diff":         "true",
-					"Layer.Learn.RLrate.ActDiffThr":   "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.ActThr":       "0.1",  // 0.1 def
-					"Layer.Learn.RLrate.Min":          "0.001",
+					"Layer.Inhib.Inhib.AvgTau":           "30",   // 30 > 20 >> 1 definitively
+					"Layer.Inhib.Inhib.GiSynThr":         "0.0",  // 0.01 shows effects
+					"Layer.Inhib.Layer.Gi":               "1.1",  // 1.1 > 1.0 > 1.2 -- all layers
+					"Layer.Inhib.Pool.Gi":                "1.1",  // 1.1 > 1.0 -- universal for all layers
+					"Layer.Inhib.Pool.FFEx0":             "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
+					"Layer.Inhib.Pool.FFEx":              "0.05", // .05 best so far
+					"Layer.Inhib.Layer.FFEx0":            "0.15",
+					"Layer.Inhib.Layer.FFEx":             "0.05", // .05 best so far
+					"Layer.Inhib.Layer.Bg":               "0.0",  // .2 worse
+					"Layer.Inhib.Pool.Bg":                "0.0",  // "
+					"Layer.Act.Dend.GbarExp":             "0.2",  // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":               "3",    // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":             "2.81", // 5 vs. 2.81? test..
+					"Layer.Act.Dt.IntTau":                "40",   // 40 > 20
+					"Layer.Act.Gbar.L":                   "0.2",  // 0.2 orig > 0.1 new def
+					"Layer.Act.Decay.Act":                "0.2",  // 0.2 > 0 > 0.5 w/ glong.7 459
+					"Layer.Act.Decay.Glong":              "0.6",  // 0.6 > 0.7 > 0.8
+					"Layer.Act.KNa.Fast.Max":             "0.1",  // fm both .2 worse
+					"Layer.Act.KNa.Med.Max":              "0.2",  // 0.2 > 0.1 def
+					"Layer.Act.KNa.Slow.Max":             "0.2",  // 0.2 > higher
+					"Layer.Act.Noise.On":                 "false",
+					"Layer.Act.Noise.Ge":                 "0.005", // 0.002 has sig effects..
+					"Layer.Act.Noise.Gi":                 "0.0",
+					"Layer.Act.Dt.LongAvgTau":            "20",   // 50 > 20 in terms of stability, but weird effect late
+					"Layer.Learn.ActAvg.MinLrn":          "0.02", // sig improves "top5" hogging in pca strength
+					"Layer.Learn.ActAvg.SSTau":           "40",
+					"Layer.Inhib.ActAvg.AdaptRate":       "0.5",   // 0.5 default for layers, except output
+					"Layer.Learn.TrgAvgAct.ErrLrate":     "0.01",  // 0.01 orig > 0.005
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.005", // 0.005 orig > 0.01
+					"Layer.Learn.TrgAvgAct.TrgRange.Min": "0.5",   // .5 > .2 overall
+					"Layer.Learn.TrgAvgAct.TrgRange.Max": "2.0",   // objrec 2 > 1.8
+					"Layer.Learn.RLrate.On":              "true",  // true = essential -- prevents over rep of
+					"Layer.Learn.RLrate.ActThr":          "0.1",   // 0.1 > 0.15 > 0.05 > 0.2
+					"Layer.Learn.RLrate.ActDifThr":       "0.02",  // 0.02 > 0.05 in other models
+					"Layer.Learn.RLrate.Min":             "0.001", // .001 best, adifthr.05
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
@@ -107,8 +103,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    // 1 >= 0 in lba
 					"Layer.Inhib.ActAvg.Init": "0.04", // .04 >= .03 > .05
-					"Layer.Inhib.Layer.Gi":    "1.0",  // was 1.1
-					"Layer.Inhib.Pool.Gi":     "1.0",  // was 1.1
+					"Layer.Inhib.Layer.Gi":    "1.1",  // was 1.1
+					"Layer.Inhib.Pool.Gi":     "1.1",  // was 1.1
 					"Layer.Inhib.Topo.On":     "false",
 					"Layer.Inhib.Topo.Width":  "4", // was 4
 					"Layer.Inhib.Topo.Sigma":  "1.0",
@@ -120,37 +116,32 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":    "false", // no layer!
 					"Layer.Inhib.ActAvg.Init": "0.06",  // .06 > .05 = .04
-					"Layer.Inhib.Layer.Gi":    "1.1",   //
-					"Layer.Inhib.Pool.Gi":     "1.1",   //
+					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.ActAvg.Init": "0.04",  // .03 actual with gi 1.2, was .06
-					"Layer.Inhib.Layer.Gi":    "1.1",   //
-					"Layer.Inhib.Pool.Gi":     "1.1",   //
+					"Layer.Inhib.ActAvg.Init": "0.06",  // .03 actual with gi 1.2, was .06
+					"Layer.Inhib.Pool.Gi":     "1.1",   // was 1.1
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":          "1.3",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
-					"Layer.Inhib.ActAvg.Init":       "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Targ":       "0.01",  // .01 > 0.011 > 0.012 > 0.009
-					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // true: it is essential -- too hard to balance manually
-					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
-					"Layer.Inhib.ActAvg.HiTol":      "0.2",   // 0.1 > 0 def
-					"Layer.Inhib.ActAvg.AdaptRate":  "0.02",  // 0.02 >= 0.01 -- 0.005 worse, tol 0.1
-					"Layer.Act.Clamp.Ge":            "0.6",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
-					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
-					"Layer.Inhib.Pool.FFEx":         "0.0",   // no
-					"Layer.Inhib.Layer.FFEx":        "0.0",   //
-					"Layer.Learn.RLrate.On":         "true",  // beneficial for trace
-					"Layer.Learn.RLrate.NormLayer":  "true",  // essential for output to be normlayer -- has pools!
-					"Layer.Learn.RLrate.NonMid":     "1",
-					"Layer.Learn.RLrate.Diff":       "true",
-					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
-					"Layer.Learn.RLrate.Min":        "0.001",
+					"Layer.Inhib.Layer.Gi":         "1.3",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
+					"Layer.Inhib.ActAvg.Init":      "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
+					"Layer.Inhib.ActAvg.Targ":      "0.01",  // .01 -- .005, .008 too low -- maybe not nec?
+					"Layer.Inhib.ActAvg.AdaptGi":   "true",  // true: it is essential -- too hard to balance manually
+					"Layer.Inhib.ActAvg.LoTol":     "0.5",
+					"Layer.Inhib.ActAvg.AdaptRate": "0.02", // 0.01 >= 0.02 best in range 0.01..0.1
+					// "Layer.Act.Decay.Act":        "0.5", // 0.5 makes no diff
+					// "Layer.Act.Decay.Glong":      "1", // 1 makes no diff
+					"Layer.Act.Clamp.Ge": "0.6", // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
+					// "Layer.Act.Spike.Tr":       "3",     // 2 >= 3 > 1 > 0
+					// "Layer.Act.GABAB.Gbar":   "0.005", // .005 > .01 > .02 > .05 > .1 > .2
+					// "Layer.Act.NMDA.Gbar":    "0.03",  // was .02
+					"Layer.Learn.RLrate.On":  "true", // todo: try false
+					"Layer.Inhib.Pool.FFEx":  "0.0",  // no
+					"Layer.Inhib.Layer.FFEx": "0.0",  //
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
 				Params: params.Params{
@@ -163,18 +154,27 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
-					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0.02 good overall, no ToOut
-					"Prjn.SWt.Adapt.SubMean":      "1",
-					"Prjn.Learn.Lrate.Base":       "0.02", // 0.02 > 0.01 > 0.03..
-					"Prjn.Com.PFail":              "0.0",
-					"Prjn.Learn.KinaseCa.SpikeG":  "12", // 12 matches theta exactly, higher dwtavg but ok
-					"Prjn.Learn.KinaseCa.Dt.MTau": "5",  // 5 > 10 test more
-					"Prjn.Learn.KinaseCa.Dt.PTau": "40",
-					"Prjn.Learn.KinaseCa.Dt.DTau": "40",
-					"Prjn.Learn.KinaseCa.UpdtThr": "0.01", // 0.01 > 0.05 -- was LrnThr
-					"Prjn.Learn.KinaseCa.MaxISI":  "100",  // 100 >= 50 -- not much diff, no sig speed diff with 50
+					"Prjn.PrjnScale.ScaleLrate": "2",      // 2 = fast response, effective
+					"Prjn.PrjnScale.LoTol":      "0.8",    // good now...
+					"Prjn.PrjnScale.AvgTau":     "500",    // slower default
+					"Prjn.PrjnScale.Adapt":      "false",  // no adapt better?
+					"Prjn.SWt.Adapt.On":         "true",   // true > false, esp in cosdiff
+					"Prjn.SWt.Adapt.Lrate":      "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.SWt.Adapt.SigGain":    "6",
+					"Prjn.SWt.Adapt.DreamVar":   "0.02",   // 0.02 good overall, no ToOut
+					"Prjn.SWt.Init.SPct":        "1",      // 1 > lower
+					"Prjn.SWt.Init.Mean":        "0.5",    // .5 > .4 -- key, except v2?
+					"Prjn.SWt.Limit.Min":        "0.2",    // .2-.8 == .1-.9; .3-.7 not better -- 0-1 minor worse
+					"Prjn.SWt.Limit.Max":        "0.8",    //
+					"Prjn.Learn.Lrate.Base":     "0.02",   // 0.02 std in initial NeurSpk models
+					"Prjn.Learn.XCal.DWtThr":    "0.0001", // 0.0001 > 0.001
+					"Prjn.Com.PFail":            "0.0",
+					"Prjn.Learn.Kinase.On":      "true",
+					"Prjn.Learn.Kinase.SAvgThr": "0.02", // 0.02 = 0.01 > 0.05
+					"Prjn.Learn.Kinase.MTau":    "40",
+					"Prjn.Learn.Kinase.PTau":    "10",
+					"Prjn.Learn.Kinase.DTau":    "40",
+					"Prjn.Learn.Kinase.DScale":  "0.95", // 0.93 > 0.94 > 1 > .9
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
@@ -193,7 +193,8 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
-					"Prjn.PrjnScale.Abs":      "1.2",   // todo: explore!  1.2 > 1.0 > 1.5 > 2.0
+					"Prjn.PrjnScale.LoTol":    "0.5",   // .5 > .8 -- needs extra kick at start!
+					"Prjn.PrjnScale.Adapt":    "true",  // was essential here
 				}},
 			{Sel: ".FmOut", Desc: "from output -- some things should be different..",
 				Params: params.Params{}},
@@ -206,7 +207,8 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Init.Sym":     "false",
 					"Prjn.SWt.Adapt.On":     "false",
 					"Prjn.PrjnScale.Abs":    "0.2", // .2 > .1 for controlling PCA; .3 or.4 with GiSynThr .01
-					"Prjn.IncGain":          "1",   // .5 def
+					"Prjn.PrjnScale.Adapt":  "false",
+					"Prjn.IncGain":          "1", // .5 def
 				}},
 			{Sel: ".V1V2", Desc: "special SWt params",
 				Params: params.Params{
@@ -344,120 +346,4 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-}
-
-// Prjns holds all the special projections
-type Prjns struct {
-	Prjn4x4Skp2              *prjn.PoolTile    `desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
-	Prjn4x4Skp2Recip         *prjn.PoolTile    `desc:"Reciprocal"`
-	Prjn4x4Skp2Sub2          *prjn.PoolTileSub `desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
-	Prjn4x4Skp2Sub2Recip     *prjn.PoolTileSub `desc:"Reciprocal"`
-	Prjn4x4Skp2Sub2Send      *prjn.PoolTileSub `desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
-	Prjn4x4Skp2Sub2SendRecip *prjn.PoolTileSub `desc:"Standard feedforward topographic projection, recv = 1/2 send size"`
-	Prjn2x2Skp1              *prjn.PoolTile    `desc:"same-size prjn"`
-	Prjn2x2Skp1Recip         *prjn.PoolTile    `desc:"same-size prjn reciprocal"`
-	Prjn2x2Skp1Sub2          *prjn.PoolTileSub `desc:"same-size prjn"`
-	Prjn2x2Skp1Sub2Recip     *prjn.PoolTileSub `desc:"same-size prjn reciprocal"`
-	Prjn2x2Skp1Sub2Send      *prjn.PoolTileSub `desc:"same-size prjn"`
-	Prjn2x2Skp1Sub2SendRecip *prjn.PoolTileSub `desc:"same-size prjn reciprocal"`
-	Prjn2x2Skp2              *prjn.PoolTileSub `desc:"lateral inhib projection"`
-	Prjn4x4Skp0              *prjn.PoolTile    `desc:"for V4 <-> TEO"`
-	Prjn4x4Skp0Recip         *prjn.PoolTile    `desc:"for V4 <-> TEO"`
-	Prjn4x4Skp0Sub2          *prjn.PoolTileSub `desc:"for V4 <-> TEO"`
-	Prjn4x4Skp0Sub2Recip     *prjn.PoolTileSub `desc:"for V4 <-> TEO"`
-	Prjn1x1Skp0              *prjn.PoolTile    `desc:"for TE <-> TEO"`
-	Prjn1x1Skp0Recip         *prjn.PoolTile    `desc:"for TE <-> TEO"`
-	Prjn6x6Skp2Lat           *prjn.PoolTileSub `desc:"lateral inhibitory connectivity for subpools"`
-}
-
-func (pj *Prjns) New() {
-	pj.Prjn4x4Skp2 = prjn.NewPoolTile()
-	pj.Prjn4x4Skp2.Size.Set(4, 4)
-	pj.Prjn4x4Skp2.Skip.Set(2, 2)
-	pj.Prjn4x4Skp2.Start.Set(-1, -1)
-	pj.Prjn4x4Skp2.TopoRange.Min = 0.8
-	pj.Prjn4x4Skp2Recip = prjn.NewPoolTileRecip(pj.Prjn4x4Skp2)
-
-	pj.Prjn4x4Skp2Sub2 = prjn.NewPoolTileSub()
-	pj.Prjn4x4Skp2Sub2.Size.Set(4, 4)
-	pj.Prjn4x4Skp2Sub2.Skip.Set(2, 2)
-	pj.Prjn4x4Skp2Sub2.Start.Set(-1, -1)
-	pj.Prjn4x4Skp2Sub2.Subs.Set(2, 2)
-	pj.Prjn4x4Skp2Sub2.TopoRange.Min = 0.8
-	pj.Prjn4x4Skp2Sub2Recip = prjn.NewPoolTileSubRecip(pj.Prjn4x4Skp2Sub2)
-
-	pj.Prjn4x4Skp2Sub2Send = prjn.NewPoolTileSub()
-	*pj.Prjn4x4Skp2Sub2Send = *pj.Prjn4x4Skp2Sub2
-	pj.Prjn4x4Skp2Sub2Send.SendSubs = true
-	pj.Prjn4x4Skp2Sub2SendRecip = prjn.NewPoolTileSubRecip(pj.Prjn4x4Skp2Sub2Send)
-
-	pj.Prjn2x2Skp1 = prjn.NewPoolTile()
-	pj.Prjn2x2Skp1.Size.Set(2, 2)
-	pj.Prjn2x2Skp1.Skip.Set(1, 1)
-	pj.Prjn2x2Skp1.Start.Set(0, 0)
-	pj.Prjn2x2Skp1.TopoRange.Min = 0.8
-	pj.Prjn2x2Skp1Recip = prjn.NewPoolTileRecip(pj.Prjn2x2Skp1)
-
-	pj.Prjn2x2Skp1Sub2 = prjn.NewPoolTileSub()
-	pj.Prjn2x2Skp1Sub2.Size.Set(2, 2)
-	pj.Prjn2x2Skp1Sub2.Skip.Set(1, 1)
-	pj.Prjn2x2Skp1Sub2.Start.Set(0, 0)
-	pj.Prjn2x2Skp1Sub2.Subs.Set(2, 2)
-	pj.Prjn2x2Skp1Sub2.TopoRange.Min = 0.8
-
-	pj.Prjn2x2Skp1Sub2Recip = prjn.NewPoolTileSubRecip(pj.Prjn2x2Skp1Sub2)
-
-	pj.Prjn2x2Skp1Sub2Send = prjn.NewPoolTileSub()
-	pj.Prjn2x2Skp1Sub2Send.Size.Set(2, 2)
-	pj.Prjn2x2Skp1Sub2Send.Skip.Set(1, 1)
-	pj.Prjn2x2Skp1Sub2Send.Start.Set(0, 0)
-	pj.Prjn2x2Skp1Sub2Send.Subs.Set(2, 2)
-	pj.Prjn2x2Skp1Sub2Send.SendSubs = true
-	pj.Prjn2x2Skp1Sub2Send.TopoRange.Min = 0.8
-
-	pj.Prjn2x2Skp1Sub2SendRecip = prjn.NewPoolTileSub()
-	*pj.Prjn2x2Skp1Sub2SendRecip = *pj.Prjn2x2Skp1Sub2Send
-	pj.Prjn2x2Skp1Sub2SendRecip.Recip = true
-
-	pj.Prjn2x2Skp2 = prjn.NewPoolTileSub()
-	pj.Prjn2x2Skp2.Size.Set(2, 2)
-	pj.Prjn2x2Skp2.Skip.Set(2, 2)
-	pj.Prjn2x2Skp2.Start.Set(0, 0)
-	pj.Prjn2x2Skp2.Subs.Set(2, 2)
-
-	pj.Prjn4x4Skp0 = prjn.NewPoolTile()
-	pj.Prjn4x4Skp0.Size.Set(4, 4)
-	pj.Prjn4x4Skp0.Skip.Set(0, 0)
-	pj.Prjn4x4Skp0.Start.Set(0, 0)
-	pj.Prjn4x4Skp0.GaussFull.Sigma = 1.5
-	pj.Prjn4x4Skp0.GaussInPool.Sigma = 1.5
-	pj.Prjn4x4Skp0.TopoRange.Min = 0.8
-	pj.Prjn4x4Skp0Recip = prjn.NewPoolTileRecip(pj.Prjn4x4Skp0)
-
-	pj.Prjn4x4Skp0Sub2 = prjn.NewPoolTileSub()
-	pj.Prjn4x4Skp0Sub2.Size.Set(4, 4)
-	pj.Prjn4x4Skp0Sub2.Skip.Set(0, 0)
-	pj.Prjn4x4Skp0Sub2.Start.Set(0, 0)
-	pj.Prjn4x4Skp0Sub2.Subs.Set(2, 2)
-	pj.Prjn4x4Skp0Sub2.SendSubs = true
-	pj.Prjn4x4Skp0Sub2.GaussFull.Sigma = 1.5
-	pj.Prjn4x4Skp0Sub2.GaussInPool.Sigma = 1.5
-	pj.Prjn4x4Skp0Sub2.TopoRange.Min = 0.8
-	pj.Prjn4x4Skp0Sub2Recip = prjn.NewPoolTileSubRecip(pj.Prjn4x4Skp0Sub2)
-
-	pj.Prjn1x1Skp0 = prjn.NewPoolTile()
-	pj.Prjn1x1Skp0.Size.Set(1, 1)
-	pj.Prjn1x1Skp0.Skip.Set(0, 0)
-	pj.Prjn1x1Skp0.Start.Set(0, 0)
-	pj.Prjn1x1Skp0.GaussFull.Sigma = 1.5
-	pj.Prjn1x1Skp0.GaussInPool.Sigma = 1.5
-	pj.Prjn1x1Skp0.TopoRange.Min = 0.8
-	pj.Prjn1x1Skp0Recip = prjn.NewPoolTileRecip(pj.Prjn1x1Skp0)
-
-	pj.Prjn6x6Skp2Lat = prjn.NewPoolTileSub()
-	pj.Prjn6x6Skp2Lat.Size.Set(6, 6)
-	pj.Prjn6x6Skp2Lat.Skip.Set(2, 2)
-	pj.Prjn6x6Skp2Lat.Start.Set(-2, -2)
-	pj.Prjn6x6Skp2Lat.Subs.Set(2, 2)
-	pj.Prjn6x6Skp2Lat.TopoRange.Min = 0.8
 }

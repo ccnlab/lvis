@@ -455,14 +455,16 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teout, _ := net.BidirConnectLayers(te, out, full)
 	teout.SetClass("ToOut FmOut")
 
-	// v59 459 -- only useful later -- TEO maybe not doing as well later?
-	v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
-	v4out.SetClass("V4Out ToOut")
-	outv4.SetClass("OutV4 FmOut")
+	/*
+		// v59 459 -- only useful later -- TEO maybe not doing as well later?
+		v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
+		v4out.SetClass("V4Out ToOut")
+		outv4.SetClass("OutV4 FmOut")
 
-	v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
-	v4out.SetClass("V4Out ToOut")
-	outv4.SetClass("OutV4 FmOut")
+		v4out, outv4 = net.BidirConnectLayers(v4f8, out, full)
+		v4out.SetClass("V4Out ToOut")
+		outv4.SetClass("OutV4 FmOut")
+	*/
 
 	var v2inhib, v4inhib prjn.Pattern
 	v2inhib = pool1to1
@@ -699,19 +701,22 @@ func (ss *Sim) ConfigLoops() {
 
 	// lrate schedule
 	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("LrateSched", func() {
-		return
 		trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		switch trnEpc {
-		case 200:
-			mpi.Printf("learning rate drop at: %d\n", trnEpc)
-			ss.Net.LrateSched(0.5)
+		case 50:
+			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
+			// ss.Net.LrateSched(0.5)
 		case 500:
-			mpi.Printf("learning rate drop at: %d\n", trnEpc)
-			ss.Net.LrateSched(0.2)
+			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
+			// ss.Net.LrateSched(0.1)
+			// case 200:
+			// 	mpi.Printf("learning rate drop at: %d\n", trnEpc)
+			// 	ss.Net.LrateSched(0.1)
 		}
 		// ly := ss.Net.LayerByName("Output")
 		// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn).AsAxon()
 		// fmit.Learn.Lrate.Mod = 1.0 / fmit.Learn.Lrate.Sched
+		// fmit.Learn.Lrate.Update()
 	})
 
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 100, func() { ss.SaveWeights() })
@@ -1200,7 +1205,7 @@ func (ss *Sim) ConfigLogItems() {
 					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Max)
 				}, etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Max)
+					ctx.SetFloat32(ly.Pools[0].ActM.Max)
 				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
 				}}})

@@ -329,13 +329,17 @@ func (ss *Sim) ConfigLoops() {
 		trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 		switch trnEpc {
 		case 20:
-			ss.Net.LrateSched(0.5)
+			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
+			// ss.Net.LrateSched(0.5)
 		case 30:
-			ss.Net.LrateSched(0.2)
+			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
+			// ss.Net.LrateSched(0.2)
 		}
+		// note: this is actually a tiny bit worse:
 		// ly := ss.Net.LayerByName("Output")
 		// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn).AsAxon()
 		// fmit.Learn.Lrate.Mod = 1.0 / fmit.Learn.Lrate.Sched
+		// fmit.Learn.Lrate.Update()
 	})
 
 	////////////////////////////////////////////
