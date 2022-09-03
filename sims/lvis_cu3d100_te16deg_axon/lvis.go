@@ -456,6 +456,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teout.SetClass("ToOut FmOut")
 
 	/*
+		// trace: not useful
 		// v59 459 -- only useful later -- TEO maybe not doing as well later?
 		v4out, outv4 := net.BidirConnectLayers(v4f16, out, full)
 		v4out.SetClass("V4Out ToOut")
@@ -1203,11 +1204,6 @@ func (ss *Sim) ConfigLogItems() {
 				etime.Scope(etime.AllModes, etime.Cycle): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Max)
-				}, etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
-					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.Pools[0].ActM.Max)
-				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + "_FirstCyc",

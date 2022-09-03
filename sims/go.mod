@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.4.14-0.20220824095814-f46ba1a1c37a
+	github.com/emer/axon v1.4.14-0.20220827085733-be56cc368dbd
 	github.com/emer/emergent v1.3.19
 	github.com/emer/empi v1.0.13
 	github.com/emer/etable v1.1.8

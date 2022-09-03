@@ -35,10 +35,10 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Tau":         "100",  // 100 def
 					"Layer.Learn.TrgAvgAct.On":        "true", // critical!
 					"Layer.Learn.TrgAvgAct.SubMean":   "0",
-					"Layer.Learn.RLrate.On":           "true",  // beneficial for trace
-					"Layer.Learn.RLrate.NormLayer":    "false", // pool
-					"Layer.Learn.RLrate.MidRange.Min": "0.1",   // 0.1, 0.9 best
-					"Layer.Learn.RLrate.MidRange.Max": "0.9",   // 0.1, 0.9 best
+					"Layer.Learn.RLrate.On":           "true", // beneficial for trace
+					"Layer.Learn.RLrate.SigDeriv":     "false",
+					"Layer.Learn.RLrate.MidRange.Min": "0.1", // 0.1, 0.9 best
+					"Layer.Learn.RLrate.MidRange.Max": "0.9", // 0.1, 0.9 best
 					"Layer.Learn.RLrate.NonMid":       "0.05",
 					"Layer.Learn.RLrate.Diff":         "true", // always key
 					"Layer.Learn.RLrate.ActDiffThr":   "0.02", // 0.02 def - todo
@@ -70,11 +70,10 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":          "1.4", // 1.4 > 1.3, .2 > 1.5
 					"Layer.Inhib.ActAvg.Init":       "0.05",
-					"Layer.Act.Clamp.Ge":            "0.6", // .6 generally = .5
-					"Layer.Learn.CaSpk.SpikeG":      "8",
+					"Layer.Act.Clamp.Ge":            "0.6",  // .6 generally = .5
+					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 -- not a big diff
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
-					"Layer.Learn.RLrate.NormLayer":  "true", // essential for output to be normlayer -- has pools!
-					"Layer.Learn.RLrate.NonMid":     "0.05", // 0.05 > .1 > .02
+					"Layer.Learn.RLrate.NonMid":     "1",    // 1 > lower for UnitErr -- else the same
 					"Layer.Learn.RLrate.Diff":       "true",
 					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
 					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
@@ -104,13 +103,14 @@ var ParamSets = params.Sets{
 				Params: params.Params{}},
 			{Sel: ".Inhib", Desc: "inhibitory projection -- not using",
 				Params: params.Params{
-					"Prjn.Learn.Lrate.Base": "0.01", // 0.0001 best for lvis
-					"Prjn.SWt.Adapt.On":     "false",
-					"Prjn.SWt.Init.Var":     "0.0",
-					"Prjn.SWt.Init.Mean":    "0.1",
-					"Prjn.PrjnScale.Abs":    "0.1", // .1 from lvis
-					"Prjn.PrjnScale.Adapt":  "false",
-					"Prjn.IncGain":          "0.5",
+					"Prjn.Learn.Lrate.Base":    "0.01", // 0.0001 best for lvis
+					"Prjn.Learn.Trace.SubMean": "1",    // 1 is *essential* here!
+					"Prjn.SWt.Adapt.On":        "false",
+					"Prjn.SWt.Init.Var":        "0.0",
+					"Prjn.SWt.Init.Mean":       "0.1",
+					"Prjn.PrjnScale.Abs":       "0.1", // .1 from lvis
+					"Prjn.PrjnScale.Adapt":     "false",
+					"Prjn.IncGain":             "0.5",
 				}},
 			{Sel: "#ITToOutput", Desc: "no random sampling here",
 				Params: params.Params{
