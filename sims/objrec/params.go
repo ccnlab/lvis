@@ -9,41 +9,38 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Act.Dt.IntTau":             "40",   // 30 == 40 no diff
-					"Layer.Act.Decay.Act":             "0.0",  // 0.2 with glong .6 best in lvis, slows learning here
-					"Layer.Act.Decay.Glong":           "0.6",  // 0.6 def
-					"Layer.Act.Dend.GbarExp":          "0.2",  // 0.2 > 0.5 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":            "3",    // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
-					"Layer.Act.Dt.GeTau":              "5",    // 5 = 4 (bit slower) > 6 > 7 @176
-					"Layer.Act.Dt.LongAvgTau":         "20",   // 20 > 50 > 100
-					"Layer.Act.Dt.VmDendTau":          "5",    // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":              "1.4",  // 1.4, 5 > 1.2, 0
-					"Layer.Act.NMDA.Voff":             "5",    // see above
-					"Layer.Act.AK.Gbar":               "1",    // 1 == .1 trace-v8
-					"Layer.Act.VGCC.Gbar":             "0.02", // non nmda: 0.15 good, 0.3 blows up
-					"Layer.Act.VGCC.Ca":               "25",   // 25 / 10tau best performance
-					"Layer.Learn.CaLrn.Norm":          "80",   // 80 default
-					"Layer.Learn.CaLrn.SpkVGCC":       "true", // sig better?
-					"Layer.Learn.CaLrn.SpkVgccCa":     "35",   // 35 > 40, 45
-					"Layer.Learn.CaLrn.VgccTau":       "10",   // 10 > 5 ?
-					"Layer.Learn.CaLrn.Dt.MTau":       "2",    // 2 > 1 ?
-					"Layer.Learn.CaSpk.SpikeG":        "12",   // 12 > 8 > 15 (too high) -- 12 makes everything work!
-					"Layer.Learn.CaSpk.SynTau":        "30",   // 30 > 20, 40
-					"Layer.Learn.CaSpk.Dt.MTau":       "5",    // 5 == 10 -- makes no diff
-					"Layer.Learn.LrnNMDA.MgC":         "1.4",  // 1.4, 5 > 1.2, 0
-					"Layer.Learn.LrnNMDA.Voff":        "5",    // see above
-					"Layer.Learn.LrnNMDA.Tau":         "100",  // 100 def
-					"Layer.Learn.TrgAvgAct.On":        "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean":   "0",
-					"Layer.Learn.RLrate.On":           "true", // beneficial for trace
-					"Layer.Learn.RLrate.SigDeriv":     "false",
-					"Layer.Learn.RLrate.MidRange.Min": "0.1", // 0.1, 0.9 best
-					"Layer.Learn.RLrate.MidRange.Max": "0.9", // 0.1, 0.9 best
-					"Layer.Learn.RLrate.NonMid":       "0.05",
-					"Layer.Learn.RLrate.Diff":         "true", // always key
-					"Layer.Learn.RLrate.ActDiffThr":   "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.ActThr":       "0.1",  // 0.1 def
-					"Layer.Learn.RLrate.Min":          "0.001",
+					"Layer.Act.Dt.IntTau":           "40",   // 30 == 40 no diff
+					"Layer.Act.Decay.Act":           "0.0",  // 0.2 with glong .6 best in lvis, slows learning here
+					"Layer.Act.Decay.Glong":         "0.6",  // 0.6 def
+					"Layer.Act.Dend.GbarExp":        "0.2",  // 0.2 > 0.5 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":          "3",    // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
+					"Layer.Act.Dt.GeTau":            "5",    // 5 = 4 (bit slower) > 6 > 7 @176
+					"Layer.Act.Dt.LongAvgTau":       "20",   // 20 > 50 > 100
+					"Layer.Act.Dt.VmDendTau":        "5",    // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":            "1.4",  // 1.4, 5 > 1.2, 0
+					"Layer.Act.NMDA.Voff":           "5",    // see above
+					"Layer.Act.AK.Gbar":             "1",    // 1 == .1 trace-v8
+					"Layer.Act.VGCC.Gbar":           "0.02", // non nmda: 0.15 good, 0.3 blows up
+					"Layer.Act.VGCC.Ca":             "25",   // 25 / 10tau best performance
+					"Layer.Learn.CaLrn.Norm":        "80",   // 80 default
+					"Layer.Learn.CaLrn.SpkVGCC":     "true", // sig better?
+					"Layer.Learn.CaLrn.SpkVgccCa":   "35",   // 35 > 40, 45
+					"Layer.Learn.CaLrn.VgccTau":     "10",   // 10 > 5 ?
+					"Layer.Learn.CaLrn.Dt.MTau":     "2",    // 2 > 1 ?
+					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 > 15 (too high) -- 12 makes everything work!
+					"Layer.Learn.CaSpk.SynTau":      "30",   // 30 > 20, 40
+					"Layer.Learn.CaSpk.Dt.MTau":     "5",    // 5 == 10 -- makes no diff
+					"Layer.Learn.LrnNMDA.MgC":       "1.4",  // 1.4, 5 > 1.2, 0
+					"Layer.Learn.LrnNMDA.Voff":      "5",    // see above
+					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
+					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
+					"Layer.Learn.TrgAvgAct.SubMean": "0",
+					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
+					"Layer.Learn.RLrate.SigmoidMin": "0.05",
+					"Layer.Learn.RLrate.Diff":       "true", // always key
+					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
+					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
+					"Layer.Learn.RLrate.Min":        "0.001",
 				}},
 			{Sel: "#V1", Desc: "pool inhib (not used), initial activity",
 				Params: params.Params{
@@ -73,7 +70,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Clamp.Ge":            "0.6",  // .6 generally = .5
 					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 -- not a big diff
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
-					"Layer.Learn.RLrate.NonMid":     "1",    // 1 > lower for UnitErr -- else the same
+					"Layer.Learn.RLrate.SigmoidMin": "1",    // 1 > lower for UnitErr -- else the same
 					"Layer.Learn.RLrate.Diff":       "true",
 					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
 					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
@@ -82,7 +79,6 @@ var ParamSets = params.Sets{
 			{Sel: "Prjn", Desc: "yes extra learning factors",
 				Params: params.Params{
 					"Prjn.Learn.Lrate.Base":       "0.2",   // 0.2 best, 0.1 nominal
-					"Prjn.Learn.Trace.SpkErr":     "false", // comparison case: needs lrate = * .5
 					"Prjn.SWt.Adapt.Lrate":        "0.005", // 0.005 == .1 == .01
 					"Prjn.SWt.Init.SPct":          "1",     // 1 >= lower (trace-v11)
 					"Prjn.SWt.Adapt.SubMean":      "1",
