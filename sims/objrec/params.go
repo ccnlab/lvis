@@ -21,8 +21,8 @@ var ParamSets = params.Sets{
 					"Layer.Act.NMDA.Voff":             "5",    // see above
 					"Layer.Act.AK.Gbar":               "1",    // 1 == .1 trace-v8
 					"Layer.Act.VGCC.Gbar":             "0.02", // non nmda: 0.15 good, 0.3 blows up
-					"Layer.Act.VGCC.Ca":               "25",   // 25 / 10tau is best but not as good as spk
-					"Layer.Learn.CaLrn.Norm":          "80",   // 60 produces good CaLrn_Max values
+					"Layer.Act.VGCC.Ca":               "25",   // 25 / 10tau best performance
+					"Layer.Learn.CaLrn.Norm":          "80",   // 80 default
 					"Layer.Learn.CaLrn.SpkVGCC":       "true", // sig better?
 					"Layer.Learn.CaLrn.SpkVgccCa":     "35",   // 35 > 40, 45
 					"Layer.Learn.CaLrn.VgccTau":       "10",   // 10 > 5 ?

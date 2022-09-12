@@ -16,42 +16,39 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Pool.FFEx0":          "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
-					"Layer.Inhib.Pool.FFEx":           "0.0",  // 0 > .05 for trace -- not good
-					"Layer.Inhib.Layer.FFEx0":         "0.15",
-					"Layer.Inhib.Layer.FFEx":          "0.0",  // 0 > .05 for trace -- not good
-					"Layer.Inhib.Layer.Gi":            "1.1",  // 1.1 def, 1.0 for lower layers is best
-					"Layer.Inhib.Pool.Gi":             "1.1",  // "
-					"Layer.Act.Dend.GbarExp":          "0.2",  // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":            "3",    // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":          "5",    // 5 much better in fsa!
-					"Layer.Act.NMDA.MgC":              "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":             "5",    // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.AK.Gbar":               "1",    // 1 >= 0 > 2
-					"Layer.Act.VGCC.Gbar":             "0.02", // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
-					"Layer.Act.VGCC.Ca":               "20",   // 20 / 10tau similar to spk
-					"Layer.Learn.CaLrn.Norm":          "80",   // 60 makes CaLrnMax closer to 1
-					"Layer.Learn.CaLrn.SpkVGCC":       "true", // sig better..
-					"Layer.Learn.CaLrn.SpkVgccCa":     "35",   // 70 / 5 or 35 / 10 both work
-					"Layer.Learn.CaLrn.VgccTau":       "10",   // 10 > 5 ?
-					"Layer.Learn.CaLrn.Dt.MTau":       "2",    // 2 > 1 ?
-					"Layer.Learn.CaSpk.SpikeG":        "12",   // 12 > 8 -- for larger nets
-					"Layer.Learn.CaSpk.SynTau":        "30",   // 30 > 20, 40
-					"Layer.Learn.CaSpk.Dt.MTau":       "5",    // 5 > 10?
-					"Layer.Learn.LrnNMDA.MgC":         "1.4",  // 1.2 for unified Act params, else 1.4
-					"Layer.Learn.LrnNMDA.Voff":        "5",    // 0 for unified Act params, else 5
-					"Layer.Learn.LrnNMDA.Tau":         "100",  // 100 def
-					"Layer.Learn.TrgAvgAct.On":        "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean":   "1",    // 1 > 0 is important
-					"Layer.Learn.RLrate.On":           "true", // beneficial for trace
-					"Layer.Learn.RLrate.SigDeriv":     "true",
-					"Layer.Learn.RLrate.MidRange.Min": "0.1", // 0.1, 0.9 best
-					"Layer.Learn.RLrate.MidRange.Max": "0.9", // 0.1, 0.9 best
-					"Layer.Learn.RLrate.NonMid":       "0.05",
-					"Layer.Learn.RLrate.Diff":         "true",
-					"Layer.Learn.RLrate.ActDiffThr":   "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.ActThr":       "0.1",  // 0.1 def
-					"Layer.Learn.RLrate.Min":          "0.001",
+					"Layer.Inhib.Pool.FFEx0":        "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
+					"Layer.Inhib.Pool.FFEx":         "0.0",  // 0 > .05 for trace -- not good
+					"Layer.Inhib.Layer.FFEx0":       "0.15",
+					"Layer.Inhib.Layer.FFEx":        "0.0",  // 0 > .05 for trace -- not good
+					"Layer.Inhib.Layer.Gi":          "1.1",  // 1.1 def, 1.0 for lower layers is best
+					"Layer.Inhib.Pool.Gi":           "1.1",  // "
+					"Layer.Act.Dend.GbarExp":        "0.2",  // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":          "3",    // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":        "5",    // 5 much better in fsa!
+					"Layer.Act.NMDA.MgC":            "1.4",  // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":           "5",    // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.AK.Gbar":             "1",    // 1 >= 0 > 2
+					"Layer.Act.VGCC.Gbar":           "0.02", // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
+					"Layer.Act.VGCC.Ca":             "25",   // 25 / 10tau same as SpkVGCC
+					"Layer.Learn.CaLrn.Norm":        "80",   // 80 def; 60 makes CaLrnMax closer to 1
+					"Layer.Learn.CaLrn.SpkVGCC":     "true", // sig better..
+					"Layer.Learn.CaLrn.SpkVgccCa":   "35",   // 70 / 5 or 35 / 10 both work
+					"Layer.Learn.CaLrn.VgccTau":     "10",   // 10 > 5 ?
+					"Layer.Learn.CaLrn.Dt.MTau":     "2",    // 2 > 1 ?
+					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 -- for larger nets
+					"Layer.Learn.CaSpk.SynTau":      "30",   // 30 > 20, 40
+					"Layer.Learn.CaSpk.Dt.MTau":     "5",    // 5 > 10?
+					"Layer.Learn.LrnNMDA.MgC":       "1.4",  // 1.2 for unified Act params, else 1.4
+					"Layer.Learn.LrnNMDA.Voff":      "5",    // 0 for unified Act params, else 5
+					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
+					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
+					"Layer.Learn.TrgAvgAct.SubMean": "1",    // 1 > 0 is important
+					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
+					"Layer.Learn.RLrate.SigmoidMin": "0.05",
+					"Layer.Learn.RLrate.Diff":       "true",
+					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
+					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
+					"Layer.Learn.RLrate.Min":        "0.001",
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
@@ -132,13 +129,13 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // true: it is essential -- too hard to balance manually
 					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
 					"Layer.Inhib.ActAvg.HiTol":      "0.2",   // 0.1 > 0 def
-					"Layer.Inhib.ActAvg.AdaptRate":  "0.02",  // 0.02 >= 0.01 -- 0.005 worse, tol 0.1
+					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.02 -- harder xforms, oscillates at .02
 					"Layer.Act.Clamp.Ge":            "0.6",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
 					"Layer.Inhib.Pool.FFEx":         "0.0",   // no
 					"Layer.Inhib.Layer.FFEx":        "0.0",   //
 					"Layer.Learn.RLrate.On":         "true",  // beneficial for trace
-					"Layer.Learn.RLrate.NonMid":     "1",     // 1 > lower for output
+					"Layer.Learn.RLrate.SigmoidMin": "1",     // 1 > lower for output
 					"Layer.Learn.RLrate.Diff":       "true",
 					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
 					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
@@ -280,7 +277,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.3", // 0.3 > .2 v53 in long run
+					"Prjn.PrjnScale.Rel": "0.2", // 0.3 > .2 v53 in long run
 				}},
 			{Sel: "#TEToOutput", Desc: "weaker",
 				Params: params.Params{

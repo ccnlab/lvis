@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.4.14-0.20220827085733-be56cc368dbd
-	github.com/emer/emergent v1.3.19
-	github.com/emer/empi v1.0.13
+	github.com/emer/axon v1.5.1
+	github.com/emer/emergent v1.3.22
+	github.com/emer/empi v1.0.14
 	github.com/emer/etable v1.1.8
 	github.com/emer/leabra v1.1.48
 	github.com/emer/vision v1.1.15
@@ -45,7 +45,7 @@ require (
 	github.com/goki/prof v1.0.0 // indirect
 	github.com/goki/vci v1.0.1 // indirect
 	github.com/goki/vgpu v1.0.5 // indirect
-	github.com/goki/vulkan v0.0.0-20220512102541-6e89b8ce8542 // indirect
+	github.com/goki/vulkan v0.0.0-20220826212136-256f2efb4961 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
