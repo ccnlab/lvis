@@ -25,7 +25,7 @@ import getpass
 # max number of hours -- slurm will terminate if longer, so be generous
 # 2d = 48, 3d = 72, 4d = 96, 5d = 120, 6d = 144, 7d = 168
 # full run taking about 60 hrs, so use 72
-hours = 48
+hours = 240
 
 # memory per CPU, which is only way to allocate on hpc2 (otherwise per node and doesn't fit)
 # to tune, look at AveRSS from salloc report

@@ -8,12 +8,12 @@ require (
 	github.com/emer/emergent v1.3.22
 	github.com/emer/empi v1.0.14
 	github.com/emer/etable v1.1.8
-	github.com/emer/leabra v1.1.48
+	github.com/emer/leabra v1.2.3
 	github.com/emer/vision v1.1.15
 	github.com/goki/gi v1.3.7
 	github.com/goki/ki v1.1.8
 	github.com/goki/mat32 v1.0.12
-	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
+	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd
 )
 
 require (

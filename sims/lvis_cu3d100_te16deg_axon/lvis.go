@@ -443,11 +443,16 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	teote.SetClass("TEOTE")
 	teteo.SetClass("TETEO")
 
-	// full connections to output are key
+	// TEO -> out ends up saturating quite a bit with consistently high weights,
+	// but removing those projections is not good -- still makes use of them.
+	// perhaps in a transitional way that sets up better TE reps.
+
+	// outteo := net.ConnectLayers(out, teo16, full, emer.Back)
 	teoout, outteo := net.BidirConnectLayers(teo16, out, full)
 	teoout.SetClass("TEOOut ToOut")
 	outteo.SetClass("OutTEO FmOut")
 
+	// outteo = net.ConnectLayers(out, teo8, full, emer.Back)
 	teoout, outteo = net.BidirConnectLayers(teo8, out, full)
 	teoout.SetClass("TEOOut ToOut")
 	outteo.SetClass("OutTEO FmOut")
@@ -601,6 +606,7 @@ func (ss *Sim) Init() {
 	ss.Net.SlowInterval = 100 // 100 > 20
 	ss.NewRun()
 	ss.ViewUpdt.Update()
+	ss.ViewUpdt.RecordSyns()
 }
 
 // InitRndSeed initializes the random seed based on current training run number

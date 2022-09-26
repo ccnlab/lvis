@@ -267,6 +267,10 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.1", // .1 orig
 				}},
+			{Sel: ".TEOTE", Desc: "stronger",
+				Params: params.Params{
+					"Prjn.PrjnScale.Abs": "1.2",
+				}},
 			{Sel: ".OutTEO", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.3", // .3 > .2 v53 in long run
@@ -277,7 +281,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.2", // 0.3 > .2 v53 in long run
+					"Prjn.PrjnScale.Rel": "0.1", // 0.1 (hard xform) > 0.2 (reg xform) > 0.3 trace
 				}},
 			{Sel: "#TEToOutput", Desc: "weaker",
 				Params: params.Params{
