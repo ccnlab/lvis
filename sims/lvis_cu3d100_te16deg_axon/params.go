@@ -30,6 +30,11 @@ var ParamSets = params.Sets{
 					"Layer.Act.AK.Gbar":             "1",    // 1 >= 0 > 2
 					"Layer.Act.VGCC.Gbar":           "0.02", // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
 					"Layer.Act.VGCC.Ca":             "25",   // 25 / 10tau same as SpkVGCC
+					"Layer.Act.Mahp.Gbar":           "0.01", // 0.01 > 0.02 > higher -- long run
+					"Layer.Act.Sahp.Gbar":           "0.1",  // 0.1 ok - not much effect?
+					"Layer.Act.Sahp.Off":            "0.8",  //
+					"Layer.Act.Sahp.Slope":          "0.02", //
+					"Layer.Act.Sahp.CaTau":          "5",    // 5 ok -- not tested
 					"Layer.Learn.CaLrn.Norm":        "80",   // 80 def; 60 makes CaLrnMax closer to 1
 					"Layer.Learn.CaLrn.SpkVGCC":     "true", // sig better..
 					"Layer.Learn.CaLrn.SpkVgccCa":   "35",   // 70 / 5 or 35 / 10 both work
@@ -46,8 +51,8 @@ var ParamSets = params.Sets{
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "0.05",
 					"Layer.Learn.RLrate.Diff":       "true",
-					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
+					"Layer.Learn.RLrate.DiffThr":    "0.02", // 0.02 def - todo
+					"Layer.Learn.RLrate.SpkThr":     "0.1",  // 0.1 def
 					"Layer.Learn.RLrate.Min":        "0.001",
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
@@ -137,8 +142,8 @@ var ParamSets = params.Sets{
 					"Layer.Learn.RLrate.On":         "true",  // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "1",     // 1 > lower for output
 					"Layer.Learn.RLrate.Diff":       "true",
-					"Layer.Learn.RLrate.ActDiffThr": "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.ActThr":     "0.1",  // 0.1 def
+					"Layer.Learn.RLrate.DiffThr":    "0.02", // 0.02 def - todo
+					"Layer.Learn.RLrate.SpkThr":     "0.1",  // 0.1 def
 					"Layer.Learn.RLrate.Min":        "0.001",
 				}},
 			{Sel: "#Claustrum", Desc: "testing -- not working",
@@ -152,19 +157,21 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
-					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0.02 good overall, no ToOut
-					"Prjn.SWt.Adapt.SubMean":      "1",
-					"Prjn.Learn.Lrate.Base":       "0.01", // 0.01 > 0.02 later (trace)
-					"Prjn.Com.PFail":              "0.0",
-					"Prjn.Learn.Trace.SubMean":    "0",  // 0-1 makes no diff, at least early on!
-					"Prjn.Learn.KinaseCa.SpikeG":  "12", // 12 matches theta exactly, higher dwtavg but ok
-					"Prjn.Learn.KinaseCa.Dt.MTau": "5",  // 5 > 10 test more
-					"Prjn.Learn.KinaseCa.Dt.PTau": "40",
-					"Prjn.Learn.KinaseCa.Dt.DTau": "40",
-					"Prjn.Learn.KinaseCa.UpdtThr": "0.01", // 0.01 > 0.05 -- was LrnThr
-					"Prjn.Learn.KinaseCa.MaxISI":  "100",  // 100 >= 50 -- not much diff, no sig speed diff with 50
+					"Prjn.SWt.Adapt.On":            "true",   // true > false, esp in cosdiff
+					"Prjn.SWt.Adapt.Lrate":         "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.SWt.Adapt.DreamVar":      "0.0",    // 0.02 good overall, no ToOut
+					"Prjn.SWt.Adapt.SubMean":       "1",
+					"Prjn.Learn.Lrate.Base":        "0.015", // 0.01 > 0.02 later (trace)
+					"Prjn.Com.PFail":               "0.0",
+					"Prjn.Learn.Trace.NeuronCa":    "true",
+					"Prjn.Learn.Trace.TrgNeuronCa": "true",
+					"Prjn.Learn.Trace.SubMean":     "0",  // 0-1 makes no diff, at least early on!
+					"Prjn.Learn.KinaseCa.SpikeG":   "12", // 12 matches theta exactly, higher dwtavg but ok
+					"Prjn.Learn.KinaseCa.Dt.MTau":  "5",  // 5 > 10 test more
+					"Prjn.Learn.KinaseCa.Dt.PTau":  "40",
+					"Prjn.Learn.KinaseCa.Dt.DTau":  "40",
+					"Prjn.Learn.KinaseCa.UpdtThr":  "0.01", // 0.01 > 0.05 -- was LrnThr
+					"Prjn.Learn.KinaseCa.MaxISI":   "100",  // 100 >= 50 -- not much diff, no sig speed diff with 50
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
