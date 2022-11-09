@@ -16,12 +16,10 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Pool.FFEx0":        "0.15", // .15 > .18; Ex .05 -- .2/.1, .2/.2, .3/.5 all blow up
-					"Layer.Inhib.Pool.FFEx":         "0.0",  // 0 > .05 for trace -- not good
-					"Layer.Inhib.Layer.FFEx0":       "0.15",
-					"Layer.Inhib.Layer.FFEx":        "0.0",  // 0 > .05 for trace -- not good
-					"Layer.Inhib.Layer.Gi":          "1.1",  // 1.1 def, 1.0 for lower layers is best
-					"Layer.Inhib.Pool.Gi":           "1.1",  // "
+					"Layer.Inhib.Layer.Gi":          "1.1", // 1.1 def, 1.0 for lower layers is best
+					"Layer.Inhib.Pool.Gi":           "1.1", // "
+					"Layer.Inhib.Layer.FB":          "1",
+					"Layer.Inhib.Pool.FB":           "1",
 					"Layer.Act.Dend.GbarExp":        "0.2",  // 0.2 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":          "3",    // 2 good for 0.2
 					"Layer.Act.Dt.VmDendTau":        "5",    // 5 much better in fsa!
@@ -137,8 +135,6 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.02 -- harder xforms, oscillates at .02
 					"Layer.Act.Clamp.Ge":            "0.6",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
-					"Layer.Inhib.Pool.FFEx":         "0.0",   // no
-					"Layer.Inhib.Layer.FFEx":        "0.0",   //
 					"Layer.Learn.RLrate.On":         "true",  // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "1",     // 1 > lower for output
 					"Layer.Learn.RLrate.Diff":       "true",
@@ -157,21 +153,20 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
-					"Prjn.SWt.Adapt.On":            "true",   // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":         "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.DreamVar":      "0.0",    // 0.02 good overall, no ToOut
-					"Prjn.SWt.Adapt.SubMean":       "1",
-					"Prjn.Learn.Lrate.Base":        "0.015", // 0.01 > 0.02 later (trace)
-					"Prjn.Com.PFail":               "0.0",
-					"Prjn.Learn.Trace.NeuronCa":    "true",
-					"Prjn.Learn.Trace.TrgNeuronCa": "true",
-					"Prjn.Learn.Trace.SubMean":     "0",  // 0-1 makes no diff, at least early on!
-					"Prjn.Learn.KinaseCa.SpikeG":   "12", // 12 matches theta exactly, higher dwtavg but ok
-					"Prjn.Learn.KinaseCa.Dt.MTau":  "5",  // 5 > 10 test more
-					"Prjn.Learn.KinaseCa.Dt.PTau":  "40",
-					"Prjn.Learn.KinaseCa.Dt.DTau":  "40",
-					"Prjn.Learn.KinaseCa.UpdtThr":  "0.01", // 0.01 > 0.05 -- was LrnThr
-					"Prjn.Learn.KinaseCa.MaxISI":   "100",  // 100 >= 50 -- not much diff, no sig speed diff with 50
+					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
+					"Prjn.SWt.Adapt.Lrate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0.02 good overall, no ToOut
+					"Prjn.SWt.Adapt.SubMean":      "1",
+					"Prjn.Learn.Lrate.Base":       "0.01", // 0.01 > 0.02 later (trace)
+					"Prjn.Com.PFail":              "0.0",
+					"Prjn.Learn.Trace.NeuronCa":   "false",
+					"Prjn.Learn.Trace.SubMean":    "0",  // 0-1 makes no diff, at least early on!
+					"Prjn.Learn.KinaseCa.SpikeG":  "12", // 12 matches theta exactly, higher dwtavg but ok
+					"Prjn.Learn.KinaseCa.Dt.MTau": "5",  // 5 > 10 test more
+					"Prjn.Learn.KinaseCa.Dt.PTau": "40",
+					"Prjn.Learn.KinaseCa.Dt.DTau": "40",
+					"Prjn.Learn.KinaseCa.UpdtThr": "0.01", // 0.01 > 0.05 -- was LrnThr
+					"Prjn.Learn.KinaseCa.MaxISI":  "100",  // 100 >= 50 -- not much diff, no sig speed diff with 50
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{

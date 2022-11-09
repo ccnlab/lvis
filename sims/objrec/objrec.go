@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/ecmd"
@@ -216,9 +217,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	itOut.SetClass("NovLearn")
 	outIT.SetClass("NovLearn")
 
-	// even with new 1.4.5 threading, no advantage to 2 threads
-	// it.SetThread(1)
-	// out.SetThread(1)
+	net.NThreads = 2
+	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
 	net.Defaults()
 	ss.Params.SetObject("Network")

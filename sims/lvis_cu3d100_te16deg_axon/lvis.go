@@ -11,8 +11,10 @@ input images.
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/decoder"
@@ -553,17 +555,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
 
-	if hi16 {
-		v3h16.SetThread(1)
-	}
-
-	v4f16.SetThread(1)
-	v4f8.SetThread(1)
-
-	teo16.SetThread(1)
-	teo8.SetThread(1)
-	te.SetThread(1)
-	out.SetThread(1)
+	net.NThreads = 4
+	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
 	net.Defaults()
 	ss.Params.SetObject("Network")
@@ -578,8 +571,6 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		sr := net.SizeReport()
 		mpi.Printf("%s", sr)
 	}
-	ar := net.ThreadReport() // hand tuning now..
-	mpi.Printf("%s", ar)
 
 	// adding each additional layer type improves decoding..
 	layers := []emer.Layer{v4f16, v4f8, teo16, teo8, out}
@@ -1200,7 +1191,6 @@ func (ss *Sim) ConfigLogItems() {
 	layers := ss.Net.LayersByClass("Hidden", "Target")
 	for _, lnm := range layers {
 		clnm := lnm
-		cly := ss.Net.LayerByName(clnm)
 		ss.Logs.AddItem(&elog.Item{
 			Name:   clnm + "_ActMax",
 			Type:   etensor.FLOAT64,
@@ -1210,7 +1200,7 @@ func (ss *Sim) ConfigLogItems() {
 			Write: elog.WriteMap{
 				etime.Scope(etime.AllModes, etime.Cycle): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.Pools[0].Inhib.Act.Max)
+					ctx.SetFloat32(ly.AvgMaxVarByPool("Act", 0).Max)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + "_FirstCyc",
@@ -1222,32 +1212,6 @@ func (ss *Sim) ConfigLogItems() {
 					fcyc := ss.FirstActStat(ctx.Logs.Table(ctx.Mode, etime.Cycle), clnm)
 					ctx.SetInt(fcyc)
 				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
-					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
-				}}})
-		ss.Logs.AddItem(&elog.Item{
-			Name:  clnm + "_FF_AvgMaxG",
-			Type:  etensor.FLOAT64,
-			Plot:  elog.DFalse,
-			Range: minmax.F64{Max: 1},
-			Write: elog.WriteMap{
-				etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
-					ffpj := cly.RecvPrjn(0).(*axon.Prjn)
-					ctx.SetFloat32(ffpj.GScale.AvgMax)
-				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
-				}}})
-		ss.Logs.AddItem(&elog.Item{
-			Name:  clnm + "_FB_AvgMaxG",
-			Type:  etensor.FLOAT64,
-			Plot:  elog.DFalse,
-			Range: minmax.F64{Max: 1},
-			Write: elog.WriteMap{
-				etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
-					if cly.NRecvPrjns() > 1 {
-						fbpj := cly.RecvPrjn(1).(*axon.Prjn)
-						ctx.SetFloat32(fbpj.GScale.AvgMax)
-					}
-				}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
 				}}})
 		if clnm == "Output" {

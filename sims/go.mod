@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.5.13
+	github.com/emer/axon v1.6.1
 	github.com/emer/emergent v1.3.31
 	github.com/emer/empi v1.0.17
 	github.com/emer/etable v1.1.11
@@ -34,7 +34,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/go-fonts/liberation v0.2.0 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20220516021902-eb3e265c7661 // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/go-gl/mathgl v1.0.0 // indirect
 	github.com/go-latex/latex v0.0.0-20210823091927-c0d11ff05a81 // indirect
 	github.com/go-pdf/fpdf v0.6.0 // indirect
