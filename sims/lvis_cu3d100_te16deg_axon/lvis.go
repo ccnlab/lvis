@@ -30,6 +30,7 @@ import (
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
+	"github.com/emer/emergent/timer"
 	"github.com/emer/empi/empi"
 	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/agg"
@@ -555,8 +556,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
 
-	net.NThreads = 4
-	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
+	net.NThreads = 2
+	runtime.GOMAXPROCS(net.NThreads)
+	// fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
 	net.Defaults()
 	ss.Params.SetObject("Network")
@@ -614,6 +616,9 @@ func (ss *Sim) ConfigLoops() {
 		if Debug {
 			mpi.Printf("MPI trials: %d\n", effTrls)
 		}
+	}
+	if ss.Args.Bool("bench") {
+		effTrls = 10
 	}
 
 	man.AddStack(etime.Train).AddTime(etime.Run, 1).AddTime(etime.Epoch, 2000).AddTime(etime.Trial, effTrls).AddTime(etime.Cycle, 200)
@@ -1370,7 +1375,7 @@ func (ss *Sim) ConfigArgs() {
 	ss.Args.Init()
 	ss.Args.AddStd()
 	ss.Args.AddInt("nzero", 2, "number of zero error epochs in a row to count as full training")
-	ss.Args.AddInt("iticycles", 0, "number of cycles to run between trials (inter-trial-interval)")
+	ss.Args.AddBool("bench", false, "run benchmarking -- just runs a few trials")
 	ss.Args.SetInt("epochs", 2000)
 	ss.Args.SetInt("runs", 1)
 	ss.Args.AddBool("mpi", false, "if set, use MPI for distributed computation")
@@ -1430,7 +1435,106 @@ func (ss *Sim) CmdArgs() {
 	ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Max = ss.Args.Int("epochs")
 
 	ss.NewRun()
+
+	bench := ss.Args.Bool("bench")
+	tmr := timer.Time{}
+
+	net := ss.Net
+
+	if bench {
+		tmr.Start()
+		net.RecFunTimes = bench
+		runtime.GOMAXPROCS(8)
+		threads := 4
+		// override defaults: neurons, sendSpike, synCa, learn
+		net.Threads.Set(2, threads, threads, threads, threads)
+		net.ThreadsAlloc() // re-update
+
+		// run: ./lvis_cu3d100_te16deg_axon -bench -epochs 1 -tag bench
+		// Macbook pro results:
+		// basically, reasonably linear from 1 -> 2 -> 4 and only CycleNeuron is linear thereafter
+		// about 7 sec of stuff not included in functions -- pretty constant over threads
+		// th   total   funcs
+		// 1:   64.7    57.5
+		// 2:   39.2    32.0
+		// 4:   26.7    19.5
+		// 8:   23.2    15.9
+
+		// - SendSpike = 1	  4.542
+		// - SendSpike = 2	  2.653
+		// - SendSpike = 4	  1.689 <- max
+		// - SendSpike = 8	  1.139
+
+		// - CycleNeur = 1 	 15.698
+		// - CycleNeur = 2 	  8.501
+		// - CycleNeur = 4	  4.658
+		// - CycleNeur = 8	  2.957 <- close to linear
+
+		// - RecvSynCa = 1	 19.525
+		// - RecvSynCa = 2	 11.198
+		// - RecvSynCa = 4	  5.928 <- 2x best
+		// - RecvSynCa = 8 	  6.02
+
+		// - SendSynCa = 1	 11.122
+		// - SendSynCa = 2	  6.983
+		// - SendSynCa = 4	  4.047 <- marginal
+		// - SendSynCa = 8	  4.784
+
+		// -       DWt = 1	  4.747
+		// -       DWt = 2 	  2.831
+		// -       DWt = 4	  1.521 <- max
+		// -       DWt = 8	  1.515
+
+		// -   WtFmDWt = 1	  1.263
+		// -   WtFmDWt = 2 	  0.719
+		// -   WtFmDWt = 4	  0.348 <- good enough
+		// -   WtFmDWt = 8 	  0.207
+
+		// hpc2 cluster results (AMD EPYC 7532 32-Core Processor)
+		// th   total   funcs
+		// 1:   123    111.0
+		// 2:   82.7    70.3
+		// 4:   53.8    42.3
+		// 8:   44.3    31.8 <- diminishing returns
+
+		// - SendSpike = 1	  6.098
+		// - SendSpike = 2	  3.770
+		// - SendSpike = 4	  2.481 <- max
+		// - SendSpike = 8	  2.044
+
+		// - CycleNeur = 1 	 43.291
+		// - CycleNeur = 2 	 30.720
+		// - CycleNeur = 4	 17.061
+		// - CycleNeur = 8	 11.102 <- close to linear
+
+		// - RecvSynCa = 1	 27.131
+		// - RecvSynCa = 2	 15.711
+		// - RecvSynCa = 4	  9.254 <- 2x best
+		// - RecvSynCa = 8 	  7.962
+
+		// - SendSynCa = 1	 24.137
+		// - SendSynCa = 2	 13.783
+		// - SendSynCa = 4	  9.598 <- marginal
+		// - SendSynCa = 8	  7.937
+
+		// -       DWt = 1	  6.222
+		// -       DWt = 2 	  3.655
+		// -       DWt = 4	  1.924 <- max
+		// -       DWt = 8	  1.212
+
+		// -   WtFmDWt = 1	  2.285
+		// -   WtFmDWt = 2 	  1.292
+		// -   WtFmDWt = 4	  0.656 <- good enough
+		// -   WtFmDWt = 8 	  0.388
+	}
+
 	ss.Loops.Run(etime.Train)
+
+	if bench {
+		tmr.Stop()
+		fmt.Printf("%6.3g\n", tmr.TotalSecs())
+		net.TimerReport()
+	}
 
 	ss.Logs.CloseLogFiles()
 

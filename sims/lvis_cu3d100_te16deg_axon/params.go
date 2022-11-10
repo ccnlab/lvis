@@ -56,10 +56,10 @@ var ParamSets = params.Sets{
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Layer.Gi":    "0.9",  // 0.9 >= 1.1 def -- more activity -- clamp.Ge more important
+					"Layer.Inhib.Layer.Gi":    "0.9",  // was 0.9
 					"Layer.Inhib.Pool.Gi":     "0.9",  // 0.9 >= 1.1 def -- more activity
 					"Layer.Inhib.ActAvg.Init": "0.06", // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
-					"Layer.Act.Clamp.Ge":      "1.0",  // 1.0 > .6 -- more activity
+					"Layer.Act.Clamp.Ge":      "1.5",  // was 1.0
 					"Layer.Act.Decay.Act":     "1",    // these make no diff
 					"Layer.Act.Decay.Glong":   "1",
 				}},
@@ -67,8 +67,8 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.0 for lower layers is best
-					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.0 > 1.1 -- is sig worse!
+					"Layer.Inhib.Layer.Gi":    "1.1",  // was 1.0
+					"Layer.Inhib.Pool.Gi":     "1.05", // 1.1 too low, 1.0 too high, was 1.0
 					"Layer.Inhib.Topo.On":     "false",
 					"Layer.Inhib.Topo.Width":  "4",
 					"Layer.Inhib.Topo.Sigma":  "1.0",
@@ -100,7 +100,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.04", // .04 >= .03 > .05
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.0 maybe > 1.1
+					"Layer.Inhib.Layer.Gi":    "1.1",  // was 1.0
 					"Layer.Inhib.Pool.Gi":     "1.1",  // 1.1 > 1.0
 					"Layer.Inhib.Topo.On":     "false",
 					"Layer.Inhib.Topo.Width":  "4", // was 4
@@ -113,23 +113,23 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init": "0.06",  // .06 > .05 = .04
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.Layer.Gi":    "1.1",   // 1.1 def
-					"Layer.Inhib.Pool.Gi":     "1.1",   // 1.1 def
+					"Layer.Inhib.Layer.Gi":    "1.25",  // was 1.1
+					"Layer.Inhib.Pool.Gi":     "1.25",  // 1.1 def
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.04",  // .03 actual with gi 1.2, was .06
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.Layer.Gi":    "1.1",   // 1.1 def
-					"Layer.Inhib.Pool.Gi":     "1.1",   // 1.1 def
+					"Layer.Inhib.Layer.Gi":    "1.2",   // was 1.1
+					"Layer.Inhib.Pool.Gi":     "1.2",   // 1.1 def
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":          "1.2",   // 1.3 adapt > fixed: 1.2, 1.23 too low, 1.25, 1.3 too high
+					"Layer.Inhib.Layer.Gi":          "1.25",  // 1.3 matches prev; 1.25 too low; was 1.2
 					"Layer.Inhib.ActAvg.Init":       "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
 					"Layer.Inhib.ActAvg.Targ":       "0.01",  // .01 > 0.011 > 0.012 > 0.009
-					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // true: it is essential -- too hard to balance manually
+					"Layer.Inhib.ActAvg.AdaptGi":    "false", // was true
 					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
 					"Layer.Inhib.ActAvg.HiTol":      "0.2",   // 0.1 > 0 def
 					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.02 -- harder xforms, oscillates at .02
