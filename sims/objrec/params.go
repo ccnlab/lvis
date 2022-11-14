@@ -59,7 +59,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.1",  // 1.1 > 1.0
+					"Layer.Inhib.Layer.Gi":    "1.1",  // 1.1 > 1.0 -- def 1.1, 1.0 > 1.0, 1.1!
 					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.0 > 1.1
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.ActAvg.Init": "0.04", // .04 def -- .03 more accurate -- 0.04 works better

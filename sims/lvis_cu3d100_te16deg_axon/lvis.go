@@ -167,6 +167,7 @@ func (ss *Sim) ConfigEnv() {
 	trn.Nm = etime.Train.String()
 	trn.Dsc = "training params and state"
 	trn.Defaults()
+	trn.NOutPer = ss.NOutPer
 	trn.High16 = false // not useful -- may need more tuning?
 	trn.ColorDoG = true
 	trn.Images.NTestPerCat = 2
@@ -185,6 +186,7 @@ func (ss *Sim) ConfigEnv() {
 	tst.Dsc = "testing params and state"
 	tst.ImageFile = trn.ImageFile
 	tst.Defaults()
+	tst.NOutPer = ss.NOutPer
 	tst.High16 = trn.High16
 	tst.ColorDoG = trn.ColorDoG
 	tst.Images.NTestPerCat = 2
