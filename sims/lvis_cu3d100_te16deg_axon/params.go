@@ -16,10 +16,10 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":          "1.1", // 1.1 def, 1.0 for lower layers is best
+					"Layer.Inhib.Layer.Gi":          "1.0", // 1.1 def, 1.0 for lower layers is best
 					"Layer.Inhib.Pool.Gi":           "1.0", // "
-					"Layer.Inhib.Layer.FB":          "4",   // 4 > 2 > 1
-					"Layer.Inhib.Pool.FB":           "4",
+					"Layer.Inhib.Layer.FB":          "6",   // 4 > 2 > 1
+					"Layer.Inhib.Pool.FB":           "6",
 					"Layer.Act.Dend.GbarExp":        "0.2",  // 0.2 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":          "3",    // 2 good for 0.2
 					"Layer.Act.Dt.VmDendTau":        "5",    // 5 much better in fsa!
@@ -55,6 +55,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
+					"Layer.Inhib.Layer.FB":    "1", // keep normalized
+					"Layer.Inhib.Pool.FB":     "1",
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.Layer.Gi":    "0.9",  // was 0.9
 					"Layer.Inhib.Pool.Gi":     "0.9",  // 0.9 >= 1.1 def -- more activity
@@ -67,8 +69,9 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":    "1",    // layer 1?
 					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.3, 1.2 FB2 best? was 1.0
-					"Layer.Inhib.Pool.Gi":     "0.9",  // 1.2 - 1.1 starts low, 1.0 too high, was 1.0
+					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.2 - 1.1 starts low, 1.0 too high, was 1.0
 					"Layer.Inhib.Topo.On":     "false",
 					"Layer.Inhib.Topo.Width":  "4",
 					"Layer.Inhib.Topo.Sigma":  "1.0",
@@ -98,15 +101,16 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.01", // was .04 but actual was .02 -> .01
+					"Layer.Inhib.ActAvg.Init": "0.02", // was .04 but actual was .02 -> .01
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					// "Layer.Inhib.Layer.Gi":    "1.1",  // was 1.0
-					// "Layer.Inhib.Pool.Gi":     "1.0",  // 1.1 > 1.0
-					"Layer.Inhib.Topo.On":    "false",
-					"Layer.Inhib.Topo.Width": "4", // was 4
-					"Layer.Inhib.Topo.Sigma": "1.0",
-					"Layer.Inhib.Topo.Gi":    "0.002", // 0.002 best -- reduces Top5, keeps NStrong
-					"Layer.Inhib.Topo.FF0":   "0.2",   // 0.2 best -- test more
+					"Layer.Inhib.Layer.FB":    "1",    // layer 1?
+					"Layer.Inhib.Layer.Gi":    "1.0",  // was 1.0 // FB4, 1.0lay 1.1pool better than reverse!
+					"Layer.Inhib.Pool.Gi":     "1.0",  // 1.1 > 1.0
+					"Layer.Inhib.Topo.On":     "false",
+					"Layer.Inhib.Topo.Width":  "4", // was 4
+					"Layer.Inhib.Topo.Sigma":  "1.0",
+					"Layer.Inhib.Topo.Gi":     "0.002", // 0.002 best -- reduces Top5, keeps NStrong
+					"Layer.Inhib.Topo.FF0":    "0.2",   // 0.2 best -- test more
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
@@ -114,7 +118,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":    "false", // no layer!
 					// "Layer.Inhib.Layer.Gi":    "1.3",   // not used!!
-					// "Layer.Inhib.Pool.Gi": "1.0", // 1.1 def
+					"Layer.Inhib.Pool.Gi": "1.0", // 1 FB6, 1.1 FB4; 1.1 def
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
@@ -122,7 +126,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Layer.On":    "false", // no layer!
 					// "Layer.Inhib.Layer.Gi":    "1.3",   // not used!!
-					// "Layer.Inhib.Pool.Gi": "1.0", // 1.1 def
+					"Layer.Inhib.Pool.Gi": "1.1", // 1.1 FB6, 1.2 FB4; 1.1 def
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
@@ -133,7 +137,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Targ":       "0.01",  // .01 > 0.011 > 0.012 > 0.009
 					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // was true
 					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
-					"Layer.Inhib.ActAvg.HiTol":      "0.2",   // 0.1 > 0 def
+					"Layer.Inhib.ActAvg.HiTol":      "0.05",  // 0.1 > 0 def
 					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.02 -- harder xforms, oscillates at .02
 					"Layer.Act.Clamp.Ge":            "0.8",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
