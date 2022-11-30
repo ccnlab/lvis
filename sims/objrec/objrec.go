@@ -37,6 +37,7 @@ import (
 	_ "github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/minmax"
 	"github.com/emer/etable/split"
+	"github.com/emer/etable/tsragg"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/mat32"
@@ -102,7 +103,7 @@ func (ss *Sim) New() {
 	ss.Stats.Init()
 	ss.RndSeeds.Init(100) // max 100 runs
 	ss.NOutPer = 5
-	ss.TestInterval = 10
+	ss.TestInterval = -1 // 10
 	ss.PCAInterval = 5
 	ss.Time.Defaults()
 	ss.ConfigArgs() // do this first, has key defaults
@@ -257,7 +258,7 @@ func (ss *Sim) InitRndSeed() {
 func (ss *Sim) ConfigLoops() {
 	man := looper.NewManager()
 
-	man.AddStack(etime.Train).AddTime(etime.Run, 1).AddTime(etime.Epoch, 100).AddTime(etime.Trial, 100).AddTime(etime.Cycle, 200)
+	man.AddStack(etime.Train).AddTime(etime.Run, 1).AddTime(etime.Epoch, 200).AddTime(etime.Trial, 100).AddTime(etime.Cycle, 200)
 
 	man.AddStack(etime.Test).AddTime(etime.Epoch, 1).AddTime(etime.Trial, 100).AddTime(etime.Cycle, 200)
 
@@ -319,6 +320,10 @@ func (ss *Sim) ConfigLoops() {
 
 	// Save weights to file, to look at later
 	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("SaveWeights", func() {
+		run := ss.Stats.Int("Run")
+		if run != 0 {
+			return
+		}
 		ctrString := ss.Stats.PrintVals([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
 		axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
 	})
@@ -326,13 +331,29 @@ func (ss *Sim) ConfigLoops() {
 	// lrate schedule
 	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("LrateSched", func() {
 		trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+		run := ss.Stats.Int("Run")
+		ctrString := ss.Stats.PrintVals([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
 		switch trnEpc {
-		case 20:
+		case 10:
+			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
+			// ss.Net.SetSubMean(1, 1)
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.5)
 		case 30:
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.2)
+		case 50:
+			if run == 0 {
+				axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
+			}
+		case 75:
+			if run == 0 {
+				axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
+			}
+		case 150:
+			if run == 0 {
+				axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
+			}
 		}
 		// note: this is actually a tiny bit worse:
 		// ly := ss.Net.LayerByName("Output")
@@ -549,6 +570,60 @@ func (ss *Sim) ConfigLogItems() {
 				ss.Logs.MiscTables[ctx.Item.Name] = cats
 				ctx.SetTensor(cats.Cols[1])
 			}}})
+	layers := ss.Net.LayersByClass("Hidden", "Target")
+	for _, lnm := range layers {
+		clnm := lnm
+		ly := ss.Net.LayerByName(clnm).(axon.AxonLayer).AsAxon()
+		ss.Logs.AddItem(&elog.Item{
+			Name:  clnm + "_AvgCaDiff",
+			Type:  etensor.FLOAT64,
+			Range: minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+					tsr := ctx.GetLayerRepTensor(clnm, "CaDiff")
+					avg := tsragg.Mean(tsr)
+					ctx.SetFloat64(avg)
+				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:   clnm + "_Gnmda",
+			Type:   etensor.FLOAT64,
+			Range:  minmax.F64{Max: 1},
+			FixMin: true,
+			Write: elog.WriteMap{
+				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+					tsr := ctx.GetLayerRepTensor(clnm, "Gnmda")
+					avg := tsragg.Mean(tsr)
+					ctx.SetFloat64(avg)
+				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:   clnm + "_GgabaB",
+			Type:   etensor.FLOAT64,
+			Range:  minmax.F64{Max: 1},
+			FixMin: true,
+			Write: elog.WriteMap{
+				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+					tsr := ctx.GetLayerRepTensor(clnm, "GgabaB")
+					avg := tsragg.Mean(tsr)
+					ctx.SetFloat64(avg)
+				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:   clnm + "_SSGi",
+			Type:   etensor.FLOAT64,
+			Range:  minmax.F64{Max: 1},
+			FixMin: true,
+			Write: elog.WriteMap{
+				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+					ctx.SetFloat32(ly.Pools[0].Inhib.SSGi)
+				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				}}})
+	}
 }
 
 // Log is the main logging function, handles special things for different scopes

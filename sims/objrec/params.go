@@ -20,6 +20,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Decay.Act":           "0.0",  // 0 > .2 -- highly sensitive
 					"Layer.Act.Decay.Glong":         "0.6",  // 0.6 def > 0.5, .7 -- highly sensitive
 					"Layer.Act.Decay.AHP":           "0.0",  // 0 def
+					"Layer.Act.Dend.SSGi":           "3",    // 3.0o0 best
 					"Layer.Act.Dend.GbarExp":        "0.2",  // 0.2 > 0.5 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":          "3",    // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
 					"Layer.Act.Dt.GeTau":            "5",    // 5 = 4 (bit slower) > 6 > 7 @176
@@ -45,7 +46,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Voff":      "5",    // see above
 					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
 					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean": "0",
+					"Layer.Learn.TrgAvgAct.SubMean": "1.0",  // 1 > 0 -- key!
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "0.05",
 					"Layer.Learn.RLrate.Diff":       "true", // always key
@@ -64,6 +65,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.SS":    "30",
 					"Layer.Inhib.Pool.SS":     "30",
 					"Layer.Act.Clamp.Ge":      "1.5", // 1.5 for fsffffb
+					"Layer.Act.Decay.Act":     "1",   // 1 = slightly beneficial
+					"Layer.Act.Decay.Glong":   "1",
 				}},
 			{Sel: "#V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -98,7 +101,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Clamp.Ge":            "0.8",  // 0.8 > 1.0 > 0.6 1.6.4
 					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 -- not a big diff
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
-					"Layer.Learn.RLrate.SigmoidMin": "1",    // 1 > lower for UnitErr -- else the same
+					"Layer.Learn.RLrate.SigmoidMin": "0.05", // 0.05 > 1 -- key!
 					"Layer.Learn.RLrate.Diff":       "true",
 					"Layer.Learn.RLrate.DiffThr":    "0.02", // 0.02 def - todo
 					"Layer.Learn.RLrate.SpkThr":     "0.1",  // 0.1 def
@@ -108,7 +111,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.Lrate.Base":       "0.2",    // 0.4 for NeuronCa; 0.2 best, 0.1 nominal
 					"Prjn.Learn.Trace.NeuronCa":   "false",  // false = sig better (SynCa)
-					"Prjn.Learn.Trace.SubMean":    "1",      // 1 > 0 -- now needed!
+					"Prjn.Learn.Trace.SubMean":    "1",      // 1 prevents sig amount of late deterioration
 					"Prjn.SWt.Adapt.Lrate":        "0.0001", // 0.005 == .1 == .01
 					"Prjn.SWt.Init.SPct":          "1",      // 1 >= lower (trace-v11)
 					"Prjn.SWt.Adapt.SubMean":      "1",
@@ -127,20 +130,10 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Forward", Desc: "special forward-only params: com prob",
 				Params: params.Params{}},
-			{Sel: ".Inhib", Desc: "inhibitory projection -- not using",
-				Params: params.Params{
-					"Prjn.Learn.Lrate.Base":    "0.01", // 0.0001 best for lvis
-					"Prjn.Learn.Trace.SubMean": "1",    // 1 is *essential* here!
-					"Prjn.SWt.Adapt.On":        "false",
-					"Prjn.SWt.Init.Var":        "0.0",
-					"Prjn.SWt.Init.Mean":       "0.1",
-					"Prjn.PrjnScale.Abs":       "0.1", // .1 from lvis
-					"Prjn.PrjnScale.Adapt":     "false",
-					"Prjn.IncGain":             "0.5",
-				}},
-			{Sel: "#ITToOutput", Desc: "no random sampling here",
+			{Sel: "#ITToOutput", Desc: "",
 				Params: params.Params{
 					"Prjn.Com.PFail": "0.0",
+					// "Prjn.Learn.Lrate.Base": "0.1", // no effect
 				}},
 		},
 	}},

@@ -20,8 +20,9 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":           "1.1", // "
 					"Layer.Inhib.Layer.FB":          "1",   // setting for layers below
 					"Layer.Inhib.Pool.FB":           "1",
-					"Layer.Act.Decay.Act":           "0.2", // 0 > .2 -- objrec highly sensitive
-					"Layer.Act.Decay.Glong":         "0.6", // 0.6 def --  "
+					"Layer.Act.Decay.Act":           "0.0", // 0 == .2
+					"Layer.Act.Decay.Glong":         "0.6", // 0.6 def
+					"Layer.Act.Dend.SSGi":           "3",   // 3 objrec
 					"Layer.Act.Dend.GbarExp":        "0.2", // 0.2 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":          "3",   // 2 good for 0.2
 					"Layer.Act.Dt.VmDendTau":        "5",   // 5 much better in fsa!
@@ -48,7 +49,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Voff":      "5",    // 0 for unified Act params, else 5
 					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
 					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean": "1",    // 1 > 0 is important
+					"Layer.Learn.TrgAvgAct.SubMean": "0",    // 0 > 1 key for early; SetSubMean later
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "0.05",
 					"Layer.Learn.RLrate.Diff":       "true",
@@ -70,12 +71,12 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V2", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.02",
+					"Layer.Inhib.ActAvg.Init": "0.03",
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    //
 					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Layer.Gi":    "1.1", //
-					"Layer.Inhib.Pool.Gi":     "1.0", //
+					"Layer.Inhib.Layer.Gi":    "1.0", // 1.1?
+					"Layer.Inhib.Pool.Gi":     "0.9", // 1.0?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -83,8 +84,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    //
 					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Layer.Gi":    "1.1",  //
-					"Layer.Inhib.Pool.Gi":     "1.05", //
+					"Layer.Inhib.Layer.Gi":    "1.0", // 1.1?
+					"Layer.Inhib.Pool.Gi":     "1.0", // 1.1?
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
@@ -92,7 +93,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.On":    "false", // no layer!
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Pool.Gi":     "1.1", // 1 FB6, 1.1 FB4; 1.2 FB1; 1.1 def
+					"Layer.Inhib.Pool.Gi":     "1.0", // 1.05?
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
@@ -100,7 +101,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.On":    "false", // no layer!
 					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
 					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Pool.Gi":     "1.2", // 1.1 FB6, 1.2 FB4; 1.2 FB1; 1.1 def
+					"Layer.Inhib.Pool.Gi":     "1.0", // 1.1?
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
@@ -115,7 +116,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Clamp.Ge":            "0.8",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
 					"Layer.Learn.RLrate.On":         "true",  // beneficial for trace
-					"Layer.Learn.RLrate.SigmoidMin": "1",     // 1 > lower for output
+					"Layer.Learn.RLrate.SigmoidMin": "0.05",  // 0.05 > 1 now!
 					"Layer.Learn.RLrate.Diff":       "true",
 					"Layer.Learn.RLrate.DiffThr":    "0.02", // 0.02 def - todo
 					"Layer.Learn.RLrate.SpkThr":     "0.1",  // 0.1 def
@@ -135,11 +136,11 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
 					"Prjn.SWt.Adapt.Lrate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
 					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0.02 good overall, no ToOut
-					"Prjn.SWt.Adapt.SubMean":      "1",
-					"Prjn.Learn.Lrate.Base":       "0.01", // 0.01 > 0.02 later (trace)
+					"Prjn.SWt.Adapt.SubMean":      "1",      // 1 > 0 -- definitely needed
+					"Prjn.Learn.Lrate.Base":       "0.005",  // 0.01 > 0.02 later (trace)
 					"Prjn.Com.PFail":              "0.0",
 					"Prjn.Learn.Trace.NeuronCa":   "false",
-					"Prjn.Learn.Trace.SubMean":    "1",  // 1 > 0 -- now needed!
+					"Prjn.Learn.Trace.SubMean":    "0",  // 1 == 0 no effect -- SetSubMean later
 					"Prjn.Learn.KinaseCa.SpikeG":  "12", // 12 matches theta exactly, higher dwtavg but ok
 					"Prjn.Learn.KinaseCa.Dt.MTau": "5",  // 5 > 10 test more
 					"Prjn.Learn.KinaseCa.Dt.PTau": "40",
@@ -160,7 +161,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".ToOut", Desc: "to output -- some things should be different..",
 				Params: params.Params{
-					"Prjn.Com.PFail":          "0.0",
+					"Prjn.Com.PFail": "0.0",
+					// "Prjn.Learn.Lrate.Base":   "0.01",  // base 0.01
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
