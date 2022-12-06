@@ -335,10 +335,11 @@ func (ss *Sim) ConfigLoops() {
 		ctrString := ss.Stats.PrintVals([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
 		switch trnEpc {
 		case 10:
-			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
-			// ss.Net.SetSubMean(1, 1)
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.5)
+		case 20:
+			mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc) // works best here!
+			ss.Net.SetSubMean(1, 1)
 		case 30:
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.2)

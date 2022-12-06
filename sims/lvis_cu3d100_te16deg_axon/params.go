@@ -16,13 +16,14 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":          "1.1", // 1.1 def, 1.0 for lower layers is best
-					"Layer.Inhib.Pool.Gi":           "1.1", // "
-					"Layer.Inhib.Layer.FB":          "1",   // setting for layers below
+					"Layer.Inhib.ActAvg.Init":       "0.04", // 0.04 for most layers
+					"Layer.Inhib.Layer.Gi":          "1.1",  // 1.1 def, 1.0 for lower layers is best
+					"Layer.Inhib.Pool.Gi":           "1.1",  // "
+					"Layer.Inhib.Layer.FB":          "1",    // setting for layers below
 					"Layer.Inhib.Pool.FB":           "1",
 					"Layer.Act.Decay.Act":           "0.0", // 0 == .2
 					"Layer.Act.Decay.Glong":         "0.6", // 0.6 def
-					"Layer.Act.Dend.SSGi":           "3",   // 3 objrec
+					"Layer.Act.Dend.SSGi":           "2",   // 2 new default
 					"Layer.Act.Dend.GbarExp":        "0.2", // 0.2 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":          "3",   // 2 good for 0.2
 					"Layer.Act.Dt.VmDendTau":        "5",   // 5 much better in fsa!
@@ -49,7 +50,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Voff":      "5",    // 0 for unified Act params, else 5
 					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
 					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean": "0",    // 0 > 1 key for early; SetSubMean later
+					"Layer.Learn.TrgAvgAct.SubMean": "0",    // 0 > 1 key early -- even .5 slows learning
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "0.05",
 					"Layer.Learn.RLrate.Diff":       "true",
@@ -71,12 +72,12 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V2", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.03",
+					"Layer.Inhib.ActAvg.Init": "0.04", // 0.04 (actual 0.03 - 0.04)
 					"Layer.Inhib.Pool.On":     "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":    "1",    //
 					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Layer.Gi":    "1.0", // 1.1?
-					"Layer.Inhib.Pool.Gi":     "0.9", // 1.0?
+					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.1?
+					"Layer.Inhib.Pool.Gi":     "0.95", // 1.0?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -135,7 +136,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
 					"Prjn.SWt.Adapt.Lrate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0.02 good overall, no ToOut
+					"Prjn.SWt.Adapt.DreamVar":     "0.02",   // 0.02 good overall, no ToOut
 					"Prjn.SWt.Adapt.SubMean":      "1",      // 1 > 0 -- definitely needed
 					"Prjn.Learn.Lrate.Base":       "0.005",  // 0.01 > 0.02 later (trace)
 					"Prjn.Com.PFail":              "0.0",
@@ -166,7 +167,7 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
-					"Prjn.PrjnScale.Abs":      "1.5",   // 2.0 >= 1.8 > 2.2 > 1.5 > 1.2 trace
+					"Prjn.PrjnScale.Abs":      "2.0",   // 2.0 >= 1.8 > 2.2 > 1.5 > 1.2 trace
 				}},
 			{Sel: ".FmOut", Desc: "from output -- some things should be different..",
 				Params: params.Params{}},

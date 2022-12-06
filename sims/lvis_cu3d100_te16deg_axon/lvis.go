@@ -476,29 +476,31 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		outv4.SetClass("OutV4 FmOut")
 	*/
 
-	var v2inhib, v4inhib prjn.Pattern
-	v2inhib = pool1to1
-	v4inhib = pool1to1
-	if ss.SubPools {
-		v2inhib = pj.Prjn2x2Skp2 // pj.Prjn6x6Skp2Lat
-		v4inhib = pj.Prjn2x2Skp2
-	}
+	/*
+		var v2inhib, v4inhib prjn.Pattern
+		v2inhib = pool1to1
+		v4inhib = pool1to1
+		if ss.SubPools {
+			v2inhib = pj.Prjn2x2Skp2 // pj.Prjn6x6Skp2Lat
+			v4inhib = pj.Prjn2x2Skp2
+		}
 
-	// this extra inhibition drives decorrelation, produces significant learning benefits
-	net.LateralConnectLayerPrjn(v2m16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2l16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2m8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v2l8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v4f16, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(v4f8, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			// this extra inhibition drives decorrelation, produces significant learning benefits
+			net.LateralConnectLayerPrjn(v2m16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(v2l16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(v2m8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(v2l8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(v4f16, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(v4f8, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
 
-	if hi16 {
-		net.LateralConnectLayerPrjn(v2h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-		net.LateralConnectLayerPrjn(v3h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-	}
+			if hi16 {
+				net.LateralConnectLayerPrjn(v2h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+				net.LateralConnectLayerPrjn(v3h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			}
+	*/
 
 	///////////////////////
 	// 	Shortcuts:
@@ -710,17 +712,21 @@ func (ss *Sim) ConfigLoops() {
 		case 50:
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.5)
-		case 500:
+		case 200:
+			// 100 is too early..
 			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
 			// ss.Net.SetSubMean(1, 1)
+		case 500:
+			mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
+			ss.Net.SetSubMean(1, 1)
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.1)
 			// case 200:
 			// 	mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// 	ss.Net.LrateSched(0.1)
 		case 1000:
-			mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
-			ss.Net.SetSubMean(1, 1)
+			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
+			// ss.Net.SetSubMean(1, 1)
 		}
 		// ly := ss.Net.LayerByName("Output")
 		// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn).AsAxon()

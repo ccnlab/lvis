@@ -20,7 +20,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Decay.Act":           "0.0",  // 0 > .2 -- highly sensitive
 					"Layer.Act.Decay.Glong":         "0.6",  // 0.6 def > 0.5, .7 -- highly sensitive
 					"Layer.Act.Decay.AHP":           "0.0",  // 0 def
-					"Layer.Act.Dend.SSGi":           "3",    // 3.0o0 best
+					"Layer.Act.Dend.SSGi":           "2",    // 3.0o0 best
 					"Layer.Act.Dend.GbarExp":        "0.2",  // 0.2 > 0.5 > 0.1 > 0
 					"Layer.Act.Dend.GbarR":          "3",    // 3 > 6 > 2 good for 0.2 -- too low rel to ExpGbar causes fast ini learning, but then unravels
 					"Layer.Act.Dt.GeTau":            "5",    // 5 = 4 (bit slower) > 6 > 7 @176
@@ -46,7 +46,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Voff":      "5",    // see above
 					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
 					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean": "1.0",  // 1 > 0 -- key!
+					"Layer.Learn.TrgAvgAct.SubMean": "1.0",  // 1 > 0 -- doesn't slow learning -- always 1
 					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
 					"Layer.Learn.RLrate.SigmoidMin": "0.05",
 					"Layer.Learn.RLrate.Diff":       "true", // always key
@@ -111,7 +111,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.Lrate.Base":       "0.2",    // 0.4 for NeuronCa; 0.2 best, 0.1 nominal
 					"Prjn.Learn.Trace.NeuronCa":   "false",  // false = sig better (SynCa)
-					"Prjn.Learn.Trace.SubMean":    "1",      // 1 prevents sig amount of late deterioration
+					"Prjn.Learn.Trace.SubMean":    "0",      // 1 prevents sig amount of late deterioration
 					"Prjn.SWt.Adapt.Lrate":        "0.0001", // 0.005 == .1 == .01
 					"Prjn.SWt.Init.SPct":          "1",      // 1 >= lower (trace-v11)
 					"Prjn.SWt.Adapt.SubMean":      "1",
