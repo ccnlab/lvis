@@ -16,132 +16,145 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Layer", Desc: "needs some special inhibition and learning params",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init":       "0.04", // 0.04 for most layers
-					"Layer.Inhib.Layer.Gi":          "1.1",  // 1.1 def, 1.0 for lower layers is best
-					"Layer.Inhib.Pool.Gi":           "1.1",  // "
-					"Layer.Inhib.Layer.FB":          "1",    // setting for layers below
-					"Layer.Inhib.Pool.FB":           "1",
-					"Layer.Act.Decay.Act":           "0.0", // 0 == .2
-					"Layer.Act.Decay.Glong":         "0.6", // 0.6 def
-					"Layer.Act.Dend.SSGi":           "2",   // 2 new default
-					"Layer.Act.Dend.GbarExp":        "0.2", // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":          "3",   // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":        "5",   // 5 much better in fsa!
-					"Layer.Act.NMDA.Gbar":           "0.15",
-					"Layer.Act.NMDA.MgC":            "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":           "5",   // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.AK.Gbar":             "0.1",
-					"Layer.Act.VGCC.Gbar":           "0.02", // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
-					"Layer.Act.VGCC.Ca":             "25",   // 25 / 10tau same as SpkVGCC
-					"Layer.Act.Mahp.Gbar":           "0.01", // 0.01 > 0.02 > higher -- long run
-					"Layer.Act.Sahp.Gbar":           "0.05", // was 0.1, 0.05 def
-					"Layer.Act.Sahp.Off":            "0.8",  //
-					"Layer.Act.Sahp.Slope":          "0.02", //
-					"Layer.Act.Sahp.CaTau":          "5",    // 5 ok -- not tested
-					"Layer.Learn.CaLrn.Norm":        "80",   // 80 def; 60 makes CaLrnMax closer to 1
-					"Layer.Learn.CaLrn.SpkVGCC":     "true", // sig better..
-					"Layer.Learn.CaLrn.SpkVgccCa":   "35",   // 70 / 5 or 35 / 10 both work
-					"Layer.Learn.CaLrn.VgccTau":     "10",   // 10 > 5 ?
-					"Layer.Learn.CaLrn.Dt.MTau":     "2",    // 2 > 1 ?
-					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 -- for larger nets
-					"Layer.Learn.CaSpk.SynTau":      "30",   // 30 > 20, 40
-					"Layer.Learn.CaSpk.Dt.MTau":     "5",    // 5 > 10?
-					"Layer.Learn.LrnNMDA.MgC":       "1.4",  // 1.2 for unified Act params, else 1.4
-					"Layer.Learn.LrnNMDA.Voff":      "5",    // 0 for unified Act params, else 5
-					"Layer.Learn.LrnNMDA.Tau":       "100",  // 100 def
-					"Layer.Learn.TrgAvgAct.On":      "true", // critical!
-					"Layer.Learn.TrgAvgAct.SubMean": "0",    // 0 > 1 key early -- even .5 slows learning
-					"Layer.Learn.RLrate.On":         "true", // beneficial for trace
-					"Layer.Learn.RLrate.SigmoidMin": "0.05",
-					"Layer.Learn.RLrate.Diff":       "true",
-					"Layer.Learn.RLrate.DiffThr":    "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.SpkThr":     "0.1",  // 0.1 def
-					"Layer.Learn.RLrate.Min":        "0.001",
+					"Layer.Inhib.ActAvg.Nominal":         "0.04", // 0.04 for most layers
+					"Layer.Inhib.Layer.Gi":               "1.1",  // 1.1 def, 1.0 for lower layers is best
+					"Layer.Inhib.Pool.Gi":                "1.1",  // "
+					"Layer.Inhib.Layer.FB":               "1",    // setting for layers below
+					"Layer.Inhib.Pool.FB":                "1",
+					"Layer.Inhib.ActAvg.AdaptRate":       "0.1",
+					"Layer.Inhib.ActAvg.LoTol":           "0.8",
+					"Layer.Inhib.ActAvg.HiTol":           "0.0",
+					"Layer.Act.Decay.Act":                "0.0", // 0 == .2
+					"Layer.Act.Decay.Glong":              "0.6", // 0.6 def
+					"Layer.Act.Dend.SSGi":                "2",   // 2 new default
+					"Layer.Act.Dend.GbarExp":             "0.2", // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":               "3",   // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":             "5",   // 5 much better in fsa!
+					"Layer.Act.NMDA.Gbar":                "0.15",
+					"Layer.Act.NMDA.MgC":                 "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":                "5",   // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.AK.Gbar":                  "0.1",
+					"Layer.Act.VGCC.Gbar":                "0.02",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
+					"Layer.Act.VGCC.Ca":                  "25",    // 25 / 10tau same as SpkVGCC
+					"Layer.Act.Mahp.Gbar":                "0.01",  // 0.01 > 0.02 > higher -- long run
+					"Layer.Act.Sahp.Gbar":                "0.05",  // was 0.1, 0.05 def
+					"Layer.Act.Sahp.Off":                 "0.8",   //
+					"Layer.Act.Sahp.Slope":               "0.02",  //
+					"Layer.Act.Sahp.CaTau":               "5",     // 5 ok -- not tested
+					"Layer.Learn.CaLrn.Norm":             "80",    // 80 def; 60 makes CaLrnMax closer to 1
+					"Layer.Learn.CaLrn.SpkVGCC":          "true",  // sig better..
+					"Layer.Learn.CaLrn.SpkVgccCa":        "35",    // 70 / 5 or 35 / 10 both work
+					"Layer.Learn.CaLrn.VgccTau":          "10",    // 10 > 5 ?
+					"Layer.Learn.CaLrn.Dt.MTau":          "2",     // 2 > 1 ?
+					"Layer.Learn.CaSpk.SpikeG":           "12",    // 12 > 8 -- for larger nets
+					"Layer.Learn.CaSpk.SynTau":           "30",    // 30 > 20, 40
+					"Layer.Learn.CaSpk.Dt.MTau":          "5",     // 5 > 10?
+					"Layer.Learn.LrnNMDA.MgC":            "1.4",   // 1.2 for unified Act params, else 1.4
+					"Layer.Learn.LrnNMDA.Voff":           "5",     // 0 for unified Act params, else 5
+					"Layer.Learn.LrnNMDA.Tau":            "100",   // 100 def
+					"Layer.Learn.TrgAvgAct.On":           "true",  // critical!
+					"Layer.Learn.TrgAvgAct.SubMean":      "0",     // 0 > 1 key throughout -- even .5 slows learning -- doesn't help slow pca
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.002", // 0.002 > 0.001 > 0.0005 too weak even with adapt gi
+					"Layer.Learn.TrgAvgAct.ErrLRate":     "0.02",  // 0.02 def
+					"Layer.Learn.RLRate.On":              "true",  // beneficial for trace
+					"Layer.Learn.RLRate.SigmoidMin":      "0.05",
+					"Layer.Learn.RLRate.Diff":            "true",
+					"Layer.Learn.RLRate.DiffThr":         "0.02", // 0.02 def - todo
+					"Layer.Learn.RLRate.SpkThr":          "0.1",  // 0.1 def
+					"Layer.Learn.RLRate.Min":             "0.001",
 				}},
 			{Sel: ".Input", Desc: "all V1 input layers",
 				Params: params.Params{
-					"Layer.Inhib.Layer.FB":    "1", // keep normalized
-					"Layer.Inhib.Pool.FB":     "1",
-					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Layer.Gi":    "0.9",  // was 0.9
-					"Layer.Inhib.Pool.Gi":     "0.9",  // 0.9 >= 1.1 def -- more activity
-					"Layer.Inhib.ActAvg.Init": "0.06", // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
-					"Layer.Act.Clamp.Ge":      "1.5",  // was 1.0
-					"Layer.Act.Decay.Act":     "1",    // these make no diff
-					"Layer.Act.Decay.Glong":   "1",
+					"Layer.Inhib.Layer.FB":       "1", // keep normalized
+					"Layer.Inhib.Pool.FB":        "1",
+					"Layer.Inhib.Pool.On":        "true",
+					"Layer.Inhib.Layer.Gi":       "0.9",  // was 0.9
+					"Layer.Inhib.Pool.Gi":        "0.9",  // 0.9 >= 1.1 def -- more activity
+					"Layer.Inhib.ActAvg.Nominal": "0.04", // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
+					"Layer.Act.Clamp.Ge":         "1.5",  // was 1.0
+					"Layer.Act.Decay.Act":        "1",    // these make no diff
+					"Layer.Act.Decay.Glong":      "1",
 				}},
 			{Sel: ".V2", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.04", // 0.04 (actual 0.03 - 0.04)
-					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":    "1",    //
-					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Layer.Gi":    "1.0",  // 1.1?
-					"Layer.Inhib.Pool.Gi":     "0.95", // 1.0?
+					"Layer.Inhib.ActAvg.Nominal": "0.02",  // .02 1.6.15 SSGi -- was higher
+					"Layer.Inhib.ActAvg.Offset":  "0.005", // nom is lower to increase Ge
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Inhib.Pool.On":        "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":       "1",    //
+					"Layer.Inhib.Pool.FB":        "4",
+					"Layer.Inhib.Layer.Gi":       "1.0",  // 1.1?
+					"Layer.Inhib.Pool.Gi":        "0.95", // 1.0?
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.04", // was .04 but actual was .02 -> .01
-					"Layer.Inhib.Pool.On":     "true", // needs pool-level
-					"Layer.Inhib.Layer.FB":    "1",    //
-					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Layer.Gi":    "1.0", // 1.1?
-					"Layer.Inhib.Pool.Gi":     "1.0", // 1.1?
+					"Layer.Inhib.ActAvg.Nominal": "0.02",  // .02 1.6.15 SSGi
+					"Layer.Inhib.ActAvg.Offset":  "0.005", // nom is lower to increase Ge
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Inhib.Pool.On":        "true", // needs pool-level
+					"Layer.Inhib.Layer.FB":       "1",    //
+					"Layer.Inhib.Pool.FB":        "4",
+					"Layer.Inhib.Layer.Gi":       "1.0", // 1.1?
+					"Layer.Inhib.Pool.Gi":        "1.0", // 1.1?
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.05",  // was .06 but actual was .05
-					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
-					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Pool.Gi":     "1.0", // 1.05?
+					"Layer.Inhib.ActAvg.Nominal": "0.03", // .03 1.6.15 SSGi
+					"Layer.Inhib.ActAvg.Offset":  "0.01", // nom is lower to increase Ge
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Inhib.Layer.On":       "false", // no layer!
+					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
+					"Layer.Inhib.Pool.FB":        "4",
+					"Layer.Inhib.Pool.Gi":        "1.0", // 1.0; 1.05?
 				}},
 			{Sel: "#TE", Desc: "initial activity",
 				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.05",  // was .04 but .02 actual
-					"Layer.Inhib.Layer.On":    "false", // no layer!
-					"Layer.Inhib.Pool.On":     "true",  // needs pool-level
-					"Layer.Inhib.Pool.FB":     "4",
-					"Layer.Inhib.Pool.Gi":     "1.0", // 1.1?
+					"Layer.Inhib.ActAvg.Nominal": "0.03", // .03 1.6.15 SSGi
+					"Layer.Inhib.ActAvg.Offset":  "0.01", // nom is lower to increase Ge
+					"Layer.Inhib.ActAvg.AdaptGi": "true",
+					"Layer.Inhib.Layer.On":       "false", // no layer!
+					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
+					"Layer.Inhib.Pool.FB":        "4",
+					"Layer.Inhib.Pool.Gi":        "1.0", // 1.0; 1.1?
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":          "1.2",   // 1.2 FB4 > 1.3 FB 1 SS0
-					"Layer.Inhib.Layer.FB":          "4",     // 4 > 1 -- try higher
-					"Layer.Inhib.ActAvg.Init":       "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Target":     "0.01",  // .01 > 0.011 > 0.012 > 0.009
-					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // was true
-					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
-					"Layer.Inhib.ActAvg.HiTol":      "0.02",  // 0.1 > 0 def
-					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.02 -- harder xforms, oscillates at .02
-					"Layer.Act.Clamp.Ge":            "0.8",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
-					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
-					"Layer.Learn.RLrate.On":         "true",  // beneficial for trace
-					"Layer.Learn.RLrate.SigmoidMin": "0.05",  // 0.05 > 1 now!
-					"Layer.Learn.RLrate.Diff":       "true",
-					"Layer.Learn.RLrate.DiffThr":    "0.02", // 0.02 def - todo
-					"Layer.Learn.RLrate.SpkThr":     "0.1",  // 0.1 def
-					"Layer.Learn.RLrate.Min":        "0.001",
+					"Layer.Inhib.Layer.Gi":       "1.2",   // 1.2 FB4 > 1.3 FB 1 SS0
+					"Layer.Inhib.Layer.FB":       "4",     // 4 > 1 -- try higher
+					"Layer.Inhib.ActAvg.Nominal": "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
+					"Layer.Inhib.ActAvg.Offset":  "0.005", //
+					"Layer.Inhib.ActAvg.AdaptGi": "true",  // needed in any case
+					// "Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
+					// "Layer.Inhib.ActAvg.HiTol":      "0.02",  // 0.02 was
+					"Layer.Inhib.ActAvg.AdaptRate":  "0.01", // 0.01 > 0.1
+					"Layer.Act.Clamp.Ge":            "0.8",  // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
+					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 probably; 8 = orig, 12 = new trace
+					"Layer.Learn.RLRate.On":         "true", // beneficial for trace
+					"Layer.Learn.RLRate.SigmoidMin": "0.05", // 0.05 > 1 now!
+					"Layer.Learn.RLRate.Diff":       "true",
+					"Layer.Learn.RLRate.DiffThr":    "0.02", // 0.02 def - todo
+					"Layer.Learn.RLRate.SpkThr":     "0.1",  // 0.1 def
+					"Layer.Learn.RLRate.Min":        "0.001",
 				}},
-			{Sel: "#Claustrum", Desc: "testing -- not working",
-				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "0.8",
-					"Layer.Inhib.Pool.On":     "false", // needs pool-level
-					"Layer.Inhib.Layer.On":    "true",
-					"Layer.Inhib.ActAvg.Init": ".06",
-				}},
+			// {Sel: "#Claustrum", Desc: "testing -- not working",
+			// 	Params: params.Params{
+			// 		"Layer.Inhib.Layer.Gi":    "0.8",
+			// 		"Layer.Inhib.Pool.On":     "false", // needs pool-level
+			// 		"Layer.Inhib.Layer.On":    "true",
+			// 		"Layer.Inhib.ActAvg.Nominal": ".06",
+			// 	}},
 			///////////////////////////////
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
 					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.Lrate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.DreamVar":     "0.02",   // 0.02 good overall, no ToOut
+					"Prjn.SWt.Adapt.LRate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0 == 0.02
 					"Prjn.SWt.Adapt.SubMean":      "1",      // 1 > 0 -- definitely needed
-					"Prjn.Learn.Lrate.Base":       "0.005",  // 0.01 > 0.02 later (trace)
+					"Prjn.Learn.LRate.Base":       "0.005",  // 0.01 > 0.02 later (trace)
 					"Prjn.Com.PFail":              "0.0",
 					"Prjn.Learn.Trace.NeuronCa":   "false",
-					"Prjn.Learn.Trace.SubMean":    "0",  // 1 == 0 no effect -- SetSubMean later
+					"Prjn.Learn.Trace.SubMean":    "1",  // 1 > 0 for trgavg weaker
 					"Prjn.Learn.KinaseCa.SpikeG":  "12", // 12 matches theta exactly, higher dwtavg but ok
 					"Prjn.Learn.KinaseCa.Dt.MTau": "5",  // 5 > 10 test more
 					"Prjn.Learn.KinaseCa.Dt.PTau": "40",
@@ -152,7 +165,7 @@ var ParamSets = params.Sets{
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.2",
-					// "Prjn.Learn.Lrate.Base": "0",
+					// "Prjn.Learn.LRate.Base": "0",
 				}},
 			{Sel: ".Forward", Desc: "use pfail only on forward cons?",
 				Params: params.Params{
@@ -163,26 +176,28 @@ var ParamSets = params.Sets{
 			{Sel: ".ToOut", Desc: "to output -- some things should be different..",
 				Params: params.Params{
 					"Prjn.Com.PFail": "0.0",
-					// "Prjn.Learn.Lrate.Base":   "0.01",  // base 0.01
+					// "Prjn.Learn.LRate.Base":   "0.01",  // base 0.01
 					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
 					"Prjn.SWt.Adapt.On":       "false", // off > on
 					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
 					"Prjn.PrjnScale.Abs":      "2.0",   // 2.0 >= 1.8 > 2.2 > 1.5 > 1.2 trace
 				}},
-			{Sel: ".FmOut", Desc: "from output -- some things should be different..",
-				Params: params.Params{}},
-			{Sel: ".Inhib", Desc: "inhibitory projection",
-				Params: params.Params{
-					"Prjn.Learn.Learn":         "true",   // learned decorrel is good
-					"Prjn.Learn.Lrate.Base":    "0.0001", // .0001 > .001 -- slower better!
-					"Prjn.Learn.Trace.SubMean": "1",      // 1 is *essential* here!
-					"Prjn.SWt.Init.Var":        "0.0",
-					"Prjn.SWt.Init.Mean":       "0.1",
-					"Prjn.SWt.Init.Sym":        "false",
-					"Prjn.SWt.Adapt.On":        "false",
-					"Prjn.PrjnScale.Abs":       "0.2", // .2 > .1 for controlling PCA; .3 or.4 with GiSynThr .01
-					"Prjn.IncGain":             "1",   // .5 def
-				}},
+			// {Sel: ".FmOut", Desc: "from output -- some things should be different..",
+			// 	Params: params.Params{}},
+			/*
+				{Sel: ".Inhib", Desc: "inhibitory projection -- not necc with fs-fffb inhib",
+					Params: params.Params{
+						"Prjn.Learn.Learn":         "true",   // learned decorrel is good
+						"Prjn.Learn.LRate.Base":    "0.0001", // .0001 > .001 -- slower better!
+						"Prjn.Learn.Trace.SubMean": "1",      // 1 is *essential* here!
+						"Prjn.SWt.Init.Var":        "0.0",
+						"Prjn.SWt.Init.Mean":       "0.1",
+						"Prjn.SWt.Init.Sym":        "false",
+						"Prjn.SWt.Adapt.On":        "false",
+						"Prjn.PrjnScale.Abs":       "0.2", // .2 > .1 for controlling PCA; .3 or.4 with GiSynThr .01
+						"Prjn.IncGain":             "1",   // .5 def
+					}},
+			*/
 			{Sel: ".V1V2", Desc: "special SWt params",
 				Params: params.Params{
 					"Prjn.SWt.Init.Mean": "0.4", // .4 here is key!
@@ -213,19 +228,19 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.PrjnScale.Abs": "1.0", // see above
 				}},
-			{Sel: ".V4TEO", Desc: "stronger",
-				Params: params.Params{
-					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
-				}},
+			// {Sel: ".V4TEO", Desc: "stronger",
+			// 	Params: params.Params{
+			// 		// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
+			// 	}},
 			{Sel: ".V4TEOoth", Desc: "weaker rel",
 				Params: params.Params{
 					// "Prjn.PrjnScale.Abs": "1.2", // trying bigger -- was low
 					"Prjn.PrjnScale.Rel": "0.5",
 				}},
-			{Sel: ".V4Out", Desc: "NOT weaker",
-				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "1", // 1 > 0.5 > .2 -- v53 still
-				}},
+			// {Sel: ".V4Out", Desc: "NOT weaker",
+			// 	Params: params.Params{
+			// 		"Prjn.PrjnScale.Rel": "1", // 1 > 0.5 > .2 -- v53 still
+			// 	}},
 			{Sel: ".TEOTE", Desc: "too weak at start",
 				Params: params.Params{
 					"Prjn.PrjnScale.Abs": "1", // 1.2 not better
@@ -239,10 +254,10 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Limit.Min": "0.1",  // .1-.7 def
 					"Prjn.SWt.Limit.Max": "0.7",  //
 				}},
-			{Sel: ".TEOV2", Desc: "weaker -- not used",
-				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1
-				}},
+			// {Sel: ".TEOV2", Desc: "weaker -- not used",
+			// 	Params: params.Params{
+			// 		"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1
+			// 	}},
 			{Sel: ".TEOV4", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.1", // .1 == .2
@@ -259,10 +274,10 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.3", // .3 > .2 v53 in long run
 				}},
-			{Sel: ".OutV4", Desc: "weaker",
-				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.1", // .1 > .2 v53
-				}},
+			// {Sel: ".OutV4", Desc: "weaker",
+			// 	Params: params.Params{
+			// 		"Prjn.PrjnScale.Rel": "0.1", // .1 > .2 v53
+			// 	}},
 			{Sel: "#OutputToTE", Desc: "weaker",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.1", // 0.1 (hard xform) > 0.2 (reg xform) > 0.3 trace
@@ -273,15 +288,15 @@ var ParamSets = params.Sets{
 				}},
 
 			// shortcuts -- .5 > .2 (v32 still) -- all tested together
-			{Sel: "#V1l16ToClaustrum", Desc: "random fixed -- not useful",
-				Params: params.Params{
-					"Prjn.Learn.Learn":   "false",
-					"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
-					"Prjn.SWt.Adapt.On":  "false", // seems better
-				}},
+			// {Sel: "#V1l16ToClaustrum", Desc: "random fixed -- not useful",
+			// 	Params: params.Params{
+			// 		"Prjn.Learn.Learn":   "false",
+			// 		"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
+			// 		"Prjn.SWt.Adapt.On":  "false", // seems better
+			// 	}},
 			{Sel: ".V1SC", Desc: "v1 shortcut",
 				Params: params.Params{
-					"Prjn.Learn.Lrate.Base": "0.001", //
+					"Prjn.Learn.LRate.Base": "0.001", //
 					// "Prjn.Learn.Learn":      "false",
 					"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
 					"Prjn.SWt.Adapt.On":  "false", // seems better
@@ -293,8 +308,8 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "0.9", // 0.9 > 1.0
-					"Layer.Inhib.ActAvg.Init": "0.1", // 0.1 seems good
+					"Layer.Inhib.Layer.Gi":       "0.9", // 0.9 > 1.0
+					"Layer.Inhib.ActAvg.Nominal": "0.1", // 0.1 seems good
 				}},
 		},
 	}},
@@ -302,8 +317,8 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "#Output", Desc: "high inhib for one-hot output",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "1.5", // 1.5 = 1.6 > 1.4
-					"Layer.Inhib.ActAvg.Init": "0.01",
+					"Layer.Inhib.Layer.Gi":       "1.5", // 1.5 = 1.6 > 1.4
+					"Layer.Inhib.ActAvg.Nominal": "0.01",
 				}},
 		},
 	}},

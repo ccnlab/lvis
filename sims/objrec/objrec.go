@@ -337,10 +337,9 @@ func (ss *Sim) ConfigLoops() {
 		case 10:
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.5)
-		case 20:
-			mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc) // works best here!
-			ss.Net.SetSubMean(1, 1)
 		case 30:
+			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc) // works best here!
+			// ss.Net.SetSubMean(1, 1)
 			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
 			// ss.Net.LrateSched(0.2)
 		case 50:
@@ -623,6 +622,17 @@ func (ss *Sim) ConfigLogItems() {
 					ctx.SetFloat32(ly.Pools[0].Inhib.SSGi)
 				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:   clnm + "_GiMult",
+			Type:   etensor.FLOAT64,
+			Plot:   elog.DFalse,
+			FixMax: elog.DFalse,
+			Range:  minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(ly.ActAvg.GiMult)
 				}}})
 	}
 }
