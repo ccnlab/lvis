@@ -50,7 +50,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Tau":            "100",    // 100 def
 					"Layer.Learn.TrgAvgAct.On":           "true",   // no diff?
 					"Layer.Learn.TrgAvgAct.SubMean":      "1.0",    // 1 > 0 -- doesn't slow learning -- always 1
-					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.0002", // 0.0002, downonly = false is best
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.0002", // 0.0002 > others -- 0.005 sig worse
 					"Layer.Learn.TrgAvgAct.ErrLRate":     "0.02",   // 0.02 >= 0.05 -- less noisy
 					"Layer.Learn.RLRate.On":              "true",   // beneficial for trace
 					"Layer.Learn.RLRate.SigmoidMin":      "0.05",

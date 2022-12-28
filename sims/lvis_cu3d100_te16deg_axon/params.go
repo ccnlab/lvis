@@ -54,7 +54,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.LrnNMDA.Tau":            "100",   // 100 def
 					"Layer.Learn.TrgAvgAct.On":           "true",  // critical!
 					"Layer.Learn.TrgAvgAct.SubMean":      "0",     // 0 > 1 key throughout -- even .5 slows learning -- doesn't help slow pca
-					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.002", // 0.002 > 0.001 > 0.0005 too weak even with adapt gi
+					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.002", // 0.002 >= 0.005 > 0.001 > 0.0005 too weak even with adapt gi
 					"Layer.Learn.TrgAvgAct.ErrLRate":     "0.02",  // 0.02 def
 					"Layer.Learn.RLRate.On":              "true",  // beneficial for trace
 					"Layer.Learn.RLRate.SigmoidMin":      "0.05",
@@ -119,18 +119,18 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":       "1.2",   // 1.2 FB4 > 1.3 FB 1 SS0
-					"Layer.Inhib.Layer.FB":       "4",     // 4 > 1 -- try higher
-					"Layer.Inhib.ActAvg.Nominal": "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
-					"Layer.Inhib.ActAvg.Offset":  "0.005", //
-					"Layer.Inhib.ActAvg.AdaptGi": "true",  // needed in any case
-					// "Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5
-					// "Layer.Inhib.ActAvg.HiTol":      "0.02",  // 0.02 was
-					"Layer.Inhib.ActAvg.AdaptRate":  "0.01", // 0.01 > 0.1
-					"Layer.Act.Clamp.Ge":            "0.8",  // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
-					"Layer.Learn.CaSpk.SpikeG":      "12",   // 12 > 8 probably; 8 = orig, 12 = new trace
-					"Layer.Learn.RLRate.On":         "true", // beneficial for trace
-					"Layer.Learn.RLRate.SigmoidMin": "0.05", // 0.05 > 1 now!
+					"Layer.Inhib.Layer.Gi":          "1.2",   // 1.2 FB4 > 1.3 FB 1 SS0
+					"Layer.Inhib.Layer.FB":          "4",     // 4 > 1 -- try higher
+					"Layer.Inhib.ActAvg.Nominal":    "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
+					"Layer.Inhib.ActAvg.Offset":     "0.005", //
+					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // needed in any case
+					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5 older..
+					"Layer.Inhib.ActAvg.HiTol":      "0.02",  // 0.02 > 0 tiny bit
+					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.1
+					"Layer.Act.Clamp.Ge":            "0.8",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
+					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
+					"Layer.Learn.RLRate.On":         "true",  // beneficial for trace
+					"Layer.Learn.RLRate.SigmoidMin": "0.05",  // 0.05 > 1 now!
 					"Layer.Learn.RLRate.Diff":       "true",
 					"Layer.Learn.RLRate.DiffThr":    "0.02", // 0.02 def - todo
 					"Layer.Learn.RLRate.SpkThr":     "0.1",  // 0.1 def
