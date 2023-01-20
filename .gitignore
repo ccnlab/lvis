@@ -1,3 +1,9 @@
+# training images
+images/
+
+# network binaries
+sims/lvis_cu3d100_te16deg_axon/lvis_cu3d100_te16deg_axon
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
