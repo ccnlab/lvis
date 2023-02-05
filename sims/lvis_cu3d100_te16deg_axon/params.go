@@ -45,6 +45,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.CaLrn.SpkVGCC":          "true",  // sig better..
 					"Layer.Learn.CaLrn.SpkVgccCa":        "35",    // 70 / 5 or 35 / 10 both work
 					"Layer.Learn.CaLrn.VgccTau":          "10",    // 10 > 5 ?
+					"Layer.Learn.CaLrn.UpdtThr":          "0.01",  // 0.01 > 0.05 -- was LrnThr
 					"Layer.Learn.CaLrn.Dt.MTau":          "2",     // 2 > 1 ?
 					"Layer.Learn.CaSpk.SpikeG":           "12",    // 12 > 8 -- for larger nets
 					"Layer.Learn.CaSpk.SynTau":           "30",    // 30 > 20, 40
@@ -63,7 +64,7 @@ var ParamSets = params.Sets{
 					"Layer.Learn.RLRate.SpkThr":          "0.1",  // 0.1 def
 					"Layer.Learn.RLRate.Min":             "0.001",
 				}},
-			{Sel: ".Input", Desc: "all V1 input layers",
+			{Sel: ".InputLayer", Desc: "all V1 input layers",
 				Params: params.Params{
 					"Layer.Inhib.Layer.FB":       "1", // keep normalized
 					"Layer.Inhib.Pool.FB":        "1",
@@ -153,21 +154,19 @@ var ParamSets = params.Sets{
 					"Prjn.SWt.Adapt.SubMean":      "1",      // 1 > 0 -- definitely needed
 					"Prjn.Learn.LRate.Base":       "0.005",  // 0.01 > 0.02 later (trace)
 					"Prjn.Com.PFail":              "0.0",
-					"Prjn.Learn.Trace.NeuronCa":   "false",
 					"Prjn.Learn.Trace.SubMean":    "1",  // 1 > 0 for trgavg weaker
 					"Prjn.Learn.KinaseCa.SpikeG":  "12", // 12 matches theta exactly, higher dwtavg but ok
 					"Prjn.Learn.KinaseCa.Dt.MTau": "5",  // 5 > 10 test more
 					"Prjn.Learn.KinaseCa.Dt.PTau": "40",
 					"Prjn.Learn.KinaseCa.Dt.DTau": "40",
-					"Prjn.Learn.KinaseCa.UpdtThr": "0.01", // 0.01 > 0.05 -- was LrnThr
-					"Prjn.Learn.KinaseCa.MaxISI":  "100",  // 100 >= 50 -- not much diff, no sig speed diff with 50
+					"Prjn.Learn.KinaseCa.MaxISI":  "100", // 100 >= 50 -- not much diff, no sig speed diff with 50
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
+			{Sel: ".BackPrjn", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.2",
 					// "Prjn.Learn.LRate.Base": "0",
 				}},
-			{Sel: ".Forward", Desc: "use pfail only on forward cons?",
+			{Sel: ".ForwardPrjn", Desc: "use pfail only on forward cons?",
 				Params: params.Params{
 					// .2 max 1 = no diff, .5 max .8 = no diff
 					"Prjn.Com.PFail": "0.0", // 0 > .05 > .1 > .2

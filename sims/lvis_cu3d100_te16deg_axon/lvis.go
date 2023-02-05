@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/decoder"
@@ -38,7 +37,6 @@ import (
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/etview"
-	_ "github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/minmax"
 	"github.com/emer/etable/split"
 	"github.com/emer/etable/tsragg"
@@ -85,7 +83,7 @@ type Sim struct {
 	Stats        estats.Stats     `desc:"contains computed statistic values"`
 	Logs         elog.Logs        `desc:"Contains all the logs and information about the logs.'"`
 	Envs         env.Envs         `view:"no-inline" desc:"Environments"`
-	Time         axon.Time        `desc:"axon timing parameters and state"`
+	Context      axon.Context     `desc:"axon timing parameters and state"`
 	ViewUpdt     netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
 	TestInterval int              `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
 	PCAInterval  int              `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
@@ -128,7 +126,7 @@ func (ss *Sim) New() {
 	ss.PCAInterval = 10
 	ss.ConfusionEpc = 500
 	ss.MaxTrls = 512
-	ss.Time.Defaults()
+	ss.Context.Defaults()
 	ss.ConfigArgs() // do this first, has key defaults
 }
 
@@ -561,17 +559,17 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
 
-	net.NThreads = 2
-	runtime.GOMAXPROCS(net.NThreads)
+	// net.NThreads = 2
+	// runtime.GOMAXPROCS(net.NThreads)
 	// fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
-	net.Defaults()
-	ss.Params.SetObject("Network")
 	err := net.Build()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	net.Defaults()
+	ss.Params.SetObject("Network")
 	net.InitWts()
 
 	if !ss.Args.Bool("nogui") {
@@ -630,11 +628,11 @@ func (ss *Sim) ConfigLoops() {
 
 	man.AddStack(etime.Test).AddTime(etime.Epoch, 1).AddTime(etime.Trial, effTrls).AddTime(etime.Cycle, 200)
 
-	axon.LooperStdPhases(man, &ss.Time, ss.Net.AsAxon(), 150, 199)            // plus phase timing
-	axon.LooperSimCycleAndLearn(man, ss.Net.AsAxon(), &ss.Time, &ss.ViewUpdt) // std algo code
+	axon.LooperStdPhases(man, &ss.Context, ss.Net.AsAxon(), 150, 199)            // plus phase timing
+	axon.LooperSimCycleAndLearn(man, ss.Net.AsAxon(), &ss.Context, &ss.ViewUpdt) // std algo code
 
 	man.GetLoop(etime.Train, etime.Trial).OnEnd.Replace("UpdateWeights", func() {
-		ss.Net.DWt(&ss.Time)
+		ss.Net.DWt(&ss.Context)
 		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
 		ss.MPIWtFmDWt()
 	})
@@ -648,7 +646,7 @@ func (ss *Sim) ConfigLoops() {
 		})
 		stack.Loops[etime.Trial].OnStart.Add("ApplyInputs", func() {
 			ss.ApplyInputs()
-			// axon.EnvApplyInputs(ss.Net, ss.Envs[ss.Time.Mode])
+			// axon.EnvApplyInputs(ss.Net, ss.Envs[ss.Context.Mode])
 		})
 		stack.Loops[etime.Trial].OnEnd.Add("StatCounters", ss.StatCounters)
 		stack.Loops[etime.Trial].OnEnd.Add("TrialStats", ss.TrialStats)
@@ -813,10 +811,10 @@ func (ss *Sim) CenterPoolIdxs(ly emer.Layer, n int) []int {
 // (training, testing, etc).
 func (ss *Sim) ApplyInputs() {
 	net := ss.Net
-	ev := ss.Envs[ss.Time.Mode]
+	ev := ss.Envs[ss.Context.Mode.String()]
 	net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
-	lays := net.LayersByClass("Input", "Target")
+	lays := net.LayersByType(axon.InputLayer, axon.TargetLayer)
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		pats := ev.State(ly.Nm)
@@ -824,6 +822,7 @@ func (ss *Sim) ApplyInputs() {
 			ly.ApplyExt(pats)
 		}
 	}
+	net.ApplyExts(&ss.Context) // required for GPU
 }
 
 // NewRun intializes a new run of the model, using the TrainEnv.Run counter
@@ -832,8 +831,8 @@ func (ss *Sim) NewRun() {
 	ss.InitRndSeed()
 	ss.Envs.ByMode(etime.Train).Init(0)
 	ss.Envs.ByMode(etime.Test).Init(0)
-	ss.Time.Reset()
-	ss.Time.Mode = etime.Train.String()
+	ss.Context.Reset()
+	ss.Context.Mode = etime.Train
 	ss.Net.InitWts()
 	ss.InitStats()
 	ss.StatCounters()
@@ -912,14 +911,13 @@ func (ss *Sim) InitStats() {
 // StatCounters saves current counters to Stats, so they are available for logging etc
 // Also saves a string rep of them for ViewUpdt.Text
 func (ss *Sim) StatCounters() {
-	var mode etime.Modes
-	mode.FromString(ss.Time.Mode)
+	mode := ss.Context.Mode
 	ss.Loops.Stacks[mode].CtrsToStats(&ss.Stats)
 	// always use training epoch..
 	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 	ss.Stats.SetInt("Epoch", trnEpc)
-	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ev := ss.Envs[ss.Time.Mode].(*ImagesEnv)
+	ss.Stats.SetInt("Cycle", int(ss.Context.Cycle))
+	ev := ss.Envs[ss.Context.Mode.String()].(*ImagesEnv)
 	ss.Stats.SetString("TrialName", ev.String())
 	ss.Stats.SetString("TrlResp", "")
 	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrlCat", "TrlResp", "TrialName", "Cycle", "TrlUnitErr", "TrlErr", "TrlCorSim"})
@@ -928,13 +926,14 @@ func (ss *Sim) StatCounters() {
 // TrialStats computes the trial-level statistics.
 // Aggregation is done directly from log data.
 func (ss *Sim) TrialStats() {
+	ss.Net.GPU.CopyNeuronsFromGPU(&ss.Context, ss.Net)
 	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
 
-	ss.Stats.SetFloat("TrlCorSim", float64(out.CorSim.Cor))
+	ss.Stats.SetFloat32("TrlCorSim", out.Vals.CorSim.Cor)
 	ss.Stats.SetFloat("TrlUnitErr", out.PctUnitErr())
 
 	ovt := ss.Stats.SetLayerTensor(ss.Net, "Output", "ActM")
-	env := ss.Envs[ss.Time.Mode].(*ImagesEnv)
+	env := ss.Envs[ss.Context.Mode.String()].(*ImagesEnv)
 
 	ncats := len(env.Images.Cats)
 
@@ -953,10 +952,10 @@ func (ss *Sim) TrialStats() {
 		ss.Stats.Confusion.Incr(ss.Stats.Int("TrlCatIdx"), ss.Stats.Int("TrlRespIdx"))
 	}
 
-	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].ActP.Avg/0.01))
+	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].AvgMax.Act.Plus.Avg/0.01))
 	decIdx := ss.Decoder.Decode("ActM")
 	ss.Stats.SetInt("TrlDecRespIdx", decIdx)
-	if ss.Time.Mode == etime.Train.String() {
+	if ss.Context.Mode == etime.Train {
 		ss.Decoder.Train(env.CurCatIdx)
 	}
 	decErr := float64(0)
@@ -1056,7 +1055,7 @@ func (ss *Sim) FirstOut(cyclog *etable.Table) (fcyc, resp int, err float64, err2
 		return
 	}
 	out := cyclog.CellTensor("Output_Act", fcyc).(*etensor.Float32)
-	env := ss.Envs[ss.Time.Mode].(*ImagesEnv)
+	env := ss.Envs[ss.Context.Mode.String()].(*ImagesEnv)
 	resp, err, err2 = env.OutErr(out)
 	return
 }
@@ -1068,6 +1067,7 @@ func (ss *Sim) ConfigLogs() {
 	ss.Stats.SetString("RunName", ss.Params.RunName(0)) // used for naming logs, stats, etc
 
 	ss.Logs.AddCounterItems(etime.Run, etime.Epoch, etime.Trial, etime.Cycle)
+	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
 	ss.Logs.AddStatStringItem(etime.AllModes, etime.AllTimes, "RunName")
 	ss.Logs.AddStatStringItem(etime.AllModes, etime.Trial, "TrlCat", "TrialName", "TrlResp")
 
@@ -1080,15 +1080,14 @@ func (ss *Sim) ConfigLogs() {
 	// Copy over Testing items
 	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr", "PctErr2", "DecErr", "DecErr2", "FirstErr", "FirstErr2")
 
-	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
 	ss.ConfigActRFs()
 
 	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
 	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Run, etime.Epoch, etime.Trial)
 
 	axon.LogAddLayerGeActAvgItems(&ss.Logs, ss.Net.AsAxon(), etime.Test, etime.Cycle)
-	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "Target")
-	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.AllModes, etime.Cycle, "Target")
+	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "TargetLayer")
+	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.AllModes, etime.Cycle, "TargetLayer")
 
 	// this was useful during development of trace learning:
 	// axon.LogAddCaLrnDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
@@ -1207,7 +1206,7 @@ func (ss *Sim) ConfigLogItems() {
 				ctx.SetTensor(cats.Cols[1])
 			}}})
 
-	layers := ss.Net.LayersByClass("Hidden", "Target")
+	layers := ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer)
 	for _, lnm := range layers {
 		clnm := lnm
 		ly := ss.Net.LayerByName(clnm).(axon.AxonLayer).AsAxon()
@@ -1292,7 +1291,7 @@ func (ss *Sim) ConfigLogItems() {
 			Write: elog.WriteMap{
 				etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.ActAvg.GiMult)
+					ctx.SetFloat32(ly.Vals.ActAvg.GiMult)
 				}}})
 
 	}
@@ -1300,8 +1299,8 @@ func (ss *Sim) ConfigLogItems() {
 
 // Log is the main logging function, handles special things for different scopes
 func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
-	if mode.String() != "Analyze" {
-		ss.Time.Mode = mode.String() // Also set specifically in a Loop callback.
+	if mode != etime.Analyze {
+		ss.Context.Mode = mode // Also set specifically in a Loop callback.
 	}
 	ss.StatCounters()
 
@@ -1442,6 +1441,7 @@ func (ss *Sim) ConfigArgs() {
 	ss.Args.SetInt("epochs", 2000)
 	ss.Args.SetInt("runs", 1)
 	ss.Args.AddBool("mpi", false, "if set, use MPI for distributed computation")
+	ss.Args.AddBool("gpu", false, "if set, use GPU for computation")
 	ss.Args.Parse() // always parse
 }
 
@@ -1499,6 +1499,11 @@ func (ss *Sim) CmdArgs() {
 
 	ss.NewRun()
 
+	gpu := ss.Args.Bool("gpu")
+	if gpu {
+		ss.Net.GPUOnNoGUI(&ss.Context)
+	}
+
 	bench := ss.Args.Bool("bench")
 	tmr := timer.Time{}
 
@@ -1507,11 +1512,7 @@ func (ss *Sim) CmdArgs() {
 	if bench {
 		tmr.Start()
 		net.RecFunTimes = bench
-		runtime.GOMAXPROCS(8)
-		threads := 4
-		// override defaults: neurons, sendSpike, synCa, learn
-		net.Threads.Set(2, threads, threads, threads, threads)
-		net.ThreadsAlloc() // re-update
+		// runtime.GOMAXPROCS(4)
 
 		// run: ./lvis_cu3d100_te16deg_axon -bench -epochs 1 -tag bench
 		// Macbook pro results:
@@ -1605,6 +1606,8 @@ func (ss *Sim) CmdArgs() {
 		ss.GUI.SaveNetData(ss.Stats.String("RunName"))
 	}
 
+	ss.Net.GPU.Destroy()
+
 	ss.MPIFinalize()
 }
 
@@ -1650,5 +1653,5 @@ func (ss *Sim) MPIWtFmDWt() {
 		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
 		ss.Net.SetDWts(ss.SumDWts, mpi.WorldSize())
 	}
-	ss.Net.WtFmDWt(&ss.Time)
+	ss.Net.WtFmDWt(&ss.Context)
 }
