@@ -163,6 +163,8 @@ func (ss *Sim) ConfigEnv() {
 		trn.ImageFile = "cu3d100old"
 	}
 
+	ss.MaxTrls = ss.Args.Int("trials")
+
 	trn.Nm = etime.Train.String()
 	trn.Dsc = "training params and state"
 	trn.Defaults()
@@ -926,7 +928,7 @@ func (ss *Sim) StatCounters() {
 // TrialStats computes the trial-level statistics.
 // Aggregation is done directly from log data.
 func (ss *Sim) TrialStats() {
-	ss.Net.GPU.CopyNeuronsFromGPU(&ss.Context, ss.Net)
+	ss.Net.GPU.CopyStateFromGPU(&ss.Context, ss.Net)
 	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
 
 	ss.Stats.SetFloat32("TrlCorSim", out.Vals.CorSim.Cor)
@@ -1437,8 +1439,9 @@ func (ss *Sim) ConfigArgs() {
 	ss.Args.Init()
 	ss.Args.AddStd()
 	ss.Args.AddInt("nzero", 2, "number of zero error epochs in a row to count as full training")
-	ss.Args.AddBool("bench", false, "run benchmarking -- just runs a few trials")
+	ss.Args.AddBool("bench", false, "run benchmarking -- sets trials = 10 and reports func timing")
 	ss.Args.SetInt("epochs", 2000)
+	ss.Args.AddInt("trials", 512, "number of trials per epoch -- must be evenly divisible by mpi nodes")
 	ss.Args.SetInt("runs", 1)
 	ss.Args.AddBool("mpi", false, "if set, use MPI for distributed computation")
 	ss.Args.AddBool("gpu", false, "if set, use GPU for computation")
@@ -1506,12 +1509,12 @@ func (ss *Sim) CmdArgs() {
 
 	bench := ss.Args.Bool("bench")
 	tmr := timer.Time{}
+	tmr.Start()
 
 	net := ss.Net
 
 	if bench {
-		tmr.Start()
-		net.RecFunTimes = bench
+		net.RecFunTimes = bench // this determines whether GPU waits or not
 		// runtime.GOMAXPROCS(4)
 
 		// run: ./lvis_cu3d100_te16deg_axon -bench -epochs 1 -tag bench
