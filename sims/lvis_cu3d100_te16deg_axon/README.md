@@ -7,6 +7,7 @@ The `lvix_fix8.proj` version has "blob" color filters in addition to the monochr
 # Images: CU3D100
 
 This [google drive folder](https://drive.google.com/drive/folders/13Mi9aUlF1A3sx3JaofX-qzKlxGoViT86?usp=sharing) has .png input files for use with this model.
+By default the models looks for the images extracted from `CU3D_100_renders_lr20_u30_nb.tar.gz` in the `<repo>/sims/lvis_cu3d100_te16deg_axon/images/CU3D_100_renders_lr20_u30_nb/` folder.
 
 `CU3D_100_plus_renders.tar.gz` is a set of 30,240 rendered images from 100 3D object categories, with 14.45 average different instances per category, used for much of our object recognition work, including the above paper and originally: O'Reilly, R.C., Wyatte, D., Herd, S., Mingus, B. & Jilk, D.J. (2013). Recurrent Processing during Object Recognition. *Frontiers in Psychology, 4,* 124. [PDF](https://ccnlab.org/papers/OReillyWyatteHerdEtAl13.pdf) | [URL](http://www.ncbi.nlm.nih.gov/pubmed/23554596)
 
