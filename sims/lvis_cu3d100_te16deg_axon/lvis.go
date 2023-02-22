@@ -47,8 +47,12 @@ import (
 	"github.com/goki/ki/kit"
 )
 
-// Debug triggers various messages etc
-var Debug = false
+var (
+	// Debug triggers various messages etc
+	Debug = true
+	// GPU runs with the GPU (for demo, testing -- not useful for such a small network)
+	GPU = true
+)
 
 func main() {
 	TheSim.New()
@@ -758,7 +762,7 @@ func (ss *Sim) ConfigLoops() {
 			ss.GUI.Grid("Image").UpdateSig()
 		})
 
-		axon.LooperUpdtNetView(man, &ss.ViewUpdt)
+		axon.LooperUpdtNetView(man, &ss.ViewUpdt, ss.Net)
 		axon.LooperUpdtPlots(man, &ss.GUI)
 	}
 
@@ -928,7 +932,6 @@ func (ss *Sim) StatCounters() {
 // TrialStats computes the trial-level statistics.
 // Aggregation is done directly from log data.
 func (ss *Sim) TrialStats() {
-	ss.Net.GPU.CopyStateFromGPU(&ss.Context, ss.Net)
 	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
 
 	ss.Stats.SetFloat32("TrlCorSim", out.Vals.CorSim.Cor)
@@ -1084,7 +1087,7 @@ func (ss *Sim) ConfigLogs() {
 
 	ss.ConfigActRFs()
 
-	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
+	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer), etime.Epoch, etime.Trial)
 	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Run, etime.Epoch, etime.Trial)
 
 	axon.LogAddLayerGeActAvgItems(&ss.Logs, ss.Net.AsAxon(), etime.Test, etime.Cycle)
@@ -1432,6 +1435,12 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		},
 	})
 	ss.GUI.FinalizeGUI(false)
+	if GPU {
+		TheSim.Net.ConfigGPUwithGUI(&TheSim.Context)
+		gi.SetQuitCleanFunc(func() {
+			ss.Net.GPU.Destroy()
+		})
+	}
 	return ss.GUI.Win
 }
 
@@ -1444,7 +1453,6 @@ func (ss *Sim) ConfigArgs() {
 	ss.Args.AddInt("trials", 512, "number of trials per epoch -- must be evenly divisible by mpi nodes")
 	ss.Args.SetInt("runs", 1)
 	ss.Args.AddBool("mpi", false, "if set, use MPI for distributed computation")
-	ss.Args.AddBool("gpu", false, "if set, use GPU for computation")
 	ss.Args.Parse() // always parse
 }
 
@@ -1504,7 +1512,7 @@ func (ss *Sim) CmdArgs() {
 
 	gpu := ss.Args.Bool("gpu")
 	if gpu {
-		ss.Net.GPUOnNoGUI(&ss.Context)
+		ss.Net.ConfigGPUnoGUI(&ss.Context)
 	}
 
 	bench := ss.Args.Bool("bench")

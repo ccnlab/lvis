@@ -78,7 +78,7 @@ type Sim struct {
 	Stats        estats.Stats     `desc:"contains computed statistic values"`
 	Logs         elog.Logs        `desc:"Contains all the logs and information about the logs.'"`
 	Envs         env.Envs         `view:"no-inline" desc:"Environments"`
-	Time         axon.Time        `desc:"axon timing parameters and state"`
+	Context      axon.Context     `desc:"axon timing parameters and state"`
 	ViewUpdt     netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
 	TestInterval int              `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
 	PCAInterval  int              `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
@@ -105,7 +105,7 @@ func (ss *Sim) New() {
 	ss.NOutPer = 5
 	ss.TestInterval = -1 // 10
 	ss.PCAInterval = 5
-	ss.Time.Defaults()
+	ss.Context.Defaults()
 	ss.ConfigArgs() // do this first, has key defaults
 	ss.NewPrjns()
 }
@@ -218,16 +218,15 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	itOut.SetClass("NovLearn")
 	outIT.SetClass("NovLearn")
 
-	net.NThreads = 1
 	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
-	net.Defaults()
-	ss.Params.SetObject("Network")
 	err := net.Build()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	net.Defaults()
+	ss.Params.SetObject("Network")
 	net.InitWts()
 }
 
@@ -262,8 +261,8 @@ func (ss *Sim) ConfigLoops() {
 
 	man.AddStack(etime.Test).AddTime(etime.Epoch, 1).AddTime(etime.Trial, 100).AddTime(etime.Cycle, 200)
 
-	axon.LooperStdPhases(man, &ss.Time, ss.Net.AsAxon(), 150, 199)            // plus phase timing
-	axon.LooperSimCycleAndLearn(man, ss.Net.AsAxon(), &ss.Time, &ss.ViewUpdt) // std algo code
+	axon.LooperStdPhases(man, &ss.Context, ss.Net.AsAxon(), 150, 199)            // plus phase timing
+	axon.LooperSimCycleAndLearn(man, ss.Net.AsAxon(), &ss.Context, &ss.ViewUpdt) // std algo code
 
 	for m, _ := range man.Stacks {
 		mode := m // For closures
@@ -379,7 +378,7 @@ func (ss *Sim) ConfigLoops() {
 			ss.GUI.Grid("Image").UpdateSig()
 		})
 
-		axon.LooperUpdtNetView(man, &ss.ViewUpdt)
+		axon.LooperUpdtNetView(man, &ss.ViewUpdt, ss.Net)
 		axon.LooperUpdtPlots(man, &ss.GUI)
 	}
 
@@ -395,10 +394,10 @@ func (ss *Sim) ConfigLoops() {
 // (training, testing, etc).
 func (ss *Sim) ApplyInputs() {
 	net := ss.Net
-	ev := ss.Envs[ss.Time.Mode]
+	ev := ss.Envs[ss.Context.Mode.String()]
 	net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
-	lays := net.LayersByClass("Input", "Target")
+	lays := net.LayersByType(axon.InputLayer, axon.TargetLayer)
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
 		pats := ev.State(ly.Nm)
@@ -414,8 +413,8 @@ func (ss *Sim) NewRun() {
 	ss.InitRndSeed()
 	ss.Envs.ByMode(etime.Train).Init(0)
 	ss.Envs.ByMode(etime.Test).Init(0)
-	ss.Time.Reset()
-	ss.Time.Mode = etime.Train.String()
+	ss.Context.Reset()
+	ss.Context.Mode = etime.Train
 	ss.Net.InitWts()
 	ss.InitStats()
 	ss.StatCounters()
@@ -457,14 +456,13 @@ func (ss *Sim) InitStats() {
 // StatCounters saves current counters to Stats, so they are available for logging etc
 // Also saves a string rep of them for ViewUpdt.Text
 func (ss *Sim) StatCounters() {
-	var mode etime.Modes
-	mode.FromString(ss.Time.Mode)
+	mode := ss.Context.Mode
 	ss.Loops.Stacks[mode].CtrsToStats(&ss.Stats)
 	// always use training epoch..
 	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 	ss.Stats.SetInt("Epoch", trnEpc)
-	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ev := ss.Envs[ss.Time.Mode].(*LEDEnv)
+	ss.Stats.SetInt("Cycle", int(ss.Context.Cycle))
+	ev := ss.Envs[ss.Context.Mode.String()].(*LEDEnv)
 	ss.Stats.SetString("TrialName", ev.String())
 	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
 	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "Cat", "TrialName", "Cycle", "TrlUnitErr", "TrlErr", "TrlCorSim"})
@@ -475,16 +473,16 @@ func (ss *Sim) StatCounters() {
 func (ss *Sim) TrialStats() {
 	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
 
-	ss.Stats.SetFloat("TrlCorSim", float64(out.CorSim.Cor))
+	ss.Stats.SetFloat32("TrlCorSim", out.Vals.CorSim.Cor)
 	ss.Stats.SetFloat("TrlUnitErr", out.PctUnitErr())
 
-	ev := ss.Envs[ss.Time.Mode].(*LEDEnv)
+	ev := ss.Envs[ss.Context.Mode.String()].(*LEDEnv)
 	ovt := ss.Stats.SetLayerTensor(ss.Net, "Output", "ActM")
 	rsp, trlErr, trlErr2 := ev.OutErr(ovt)
 	ss.Stats.SetFloat("TrlErr", trlErr)
 	ss.Stats.SetFloat("TrlErr2", trlErr2)
 	ss.Stats.SetString("TrlOut", fmt.Sprintf("%d", rsp))
-	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].ActP.Avg))
+	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pools[0].AvgMax.Act.Plus.Avg))
 	ss.Stats.SetString("Cat", fmt.Sprintf("%d", ev.CurLED))
 }
 
@@ -510,11 +508,12 @@ func (ss *Sim) ConfigLogs() {
 
 	ss.ConfigActRFs()
 
-	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
+	layers := ss.Net.AsAxon().LayersByType(axon.SuperLayer, axon.CTLayer, axon.TargetLayer)
+	axon.LogAddDiagnosticItems(&ss.Logs, layers, etime.Epoch, etime.Trial)
 	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Run, etime.Epoch, etime.Trial)
 
 	axon.LogAddLayerGeActAvgItems(&ss.Logs, ss.Net.AsAxon(), etime.Test, etime.Cycle)
-	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "Target")
+	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "TargetLayer")
 
 	// this was useful during development of trace learning:
 	// axon.LogAddCaLrnDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
@@ -570,7 +569,7 @@ func (ss *Sim) ConfigLogItems() {
 				ss.Logs.MiscTables[ctx.Item.Name] = cats
 				ctx.SetTensor(cats.Cols[1])
 			}}})
-	layers := ss.Net.LayersByClass("Hidden", "Target")
+	layers := ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer)
 	for _, lnm := range layers {
 		clnm := lnm
 		ly := ss.Net.LayerByName(clnm).(axon.AxonLayer).AsAxon()
@@ -632,15 +631,15 @@ func (ss *Sim) ConfigLogItems() {
 			Write: elog.WriteMap{
 				etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.ActAvg.GiMult)
+					ctx.SetFloat32(ly.Vals.ActAvg.GiMult)
 				}}})
 	}
 }
 
 // Log is the main logging function, handles special things for different scopes
 func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
-	if mode.String() != "Analyze" {
-		ss.Time.Mode = mode.String() // Also set specifically in a Loop callback.
+	if mode != etime.Analyze {
+		ss.Context.Mode = mode // Also set specifically in a Loop callback.
 	}
 	ss.StatCounters()
 	dt := ss.Logs.Table(mode, time)
