@@ -39,6 +39,19 @@ The cemer versions used fairly standard params (because they determined these pa
 * `Gbar.L` = .2 instead of .1
 * `Inhib.Layer.FB` = 0 instead of 1, for layers with pool inhibition.
 
+# Building
+
+To build and link against MPI:
+```bash
+go build -mod=mod -tags mpi
+```
+Without the tag all the MPI calls are replaced with stubs that don't do anything.
+
+To run with MPI:
+```bash
+mpirun -np 4 ./lvis_cu3d100_te16deg_axon --mpi
+```
+
 # TODO:
 
 * no subpool
