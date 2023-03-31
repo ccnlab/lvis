@@ -51,7 +51,7 @@ var (
 	// Debug triggers various messages etc
 	Debug = true
 	// GPU runs with the GPU (for demo, testing -- not useful for such a small network)
-	GPU = true
+	GPU = false
 )
 
 func main() {
@@ -270,10 +270,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v4Nu = 7
 	}
 
-	v1m16 := net.AddLayer4D("V1m16", 16, 16, v1nrows, 4, emer.Input)
-	v1l16 := net.AddLayer4D("V1l16", 8, 8, v1nrows, 4, emer.Input)
-	v1m8 := net.AddLayer4D("V1m8", 16, 16, v1nrows, 4, emer.Input)
-	v1l8 := net.AddLayer4D("V1l8", 8, 8, v1nrows, 4, emer.Input)
+	v1m16 := net.AddLayer4D("V1m16", 16, 16, v1nrows, 4, axon.InputLayer)
+	v1l16 := net.AddLayer4D("V1l16", 8, 8, v1nrows, 4, axon.InputLayer)
+	v1m8 := net.AddLayer4D("V1m8", 16, 16, v1nrows, 4, axon.InputLayer)
+	v1l8 := net.AddLayer4D("V1l8", 8, 8, v1nrows, 4, axon.InputLayer)
 	v1m16.SetClass("V1m")
 	v1l16.SetClass("V1l")
 	v1m8.SetClass("V1m")
@@ -285,14 +285,14 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v1l8.SetRepIdxsShape(ss.CenterPoolIdxs(v1l8, 2), emer.CenterPoolShape(v1l8, 2))
 
 	// not useful so far..
-	// clst := net.AddLayer2D("Claustrum", 5, 5, emer.Hidden)
+	// clst := net.AddLayer2D("Claustrum", 5, 5, axon.SuperLayer)
 
-	var v1cm16, v1cl16, v1cm8, v1cl8 emer.Layer
+	var v1cm16, v1cl16, v1cm8, v1cl8 *axon.Layer
 	if cdog {
-		v1cm16 = net.AddLayer4D("V1Cm16", 16, 16, 2, 2, emer.Input)
-		v1cl16 = net.AddLayer4D("V1Cl16", 8, 8, 2, 2, emer.Input)
-		v1cm8 = net.AddLayer4D("V1Cm8", 16, 16, 2, 2, emer.Input)
-		v1cl8 = net.AddLayer4D("V1Cl8", 8, 8, 2, 2, emer.Input)
+		v1cm16 = net.AddLayer4D("V1Cm16", 16, 16, 2, 2, axon.InputLayer)
+		v1cl16 = net.AddLayer4D("V1Cl16", 8, 8, 2, 2, axon.InputLayer)
+		v1cm8 = net.AddLayer4D("V1Cm8", 16, 16, 2, 2, axon.InputLayer)
+		v1cl8 = net.AddLayer4D("V1Cl8", 8, 8, 2, 2, axon.InputLayer)
 		v1cm16.SetClass("V1Cm")
 		v1cl16.SetClass("V1Cl")
 		v1cm8.SetClass("V1Cm")
@@ -304,10 +304,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v1cl8.SetRepIdxsShape(ss.CenterPoolIdxs(v1cl8, 2), emer.CenterPoolShape(v1cl8, 2))
 	}
 
-	v2m16 := net.AddLayer4D("V2m16", v2mNp, v2mNp, v2Nu, v2Nu, emer.Hidden)
-	v2l16 := net.AddLayer4D("V2l16", v2lNp, v2lNp, v2Nu, v2Nu, emer.Hidden)
-	v2m8 := net.AddLayer4D("V2m8", v2mNp, v2mNp, v2Nu, v2Nu, emer.Hidden)
-	v2l8 := net.AddLayer4D("V2l8", v2lNp, v2lNp, v2Nu, v2Nu, emer.Hidden)
+	v2m16 := net.AddLayer4D("V2m16", v2mNp, v2mNp, v2Nu, v2Nu, axon.SuperLayer)
+	v2l16 := net.AddLayer4D("V2l16", v2lNp, v2lNp, v2Nu, v2Nu, axon.SuperLayer)
+	v2m8 := net.AddLayer4D("V2m8", v2mNp, v2mNp, v2Nu, v2Nu, axon.SuperLayer)
+	v2l8 := net.AddLayer4D("V2l8", v2lNp, v2lNp, v2Nu, v2Nu, axon.SuperLayer)
 	v2m16.SetClass("V2m V2")
 	v2l16.SetClass("V2l V2")
 	v2m8.SetClass("V2m V2")
@@ -318,11 +318,11 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v2m8.SetRepIdxsShape(ss.CenterPoolIdxs(v2m8, 2), emer.CenterPoolShape(v2m8, 2))
 	v2l8.SetRepIdxsShape(ss.CenterPoolIdxs(v2l8, 2), emer.CenterPoolShape(v2l8, 2))
 
-	var v1h16, v2h16, v3h16 emer.Layer
+	var v1h16, v2h16, v3h16 *axon.Layer
 	if hi16 {
-		v1h16 = net.AddLayer4D("V1h16", 32, 32, 5, 4, emer.Input)
-		v2h16 = net.AddLayer4D("V2h16", 32, 32, v2Nu, v2Nu, emer.Hidden)
-		v3h16 = net.AddLayer4D("V3h16", 16, 16, v2Nu, v2Nu, emer.Hidden)
+		v1h16 = net.AddLayer4D("V1h16", 32, 32, 5, 4, axon.InputLayer)
+		v2h16 = net.AddLayer4D("V2h16", 32, 32, v2Nu, v2Nu, axon.SuperLayer)
+		v3h16 = net.AddLayer4D("V3h16", 16, 16, v2Nu, v2Nu, axon.SuperLayer)
 		v1h16.SetClass("V1h")
 		v2h16.SetClass("V2h V2")
 		v3h16.SetClass("V3h")
@@ -332,26 +332,26 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		v3h16.SetRepIdxsShape(ss.CenterPoolIdxs(v3h16, 2), emer.CenterPoolShape(v3h16, 2))
 	}
 
-	v4f16 := net.AddLayer4D("V4f16", v4Np, v4Np, v4Nu, v4Nu, emer.Hidden)
-	v4f8 := net.AddLayer4D("V4f8", v4Np, v4Np, v4Nu, v4Nu, emer.Hidden)
+	v4f16 := net.AddLayer4D("V4f16", v4Np, v4Np, v4Nu, v4Nu, axon.SuperLayer)
+	v4f8 := net.AddLayer4D("V4f8", v4Np, v4Np, v4Nu, v4Nu, axon.SuperLayer)
 	v4f16.SetClass("V4")
 	v4f8.SetClass("V4")
 
 	v4f16.SetRepIdxsShape(ss.CenterPoolIdxs(v4f16, 2), emer.CenterPoolShape(v4f16, 2))
 	v4f8.SetRepIdxsShape(ss.CenterPoolIdxs(v4f8, 2), emer.CenterPoolShape(v4f8, 2))
 
-	teo16 := net.AddLayer4D("TEOf16", 2, 2, 15, 15, emer.Hidden)
-	teo8 := net.AddLayer4D("TEOf8", 2, 2, 15, 15, emer.Hidden)
+	teo16 := net.AddLayer4D("TEOf16", 2, 2, 15, 15, axon.SuperLayer)
+	teo8 := net.AddLayer4D("TEOf8", 2, 2, 15, 15, axon.SuperLayer)
 	teo16.SetClass("TEO")
 	teo8.SetClass("TEO")
 
-	te := net.AddLayer4D("TE", 2, 2, 15, 15, emer.Hidden)
+	te := net.AddLayer4D("TE", 2, 2, 15, 15, axon.SuperLayer)
 
-	var out emer.Layer
+	var out *axon.Layer
 	if ss.RndOutPats {
-		out = net.AddLayer2D("Output", trn.OutSize.Y, trn.OutSize.X, emer.Target)
+		out = net.AddLayer2D("Output", trn.OutSize.Y, trn.OutSize.X, axon.TargetLayer)
 	} else {
-		out = net.AddLayer4D("Output", trn.OutSize.Y, trn.OutSize.X, trn.NOutPer, 1, emer.Target)
+		out = net.AddLayer4D("Output", trn.OutSize.Y, trn.OutSize.X, trn.NOutPer, 1, axon.TargetLayer)
 	}
 
 	full := prjn.NewFull()
@@ -386,26 +386,26 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		teotov4 = pj.Prjn4x4Skp0Sub2Recip
 	}
 
-	net.ConnectLayers(v1m16, v2m16, p4x4s2, emer.Forward).SetClass("V1V2")
-	net.ConnectLayers(v1l16, v2m16, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
+	net.ConnectLayers(v1m16, v2m16, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
+	net.ConnectLayers(v1l16, v2m16, p2x2s1, axon.ForwardPrjn).SetClass("V1V2fmSm V1V2")
 
-	net.ConnectLayers(v1l16, v2l16, p4x4s2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l16, v2l16, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
 
-	net.ConnectLayers(v1m8, v2m8, p4x4s2, emer.Forward).SetClass("V1V2")
-	net.ConnectLayers(v1l8, v2m8, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
+	net.ConnectLayers(v1m8, v2m8, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
+	net.ConnectLayers(v1l8, v2m8, p2x2s1, axon.ForwardPrjn).SetClass("V1V2fmSm V1V2")
 
-	net.ConnectLayers(v1l8, v2l8, p4x4s2, emer.Forward).SetClass("V1V2")
+	net.ConnectLayers(v1l8, v2l8, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
 
 	if cdog {
-		net.ConnectLayers(v1cm16, v2m16, p4x4s2, emer.Forward).SetClass("V1V2")
-		net.ConnectLayers(v1cl16, v2m16, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
+		net.ConnectLayers(v1cm16, v2m16, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
+		net.ConnectLayers(v1cl16, v2m16, p2x2s1, axon.ForwardPrjn).SetClass("V1V2fmSm V1V2")
 
-		net.ConnectLayers(v1cl16, v2l16, p4x4s2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl16, v2l16, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
 
-		net.ConnectLayers(v1cm8, v2m8, p4x4s2, emer.Forward).SetClass("V1V2")
-		net.ConnectLayers(v1cl8, v2m8, p2x2s1, emer.Forward).SetClass("V1V2fmSm V1V2")
+		net.ConnectLayers(v1cm8, v2m8, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
+		net.ConnectLayers(v1cl8, v2m8, p2x2s1, axon.ForwardPrjn).SetClass("V1V2fmSm V1V2")
 
-		net.ConnectLayers(v1cl8, v2l8, p4x4s2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1cl8, v2l8, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
 	}
 
 	v2v4, v4v2 := net.BidirConnectLayers(v2m16, v4f16, p4x4s2send)
@@ -425,7 +425,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4v2.SetClass("V4V2").SetPattern(p2x2s1recip)
 
 	if hi16 {
-		net.ConnectLayers(v1h16, v2h16, p4x4s2, emer.Forward).SetClass("V1V2")
+		net.ConnectLayers(v1h16, v2h16, p4x4s2, axon.ForwardPrjn).SetClass("V1V2")
 		v2v3, v3v2 := net.BidirConnectLayers(v2h16, v3h16, p4x4s2send)
 		v2v3.SetClass("V2V3")
 		v3v2.SetClass("V3V2").SetPattern(p4x4s2recip)
@@ -437,12 +437,12 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4teo, teov4 := net.BidirConnectLayers(v4f16, teo16, v4toteo)
 	v4teo.SetClass("V4TEO")
 	teov4.SetClass("TEOV4").SetPattern(teotov4)
-	net.ConnectLayers(v4f8, teo16, v4toteo, emer.Forward).SetClass("V4TEOoth")
+	net.ConnectLayers(v4f8, teo16, v4toteo, axon.ForwardPrjn).SetClass("V4TEOoth")
 
 	v4teo, teov4 = net.BidirConnectLayers(v4f8, teo8, v4toteo)
 	v4teo.SetClass("V4TEO")
 	teov4.SetClass("TEOV4").SetPattern(teotov4)
-	net.ConnectLayers(v4f16, teo8, v4toteo, emer.Forward).SetClass("V4TEOoth")
+	net.ConnectLayers(v4f16, teo8, v4toteo, axon.ForwardPrjn).SetClass("V4TEOoth")
 
 	teote, teteo := net.BidirConnectLayers(teo16, te, full)
 	teote.SetClass("TEOTE")
@@ -490,19 +490,19 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 		}
 
 			// this extra inhibition drives decorrelation, produces significant learning benefits
-			net.LateralConnectLayerPrjn(v2m16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(v2l16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(v2m8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(v2l8, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(v4f16, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(v4f8, v4inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
-			net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(emer.Inhib)
+			net.LateralConnectLayerPrjn(v2m16, v2inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(v2l16, v2inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(v2m8, v2inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(v2l8, v2inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(v4f16, v4inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(v4f8, v4inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(teo16, pool1to1, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(teo8, pool1to1, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+			net.LateralConnectLayerPrjn(te, pool1to1, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
 
 			if hi16 {
-				net.LateralConnectLayerPrjn(v2h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
-				net.LateralConnectLayerPrjn(v3h16, v2inhib, &axon.HebbPrjn{}).SetType(emer.Inhib)
+				net.LateralConnectLayerPrjn(v2h16, v2inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
+				net.LateralConnectLayerPrjn(v3h16, v2inhib, &axon.HebbPrjn{}).SetType(axon.InhibPrjn)
 			}
 	*/
 
@@ -510,20 +510,20 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	// 	Shortcuts:
 
 	// clst not useful
-	// net.ConnectLayers(v1l16, clst, full, emer.Forward)
+	// net.ConnectLayers(v1l16, clst, full, axon.ForwardPrjn)
 
 	// V1 shortcuts best for syncing all layers -- like the pulvinar basically
-	net.ConnectLayers(v1l16, v4f16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, v4f8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, teo16, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, teo8, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l16, te, rndcut, emer.Forward).SetClass("V1SC")
-	net.ConnectLayers(v1l8, te, rndcut, emer.Forward).SetClass("V1SC")
+	net.ConnectLayers(v1l16, v4f16, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l8, v4f8, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l16, teo16, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l16, teo16, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l8, teo8, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l8, teo8, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l16, te, rndcut, axon.ForwardPrjn).SetClass("V1SC")
+	net.ConnectLayers(v1l8, te, rndcut, axon.ForwardPrjn).SetClass("V1SC")
 
 	if hi16 {
-		net.ConnectLayers(v1l16, v3h16, rndcut, emer.Forward).SetClass("V1SC")
+		net.ConnectLayers(v1l16, v3h16, rndcut, axon.ForwardPrjn).SetClass("V1SC")
 	}
 
 	//////////////////////
@@ -1087,8 +1087,8 @@ func (ss *Sim) ConfigLogs() {
 
 	ss.ConfigActRFs()
 
-	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer), etime.Epoch, etime.Trial)
-	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Run, etime.Epoch, etime.Trial)
+	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer), etime.Train, etime.Epoch, etime.Trial)
+	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Train, etime.Run, etime.Epoch, etime.Trial)
 
 	axon.LogAddLayerGeActAvgItems(&ss.Logs, ss.Net.AsAxon(), etime.Test, etime.Cycle)
 	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "TargetLayer")

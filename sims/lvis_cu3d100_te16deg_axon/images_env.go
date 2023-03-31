@@ -344,9 +344,9 @@ func (ev *ImagesEnv) OpenImage() error {
 // RandTransforms generates random transforms
 func (ev *ImagesEnv) RandTransforms() {
 	if ev.TransSigma > 0 {
-		ev.CurTrans.X = float32(erand.Gauss(float64(ev.TransSigma), -1))
+		ev.CurTrans.X = float32(erand.GaussianGen(0, float64(ev.TransSigma), -1))
 		ev.CurTrans.X = mat32.Clamp(ev.CurTrans.X, -ev.TransMax.X, ev.TransMax.X)
-		ev.CurTrans.Y = float32(erand.Gauss(float64(ev.TransSigma), -1))
+		ev.CurTrans.Y = float32(erand.GaussianGen(0, float64(ev.TransSigma), -1))
 		ev.CurTrans.Y = mat32.Clamp(ev.CurTrans.Y, -ev.TransMax.Y, ev.TransMax.Y)
 	} else {
 		ev.CurTrans.X = (rand.Float32()*2 - 1) * ev.TransMax.X
