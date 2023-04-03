@@ -19,3 +19,6 @@ sims/lvis_cu3d100_te16deg_axon/lvis_cu3d100_te16deg_axon
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# MacOS
+.DS_Store

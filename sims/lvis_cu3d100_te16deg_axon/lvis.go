@@ -642,6 +642,8 @@ func (ss *Sim) ConfigLoops() {
 		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
 		ss.MPIWtFmDWt()
 	})
+	man.GetLoop(etime.Train, etime.Epoch).OnStart.Add("ValidateMPIReplicaConsistency",
+		ss.assertMPIReplicaConsistency)
 
 	for m, _ := range man.Stacks {
 		mode := m // For closures
@@ -1665,4 +1667,27 @@ func (ss *Sim) MPIWtFmDWt() {
 		ss.Net.SetDWts(ss.SumDWts, mpi.WorldSize())
 	}
 	ss.Net.WtFmDWt(&ss.Context)
+}
+
+func (ss *Sim) assertMPIReplicaConsistency() {
+	if ss.Comm.Size() == 1 {
+		return
+	}
+	hash := ss.Net.WtsHash()
+	orig := []uint8(hash)
+	var MPIHashes []byte
+	if ss.Comm.Rank() == 0 {
+		MPIHashes = make([]byte, ss.Comm.Size()*len(orig))
+	}
+	err := ss.Comm.GatherU8(0, MPIHashes, orig)
+	if err != nil {
+		panic(err)
+	}
+	if ss.Comm.Rank() == 0 {
+		for i := 0; i < ss.Comm.Size(); i++ {
+			if string(MPIHashes[i*len(orig):(i+1)*len(orig)]) != hash {
+				panic("Hashes do not match! The models on different nodes have diverged.")
+			}
+		}
+	}
 }
