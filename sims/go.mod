@@ -4,15 +4,15 @@ go 1.18
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.7.15
-	github.com/emer/emergent v1.3.50
+	github.com/emer/axon v1.7.18-0.20230429064954-d537fb7a52ee
+	github.com/emer/emergent v1.3.52
 	github.com/emer/empi v1.0.19
-	github.com/emer/etable v1.1.20
-	github.com/emer/leabra v1.2.7
+	github.com/emer/etable v1.1.21
+	github.com/emer/leabra v1.2.8
 	github.com/emer/vision v1.1.18
-	github.com/goki/gi v1.3.17
+	github.com/goki/gi v1.3.18
 	github.com/goki/ki v1.1.11
-	github.com/goki/mat32 v1.0.14
+	github.com/goki/mat32 v1.0.15
 	golang.org/x/image v0.6.0
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/go-gl/mathgl v1.0.0 // indirect
 	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
-	github.com/go-pdf/fpdf v0.6.0 // indirect
+	github.com/go-pdf/fpdf v0.7.0 // indirect
 	github.com/goki/freetype v1.0.1 // indirect
 	github.com/goki/go-difflib v1.2.1 // indirect
 	github.com/goki/gosl v1.0.13 // indirect
@@ -57,9 +57,9 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/srwiley/scanx v0.0.0-20190309010443-e94503791388 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/mod v0.9.0 // indirect
+	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
