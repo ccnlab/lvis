@@ -217,7 +217,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	itOut.SetClass("NovLearn")
 	outIT.SetClass("NovLearn")
 
-	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
+	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0)) // just use 1?
 
 	err := net.Build()
 	if err != nil {
