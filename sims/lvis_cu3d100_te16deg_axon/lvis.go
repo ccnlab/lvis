@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/decoder"
@@ -567,7 +568,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	// net.NThreads = 2
 	// runtime.GOMAXPROCS(net.NThreads)
-	// fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
+	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
 	err := net.Build()
 	if err != nil {
