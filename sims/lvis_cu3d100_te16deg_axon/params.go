@@ -24,15 +24,16 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.AdaptRate":       "0.1",
 					"Layer.Inhib.ActAvg.LoTol":           "0.8",
 					"Layer.Inhib.ActAvg.HiTol":           "0.0",
-					"Layer.Act.Decay.Act":                "0.0", // 0 == .2
-					"Layer.Act.Decay.Glong":              "0.6", // 0.6 def
-					"Layer.Act.Dend.SSGi":                "2",   // 2 new default
-					"Layer.Act.Dend.GbarExp":             "0.2", // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":               "3",   // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":             "5",   // 5 much better in fsa!
-					"Layer.Act.NMDA.Gbar":                "0.15",
-					"Layer.Act.NMDA.MgC":                 "1.4", // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":                "5",   // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Act.Decay.Act":                "0.0",   // 0 == .2
+					"Layer.Act.Decay.Glong":              "0.6",   // 0.6 def
+					"Layer.Act.Dend.SSGi":                "2",     // 2 new default
+					"Layer.Act.Dend.GbarExp":             "0.2",   // 0.2 > 0.1 > 0
+					"Layer.Act.Dend.GbarR":               "3",     // 2 good for 0.2
+					"Layer.Act.Dt.VmDendTau":             "5",     // 5 much better in fsa!
+					"Layer.Act.GABAB.Gbar":               "0.015", // 0.015 > lower; higher not better
+					"Layer.Act.NMDA.Gbar":                "0.006", // 0.006 def
+					"Layer.Act.NMDA.MgC":                 "1.4",   // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Act.NMDA.Voff":                "0",     // mg1, voff0 = mg1.4, voff5 w best params
 					"Layer.Act.AK.Gbar":                  "0.1",
 					"Layer.Act.VGCC.Gbar":                "0.02",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
 					"Layer.Act.VGCC.Ca":                  "25",    // 25 / 10tau same as SpkVGCC
@@ -50,8 +51,9 @@ var ParamSets = params.Sets{
 					"Layer.Learn.CaSpk.SpikeG":           "12",    // 12 > 8 -- for larger nets
 					"Layer.Learn.CaSpk.SynTau":           "30",    // 30 > 20, 40
 					"Layer.Learn.CaSpk.Dt.MTau":          "5",     // 5 > 10?
+					"Layer.Learn.LrnNMDA.Gbar":           "0.006", // 0.006 def
 					"Layer.Learn.LrnNMDA.MgC":            "1.4",   // 1.2 for unified Act params, else 1.4
-					"Layer.Learn.LrnNMDA.Voff":           "5",     // 0 for unified Act params, else 5
+					"Layer.Learn.LrnNMDA.Voff":           "0",     // 0 for unified Act params, else 5
 					"Layer.Learn.LrnNMDA.Tau":            "100",   // 100 def
 					"Layer.Learn.TrgAvgAct.On":           "true",  // critical!
 					"Layer.Learn.TrgAvgAct.SubMean":      "0",     // 0 > 1 key throughout -- even .5 slows learning -- doesn't help slow pca
