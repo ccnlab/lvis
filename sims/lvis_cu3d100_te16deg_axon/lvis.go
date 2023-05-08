@@ -56,21 +56,15 @@ var (
 )
 
 func main() {
-	TheSim.New()
+	sim := &Sim{}
+	sim.New()
 	if len(os.Args) > 1 {
-		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+		sim.RunNoGUI() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
 		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
+			sim.RunGUI()
 		})
 	}
-}
-
-func guirun() {
-	TheSim.Config()
-	TheSim.Init()
-	win := TheSim.ConfigGui()
-	win.StartEventLoop()
 }
 
 // see params.go for params
@@ -568,7 +562,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	// net.NThreads = 2
 	// runtime.GOMAXPROCS(net.NThreads)
-	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
+	fmt.Printf("orig GOMAXPROCS: %d\n", runtime.GOMAXPROCS(2))
+	fmt.Printf("use  GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
 
 	err := net.Build()
 	if err != nil {
@@ -635,8 +630,8 @@ func (ss *Sim) ConfigLoops() {
 
 	man.AddStack(etime.Test).AddTime(etime.Epoch, 1).AddTime(etime.Trial, effTrls).AddTime(etime.Cycle, 200)
 
-	axon.LooperStdPhases(man, &ss.Context, ss.Net.AsAxon(), 150, 199)            // plus phase timing
-	axon.LooperSimCycleAndLearn(man, ss.Net.AsAxon(), &ss.Context, &ss.ViewUpdt) // std algo code
+	axon.LooperStdPhases(man, &ss.Context, ss.Net, 150, 199)            // plus phase timing
+	axon.LooperSimCycleAndLearn(man, ss.Net, &ss.Context, &ss.ViewUpdt) // std algo code
 
 	man.GetLoop(etime.Train, etime.Trial).OnEnd.Replace("UpdateWeights", func() {
 		ss.Net.DWt(&ss.Context)
@@ -690,7 +685,7 @@ func (ss *Sim) ConfigLoops() {
 			if ss.Args.Bool("mpi") {
 				ss.Logs.MPIGatherTableRows(etime.Analyze, etime.Trial, ss.Comm)
 			}
-			axon.PCAStats(ss.Net.AsAxon(), &ss.Logs, &ss.Stats)
+			axon.PCAStats(ss.Net, &ss.Logs, &ss.Stats)
 			ss.Logs.ResetLog(etime.Analyze, etime.Trial)
 		}
 	})
@@ -736,7 +731,7 @@ func (ss *Sim) ConfigLoops() {
 			// ss.Net.SetSubMean(1, 1)
 		}
 		// ly := ss.Net.LayerByName("Output")
-		// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn).AsAxon()
+		// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn)
 		// fmit.Learn.Lrate.Mod = 1.0 / fmit.Learn.Lrate.Sched
 		// fmit.Learn.Lrate.Update()
 	})
@@ -778,7 +773,7 @@ func (ss *Sim) ConfigLoops() {
 // SaveWeights saves weights with filename recording run, epoch
 func (ss *Sim) SaveWeights() {
 	ctrString := ss.Stats.PrintVals([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
-	axon.SaveWeightsIfArgSet(ss.Net.AsAxon(), &ss.Args, ctrString, ss.Stats.String("RunName"))
+	axon.SaveWeightsIfArgSet(ss.Net, &ss.Args, ctrString, ss.Stats.String("RunName"))
 }
 
 // CenterPoolIdxs returns the unit indexes for 2x2 center pools
@@ -825,7 +820,7 @@ func (ss *Sim) ApplyInputs() {
 	// going to the same layers, but good practice and cheap anyway
 	lays := net.LayersByType(axon.InputLayer, axon.TargetLayer)
 	for _, lnm := range lays {
-		ly := ss.Net.LayerByName(lnm).(axon.AxonLayer).AsAxon()
+		ly := ss.Net.AxonLayerByName(lnm)
 		pats := ev.State(ly.Nm)
 		if pats != nil {
 			ly.ApplyExt(pats)
@@ -935,7 +930,7 @@ func (ss *Sim) StatCounters() {
 // TrialStats computes the trial-level statistics.
 // Aggregation is done directly from log data.
 func (ss *Sim) TrialStats() {
-	out := ss.Net.LayerByName("Output").(axon.AxonLayer).AsAxon()
+	out := ss.Net.AxonLayerByName("Output")
 
 	ss.Stats.SetFloat32("TrlCorSim", out.Vals.CorSim.Cor)
 	ss.Stats.SetFloat("TrlUnitErr", out.PctUnitErr())
@@ -1091,19 +1086,19 @@ func (ss *Sim) ConfigLogs() {
 	ss.ConfigActRFs()
 
 	axon.LogAddDiagnosticItems(&ss.Logs, ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer), etime.Train, etime.Epoch, etime.Trial)
-	axon.LogAddPCAItems(&ss.Logs, ss.Net.AsAxon(), etime.Train, etime.Run, etime.Epoch, etime.Trial)
+	axon.LogAddPCAItems(&ss.Logs, ss.Net, etime.Train, etime.Run, etime.Epoch, etime.Trial)
 
-	axon.LogAddLayerGeActAvgItems(&ss.Logs, ss.Net.AsAxon(), etime.Test, etime.Cycle)
+	axon.LogAddLayerGeActAvgItems(&ss.Logs, ss.Net, etime.Test, etime.Cycle)
 	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "TargetLayer")
 	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.AllModes, etime.Cycle, "TargetLayer")
 
 	// this was useful during development of trace learning:
-	// axon.LogAddCaLrnDiagnosticItems(&ss.Logs, ss.Net.AsAxon(), etime.Epoch, etime.Trial)
+	// axon.LogAddCaLrnDiagnosticItems(&ss.Logs, ss.Net, etime.Epoch, etime.Trial)
 
 	ss.Logs.PlotItems("CorSim", "PctErr", "PctErr2", "DecErr", "DecErr2")
 
 	ss.Logs.CreateTables()
-	ss.Logs.SetContext(&ss.Stats, ss.Net.AsAxon())
+	ss.Logs.SetContext(&ss.Stats, ss.Net)
 	// don't plot certain combinations we don't use
 	ss.Logs.NoPlot(etime.Train, etime.Cycle)
 	ss.Logs.NoPlot(etime.Test, etime.Run)
@@ -1217,7 +1212,7 @@ func (ss *Sim) ConfigLogItems() {
 	layers := ss.Net.LayersByType(axon.SuperLayer, axon.TargetLayer)
 	for _, lnm := range layers {
 		clnm := lnm
-		ly := ss.Net.LayerByName(clnm).(axon.AxonLayer).AsAxon()
+		ly := ss.Net.AxonLayerByName(clnm)
 		ss.Logs.AddItem(&elog.Item{
 			Name:   clnm + "_ActMax",
 			Type:   etensor.FLOAT64,
@@ -1228,6 +1223,17 @@ func (ss *Sim) ConfigLogItems() {
 				etime.Scope(etime.AllModes, etime.Cycle): func(ctx *elog.Context) {
 					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
 					ctx.SetFloat32(ly.AvgMaxVarByPool("Act", 0).Max)
+				}}})
+		ss.Logs.AddItem(&elog.Item{
+			Name:  clnm + "_GiMult",
+			Type:  etensor.FLOAT64,
+			Range: minmax.F64{Max: 1},
+			Write: elog.WriteMap{
+				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
+					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
+					ctx.SetFloat32(1.0 - ly.Vals.ActAvg.GiMult)
+				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
+					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + "_FirstCyc",
@@ -1447,6 +1453,13 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	return ss.GUI.Win
 }
 
+func (ss *Sim) RunGUI() {
+	ss.Config()
+	ss.Init()
+	win := ss.ConfigGui()
+	win.StartEventLoop()
+}
+
 func (ss *Sim) ConfigArgs() {
 	ss.Args.Init()
 	ss.Args.AddStd()
@@ -1474,14 +1487,13 @@ var SimProps = ki.Props{
 	},
 }
 
-func (ss *Sim) CmdArgs() {
+func (ss *Sim) RunNoGUI() {
 	if ss.Args.Bool("mpi") {
 		ss.MPIInit()
 	}
 
 	// key for Config and Init to be after MPIInit
 	ss.Config()
-	ss.Init()
 
 	ss.Args.ProcStd(&ss.Params)
 
@@ -1502,13 +1514,14 @@ func (ss *Sim) CmdArgs() {
 		ss.GUI.InitNetData(ss.Net, 200)
 	}
 
+	ss.Init()
+
 	runs := ss.Args.Int("runs")
 	run := ss.Args.Int("run")
 	mpi.Printf("Running %d Runs starting at %d\n", runs, run)
 	rc := &ss.Loops.GetLoop(etime.Train, etime.Run).Counter
 	rc.Set(run)
 	rc.Max = run + runs
-
 	ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Max = ss.Args.Int("epochs")
 
 	ss.NewRun()

@@ -14,7 +14,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.NMDA.MgC":                 "1.4",    // 1.4, 5 > 1.2, 0
 					"Layer.Act.NMDA.Voff":                "0",      // see above
 					"Layer.Act.NMDA.Gbar":                "0.006",  // 0.006 > 7 or higher
-					"Layer.Act.GABAB.Gbar":               "0.015",  // 0.015 > lower; higher not better
+					"Layer.Act.GABAB.Gbar":               "0.015",  // 0.015 > lower; higher not better -- this is inconsistent with LVis which works better lower?
 					"Layer.Learn.CaSpk.SpikeG":           "12",     // 12 > 8 > 15 (too high) -- 12 makes everything work!
 					"Layer.Learn.TrgAvgAct.SynScaleRate": "0.0002", // 0.0002 > others -- 0.005 sig worse
 					"Layer.Learn.LrnNMDA.MgC":            "1.4",    // 1.4, 5 > 1.2, 0
@@ -37,18 +37,18 @@ var ParamSets = params.Sets{
 			{Sel: "#V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Nominal": "0.03", // 0.03 > .04 > 0.025
+					"Layer.Inhib.ActAvg.Offset":  "0",    // 0 > 0.005 > 0.01
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
-					"Layer.Inhib.Layer.FB":       "1",    // 1.1 FB1 >> 4!
-					"Layer.Inhib.Pool.FB":        "4",    // 4
-					"Layer.Inhib.Layer.SS":       "30",   // 30 best
-					"Layer.Inhib.Pool.SS":        "30",   // 0 works here..
-					"Layer.Inhib.Layer.Gi":       "1.0",  // 1.1 > 1.0 -- def 1.1, 1.0 > 1.0, 1.1!
-					"Layer.Inhib.Pool.Gi":        "0.9",  // 0.9
+					"Layer.Inhib.Layer.Gi":       "1.0",  // 1.0 > 1.1 adapt
+					"Layer.Inhib.Layer.FB":       "1",    // 1.0 FB1 > 1.1 FB1 >> 4!
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
+					"Layer.Inhib.Pool.Gi":        "0.9",  // 0.9
+					"Layer.Inhib.Pool.FB":        "4",    // 4
 				}},
 			{Sel: "#IT", Desc: "initial activity",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Nominal": "0.04", // 0.04 -- 0.05 actual at end, but starts low
+					"Layer.Inhib.ActAvg.Offset":  "0",    // 0 > 0.005 > 0.01
 					"Layer.Inhib.ActAvg.AdaptGi": "true",
 					"Layer.Inhib.Layer.Gi":       "1.1", // 1.1 > 1.05 1.6.15 adapt
 					"Layer.Inhib.Layer.FB":       "4",   // 4
@@ -58,7 +58,7 @@ var ParamSets = params.Sets{
 					// "Layer.Act.Decay.Act":     "0.0",  // 0.2 with glong .6 best in lvis, slows learning here
 					// "Layer.Act.Decay.Glong":   "0.6",  // 0.6 def
 					"Layer.Inhib.ActAvg.Nominal": "0.05",   // 0.05 nominal
-					"Layer.Inhib.ActAvg.Offset":  "-0.005", //
+					"Layer.Inhib.ActAvg.Offset":  "-0.005", // -0.005 > 0
 					"Layer.Inhib.ActAvg.AdaptGi": "true",   //
 					"Layer.Inhib.Layer.Gi":       "1.2",    // 1.2 FB1 > 1.1 FB4
 					"Layer.Inhib.Layer.FB":       "1",      //
@@ -74,20 +74,6 @@ var ParamSets = params.Sets{
 			{Sel: ".BackPrjn", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger",
 				Params: params.Params{
 					"Prjn.PrjnScale.Rel": "0.2", // .2 >= .3 > .15 > .1 > .05 @176
-				}},
-		},
-	}},
-	{Name: "NovelLearn", Desc: "learning for novel objects case -- IT, Output connections learn", Sheets: params.Sheets{
-		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "lr = 0",
-				Params: params.Params{
-					"Prjn.Learn.LRate":     "0",
-					"Prjn.Learn.LRateInit": "0", // make sure for sched
-				}},
-			{Sel: ".NovLearn", Desc: "lr = 0.04",
-				Params: params.Params{
-					"Prjn.Learn.LRate":     "0.04",
-					"Prjn.Learn.LRateInit": "0.04", // double sure
 				}},
 		},
 	}},
