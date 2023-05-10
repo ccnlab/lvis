@@ -1225,17 +1225,6 @@ func (ss *Sim) ConfigLogItems() {
 					ctx.SetFloat32(ly.AvgMaxVarByPool("Act", 0).Max)
 				}}})
 		ss.Logs.AddItem(&elog.Item{
-			Name:  clnm + "_GiMult",
-			Type:  etensor.FLOAT64,
-			Range: minmax.F64{Max: 1},
-			Write: elog.WriteMap{
-				etime.Scope(etime.Train, etime.Trial): func(ctx *elog.Context) {
-					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(1.0 - ly.Vals.ActAvg.GiMult)
-				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
-					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
-				}}})
-		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + "_FirstCyc",
 			Type:  etensor.FLOAT64,
 			Plot:  elog.DFalse,
@@ -1295,17 +1284,6 @@ func (ss *Sim) ConfigLogItems() {
 					ctx.SetFloat32(ly.Pools[0].Inhib.SSGi)
 				}, etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
 					ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
-				}}})
-		ss.Logs.AddItem(&elog.Item{
-			Name:   clnm + "_GiMult",
-			Type:   etensor.FLOAT64,
-			Plot:   elog.DFalse,
-			FixMax: elog.DFalse,
-			Range:  minmax.F64{Max: 1},
-			Write: elog.WriteMap{
-				etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-					ly := ctx.Layer(clnm).(axon.AxonLayer).AsAxon()
-					ctx.SetFloat32(ly.Vals.ActAvg.GiMult)
 				}}})
 
 	}
