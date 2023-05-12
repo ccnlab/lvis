@@ -209,8 +209,6 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	itOut.SetClass("NovLearn")
 	outIT.SetClass("NovLearn")
 
-	fmt.Printf("GOMAXPROCS: %d\n", runtime.GOMAXPROCS(1)) // just use 1
-
 	err := net.Build()
 	if err != nil {
 		log.Println(err)
@@ -219,6 +217,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	net.Defaults()
 	ss.Params.SetObject("Network")
 	net.InitWts()
+
+	net.SetNThreads(2) // no more than 2
+	mpi.Printf("GOMAXPROCS: %d\tthreads: %d\n", runtime.GOMAXPROCS(0), net.NThreads)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

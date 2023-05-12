@@ -29,7 +29,6 @@ import (
 	"github.com/emer/emergent/looper"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
 	"github.com/emer/empi/empi"
 	"github.com/emer/empi/mpi"
@@ -104,9 +103,6 @@ type Sim struct {
 // this registers this Sim Type and gives it properties that e.g.,
 // prompt for args when calling methods
 var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
-
-// TheSim is the overall state for this simulation
-var TheSim Sim
 
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
@@ -524,46 +520,42 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	//////////////////////
 	// 	Positioning
 
-	v1m8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m16.Name(), YAlign: relpos.Front, Space: 4})
+	space := float32(4)
+	v1m8.PlaceRightOf(v1m16, space)
 
-	v1l16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m16.Name(), XAlign: relpos.Left, Space: 4})
-	v1l8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1m8.Name(), XAlign: relpos.Left, Space: 4})
-	// clst.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1l8.Name(), XAlign: relpos.Left, Space: 4, Scale: 2})
+	v1l16.PlaceBehind(v1m16, space)
+	v1l8.PlaceBehind(v1m8, space)
+	// clst.PlaceBehind(v1l8, XAlign: relpos.Left, Space: 4, Scale: 2})
 
 	if cdog {
-		v1cm16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m8.Name(), YAlign: relpos.Front, Space: 4})
-		v1cm8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1cm16.Name(), YAlign: relpos.Front, Space: 4})
-		v1cl16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1cm16.Name(), XAlign: relpos.Left, Space: 4})
-		v1cl8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v1cm8.Name(), XAlign: relpos.Left, Space: 4})
+		v1cm16.PlaceRightOf(v1m8, space)
+		v1cm8.PlaceRightOf(v1cm16, space)
+		v1cl16.PlaceBehind(v1cm16, space)
+		v1cl8.PlaceBehind(v1cm8, space)
 	}
 
 	if hi16 {
-		v1h16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v1m8.Name(), YAlign: relpos.Front, Space: 4})
-		v2h16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v2m8.Name(), YAlign: relpos.Front, Space: 4})
-		v3h16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v4f16.Name(), XAlign: relpos.Left, Space: 4})
+		v1h16.PlaceRightOf(v1m8, space)
+		v2h16.PlaceRightOf(v2m8, space)
+		v3h16.PlaceBehind(v4f16, space)
 	}
 
-	v2m16.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v1m16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
+	v2m16.PlaceAbove(v1m16)
 
-	v2m8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v2m16.Name(), YAlign: relpos.Front, Space: 4})
+	v2m8.PlaceRightOf(v2m16, space)
 
-	v2l16.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v2m16.Name(), XAlign: relpos.Left, Space: 4})
-	v2l8.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: v2m8.Name(), XAlign: relpos.Left, Space: 4})
+	v2l16.PlaceBehind(v2m16, space)
+	v2l8.PlaceBehind(v2m8, space)
 
-	v4f16.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: v2m16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
-	teo16.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f16.Name(), YAlign: relpos.Front, Space: 4})
+	v4f16.PlaceAbove(v2m16)
+	teo16.PlaceRightOf(v4f16, space)
 
-	v4f8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: teo16.Name(), XAlign: relpos.Left, YAlign: relpos.Front})
-	teo8.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: v4f8.Name(), YAlign: relpos.Front, Space: 4})
+	v4f8.PlaceRightOf(teo16, space)
+	teo8.PlaceRightOf(v4f8, space)
 
-	te.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: teo8.Name(), XAlign: relpos.Left, Space: 15})
+	te.PlaceBehind(teo8, 15)
 
-	out.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: te.Name(), XAlign: relpos.Left, Space: 15})
-
-	// net.NThreads = 2
-	// runtime.GOMAXPROCS(net.NThreads)
-	fmt.Printf("orig GOMAXPROCS: %d\n", runtime.GOMAXPROCS(2))
-	fmt.Printf("use  GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0))
+	out.PlaceBehind(te, 15)
 
 	err := net.Build()
 	if err != nil {
@@ -574,9 +566,12 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	ss.Params.SetObject("Network")
 	net.InitWts()
 
-	if !ss.Args.Bool("nogui") {
-		sr := net.SizeReport()
-		mpi.Printf("%s", sr)
+	net.SetNThreads(4) // no more than 4
+	mpi.Printf("GOMAXPROCS: %d\tthreads: %d\n", runtime.GOMAXPROCS(0), net.NThreads)
+
+	if ss.Args.Bool("bench") || !ss.Args.Bool("nogui") {
+		// sr := net.SizeReport()
+		// mpi.Printf("%s", sr)
 	}
 
 	// adding each additional layer type improves decoding..
@@ -638,8 +633,10 @@ func (ss *Sim) ConfigLoops() {
 		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
 		ss.MPIWtFmDWt()
 	})
-	man.GetLoop(etime.Train, etime.Epoch).OnStart.Add("ValidateMPIReplicaConsistency",
-		ss.assertMPIReplicaConsistency)
+	if Debug {
+		man.GetLoop(etime.Train, etime.Epoch).OnStart.Add("ValidateMPIReplicaConsistency",
+			ss.AssertMPIReplicaConsistency)
+	}
 
 	for m, _ := range man.Stacks {
 		mode := m // For closures
@@ -708,33 +705,35 @@ func (ss *Sim) ConfigLoops() {
 	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("SaveWeights", func() { ss.SaveWeights() })
 
 	// lrate schedule
-	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("LrateSched", func() {
-		trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
-		switch trnEpc {
-		case 50:
-			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
-			// ss.Net.LrateSched(0.5)
-		case 200:
-			// 100 is too early..
-			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
-			// ss.Net.SetSubMean(1, 1)
-		case 500:
-			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc) // at no point useful!
-			// ss.Net.SetSubMean(1, 1)
-			// mpi.Printf("learning rate drop at: %d\n", trnEpc)
-			// ss.Net.LrateSched(0.1)
-			// case 200:
-			// 	mpi.Printf("learning rate drop at: %d\n", trnEpc)
-			// 	ss.Net.LrateSched(0.1)
-		case 1000:
-			// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
-			// ss.Net.SetSubMean(1, 1)
-		}
-		// ly := ss.Net.LayerByName("Output")
-		// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn)
-		// fmit.Learn.Lrate.Mod = 1.0 / fmit.Learn.Lrate.Sched
-		// fmit.Learn.Lrate.Update()
-	})
+	/*
+		man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("LrateSched", func() {
+			trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+			switch trnEpc {
+			case 50:
+				// mpi.Printf("learning rate drop at: %d\n", trnEpc)
+				// ss.Net.LrateSched(0.5)
+			case 200:
+				// 100 is too early..
+				// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
+				// ss.Net.SetSubMean(1, 1)
+			case 500:
+				// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc) // at no point useful!
+				// ss.Net.SetSubMean(1, 1)
+				// mpi.Printf("learning rate drop at: %d\n", trnEpc)
+				// ss.Net.LrateSched(0.1)
+				// case 200:
+				// 	mpi.Printf("learning rate drop at: %d\n", trnEpc)
+				// 	ss.Net.LrateSched(0.1)
+			case 1000:
+				// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
+				// ss.Net.SetSubMean(1, 1)
+			}
+			// ly := ss.Net.LayerByName("Output")
+			// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn)
+			// fmit.Learn.Lrate.Mod = 1.0 / fmit.Learn.Lrate.Sched
+			// fmit.Learn.Lrate.Update()
+		})
+	*/
 
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 100, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 500, func() { ss.SaveWeights() })
@@ -744,9 +743,9 @@ func (ss *Sim) ConfigLoops() {
 	////////////////////////////////////////////
 	// GUI
 	if ss.Args.Bool("nogui") {
-		man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
-			ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
-		})
+		// man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
+		// 	ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
+		// })
 	} else {
 		// this is actually fairly expensive
 		man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
@@ -1313,7 +1312,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
 
 	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
-	if trnEpc > ss.ConfusionEpc {
+	if trnEpc > ss.ConfusionEpc && trnEpc%ss.TestInterval == 0 {
 		ss.Stats.Confusion.Probs()
 		fnm := ecmd.LogFileName("trn_conf", ss.Net.Name(), ss.Stats.String("RunName"))
 		ss.Stats.Confusion.SaveCSV(gi.FileName(fnm))
@@ -1423,7 +1422,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	})
 	ss.GUI.FinalizeGUI(false)
 	if GPU {
-		TheSim.Net.ConfigGPUwithGUI(&TheSim.Context)
+		ss.Net.ConfigGPUwithGUI(&ss.Context)
 		gi.SetQuitCleanFunc(func() {
 			ss.Net.GPU.Destroy()
 		})
@@ -1517,7 +1516,8 @@ func (ss *Sim) RunNoGUI() {
 
 	if bench {
 		net.RecFunTimes = bench // this determines whether GPU waits or not
-		// runtime.GOMAXPROCS(4)
+		runtime.GOMAXPROCS(2)
+		net.SetNThreads(2)
 
 		// run: ./lvis_cu3d100_te16deg_axon -bench -epochs 1 -tag bench
 		// Macbook pro results:
@@ -1601,7 +1601,7 @@ func (ss *Sim) RunNoGUI() {
 
 	if bench {
 		tmr.Stop()
-		fmt.Printf("%6.3g\n", tmr.TotalSecs())
+		fmt.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
 		net.TimerReport()
 	}
 
@@ -1661,7 +1661,7 @@ func (ss *Sim) MPIWtFmDWt() {
 	ss.Net.WtFmDWt(&ss.Context)
 }
 
-func (ss *Sim) assertMPIReplicaConsistency() {
+func (ss *Sim) AssertMPIReplicaConsistency() {
 	if ss.Comm.Size() == 1 {
 		return
 	}
