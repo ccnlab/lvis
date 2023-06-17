@@ -21,33 +21,33 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":                "1.1",  // "
 					"Layer.Inhib.Layer.FB":               "1",    // setting for layers below
 					"Layer.Inhib.Pool.FB":                "1",
-					"Layer.Inhib.ActAvg.AdaptRate":       "0.1",
+					"Layer.Inhib.ActAvg.AdaptRate":       "0.01", // getting fluctations
 					"Layer.Inhib.ActAvg.LoTol":           "0.8",
 					"Layer.Inhib.ActAvg.HiTol":           "0.0",
-					"Layer.Act.Decay.Act":                "0.0",   // 0 == .2
-					"Layer.Act.Decay.Glong":              "0.6",   // 0.6 def
-					"Layer.Act.Dend.SSGi":                "2",     // 2 new default
-					"Layer.Act.Dend.GbarExp":             "0.2",   // 0.2 > 0.1 > 0
-					"Layer.Act.Dend.GbarR":               "3",     // 2 good for 0.2
-					"Layer.Act.Dt.VmDendTau":             "5",     // 5 much better in fsa!
-					"Layer.Act.GABAB.Gbar":               "0.012", // 0.012 > 0.015
-					"Layer.Act.NMDA.Gbar":                "0.006", // 0.006 def
-					"Layer.Act.NMDA.MgC":                 "1.4",   // mg1, voff0, gbarexp.2, gbarr3 = better
-					"Layer.Act.NMDA.Voff":                "0",     // mg1, voff0 = mg1.4, voff5 w best params
-					"Layer.Act.AK.Gbar":                  "0.1",
-					"Layer.Act.VGCC.Gbar":                "0.02",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
-					"Layer.Act.VGCC.Ca":                  "25",    // 25 / 10tau same as SpkVGCC
-					"Layer.Act.Mahp.Gbar":                "0.01",  // 0.01 > 0.02 > higher -- long run
-					"Layer.Act.Sahp.Gbar":                "0.05",  // was 0.1, 0.05 def
-					"Layer.Act.Sahp.Off":                 "0.8",   //
-					"Layer.Act.Sahp.Slope":               "0.02",  //
-					"Layer.Act.Sahp.CaTau":               "5",     // 5 ok -- not tested
-					"Layer.Learn.CaLrn.Norm":             "80",    // 80 def; 60 makes CaLrnMax closer to 1
-					"Layer.Learn.CaLrn.SpkVGCC":          "true",  // sig better..
-					"Layer.Learn.CaLrn.SpkVgccCa":        "35",    // 70 / 5 or 35 / 10 both work
-					"Layer.Learn.CaLrn.VgccTau":          "10",    // 10 > 5 ?
-					"Layer.Learn.CaLrn.UpdtThr":          "0.01",  // 0.01 > 0.05 -- was LrnThr
-					"Layer.Learn.CaLrn.Dt.MTau":          "2",     // 2 > 1 ?
+					"Layer.Acts.Decay.Act":               "0.0",   // 0 == .2
+					"Layer.Acts.Decay.Glong":             "0.6",   // 0.6 def
+					"Layer.Acts.Dend.SSGi":               "2",     // 2 new default
+					"Layer.Acts.Dend.GbarExp":            "0.2",   // 0.2 > 0.1 > 0
+					"Layer.Acts.Dend.GbarR":              "3",     // 2 good for 0.2
+					"Layer.Acts.Dt.VmDendTau":            "5",     // 5 much better in fsa!
+					"Layer.Acts.GabaB.Gbar":              "0.012", // 0.012 > 0.015
+					"Layer.Acts.NMDA.Gbar":               "0.006", // 0.006 def
+					"Layer.Acts.NMDA.MgC":                "1.4",   // mg1, voff0, gbarexp.2, gbarr3 = better
+					"Layer.Acts.NMDA.Voff":               "0",     // mg1, voff0 = mg1.4, voff5 w best params
+					"Layer.Acts.AK.Gbar":                 "0.1",
+					"Layer.Acts.VGCC.Gbar":               "0.02",  // non nmda: 0.15 good, 0.3 blows up, nmda: .02 best
+					"Layer.Acts.VGCC.Ca":                 "25",    // 25 / 10tau same as SpkVGCC
+					"Layer.Acts.Mahp.Gbar":               "0.01",  // 0.01 > 0.02 > higher -- long run
+					"Layer.Acts.Sahp.Gbar":               "0.05",  // was 0.1, 0.05 def
+					"Layer.Acts.Sahp.Off":                "0.8",   //
+					"Layer.Acts.Sahp.Slope":              "0.02",  //
+					"Layer.Acts.Sahp.CaTau":              "5",     // 5 ok -- not tested
+					"Layer.Learn.CaLearn.Norm":           "80",    // 80 def; 60 makes CaLearnMax closer to 1
+					"Layer.Learn.CaLearn.SpkVGCC":        "true",  // sig better..
+					"Layer.Learn.CaLearn.SpkVgccCa":      "35",    // 70 / 5 or 35 / 10 both work
+					"Layer.Learn.CaLearn.VgccTau":        "10",    // 10 > 5 ?
+					"Layer.Learn.CaLearn.UpdtThr":        "0.01",  // 0.01 > 0.05 -- was LrnThr
+					"Layer.Learn.CaLearn.Dt.MTau":        "2",     // 2 > 1 ?
 					"Layer.Learn.CaSpk.SpikeG":           "12",    // 12 > 8 -- for larger nets
 					"Layer.Learn.CaSpk.SynTau":           "30",    // 30 > 20, 40
 					"Layer.Learn.CaSpk.Dt.MTau":          "5",     // 5 > 10?
@@ -74,9 +74,9 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.Gi":       "0.9",  // was 0.9
 					"Layer.Inhib.Pool.Gi":        "0.9",  // 0.9 >= 1.1 def -- more activity
 					"Layer.Inhib.ActAvg.Nominal": "0.04", // .06 for !SepColor actuals: V1m8: .04, V1m16: .03
-					"Layer.Act.Clamp.Ge":         "1.5",  // was 1.0
-					"Layer.Act.Decay.Act":        "1",    // these make no diff
-					"Layer.Act.Decay.Glong":      "1",
+					"Layer.Acts.Clamp.Ge":        "1.5",  // was 1.0
+					"Layer.Acts.Decay.Act":       "1",    // these make no diff
+					"Layer.Acts.Decay.Glong":     "1",
 				}},
 			{Sel: ".V2", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -87,7 +87,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.FB":       "1",    //
 					"Layer.Inhib.Pool.FB":        "4",
 					"Layer.Inhib.Layer.Gi":       "1.0",  // 1.1?
-					"Layer.Inhib.Pool.Gi":        "0.95", // 1.0?
+					"Layer.Inhib.Pool.Gi":        "1.05", // was 0.95 but gi mult goes up..
 				}},
 			{Sel: ".V4", Desc: "pool inhib, sparse activity",
 				Params: params.Params{
@@ -97,8 +97,8 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":        "true", // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",    //
 					"Layer.Inhib.Pool.FB":        "4",
-					"Layer.Inhib.Layer.Gi":       "1.0", // 1.1?
-					"Layer.Inhib.Pool.Gi":        "1.0", // 1.1?
+					"Layer.Inhib.Layer.Gi":       "1.0",  // 1.1?
+					"Layer.Inhib.Pool.Gi":        "1.05", // was 1.0 but gi mult goes up
 				}},
 			{Sel: ".TEO", Desc: "initial activity",
 				Params: params.Params{
@@ -130,7 +130,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5 older..
 					"Layer.Inhib.ActAvg.HiTol":      "0.02",  // 0.02 > 0 tiny bit
 					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.1
-					"Layer.Act.Clamp.Ge":            "0.8",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
+					"Layer.Acts.Clamp.Ge":           "0.8",   // .6 = .7 > .5 (tiny diff) -- input has 1.0 now
 					"Layer.Learn.CaSpk.SpikeG":      "12",    // 12 > 8 probably; 8 = orig, 12 = new trace
 					"Layer.Learn.RLRate.On":         "true",  // beneficial for trace
 					"Layer.Learn.RLRate.SigmoidMin": "0.05",  // 0.05 > 1 now!
@@ -150,10 +150,9 @@ var ParamSets = params.Sets{
 			// projections
 			{Sel: "Prjn", Desc: "exploring",
 				Params: params.Params{
-					"Prjn.SWt.Adapt.On":           "true",   // true > false, esp in cosdiff
-					"Prjn.SWt.Adapt.LRate":        "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
-					"Prjn.SWt.Adapt.DreamVar":     "0.0",    // 0 == 0.02
-					"Prjn.SWt.Adapt.SubMean":      "1",      // 1 > 0 -- definitely needed
+					"Prjn.SWts.Adapt.On":          "true",   // true > false, esp in cosdiff
+					"Prjn.SWts.Adapt.LRate":       "0.0002", // .0002, .001 > .01 > .1 after 250epc in NStrong
+					"Prjn.SWts.Adapt.SubMean":     "1",      // 1 > 0 -- definitely needed
 					"Prjn.Learn.LRate.Base":       "0.005",  // 0.01 > 0.02 later (trace)
 					"Prjn.Com.PFail":              "0.0",
 					"Prjn.Learn.Trace.SubMean":    "1",  // 1 > 0 for trgavg weaker
@@ -172,16 +171,14 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					// .2 max 1 = no diff, .5 max .8 = no diff
 					"Prjn.Com.PFail": "0.0", // 0 > .05 > .1 > .2
-					// "Prjn.SWt.Adapt.DreamVar": "0.02", // 0.01 big pca effects, no perf bene; 0.05 impairs perf
 				}},
 			{Sel: ".ToOut", Desc: "to output -- some things should be different..",
 				Params: params.Params{
 					"Prjn.Com.PFail": "0.0",
 					// "Prjn.Learn.LRate.Base":   "0.01",  // base 0.01
-					"Prjn.SWt.Adapt.DreamVar": "0.0",   // nope
-					"Prjn.SWt.Adapt.On":       "false", // off > on
-					"Prjn.SWt.Init.SPct":      "0",     // when off, 0
-					"Prjn.PrjnScale.Abs":      "2.0",   // 2.0 >= 1.8 > 2.2 > 1.5 > 1.2 trace
+					"Prjn.SWts.Adapt.On":  "false", // off > on
+					"Prjn.SWts.Init.SPct": "0",     // when off, 0
+					"Prjn.PrjnScale.Abs":  "2.0",   // 2.0 >= 1.8 > 2.2 > 1.5 > 1.2 trace
 				}},
 			// {Sel: ".FmOut", Desc: "from output -- some things should be different..",
 			// 	Params: params.Params{}},
@@ -191,20 +188,20 @@ var ParamSets = params.Sets{
 						"Prjn.Learn.Learn":         "true",   // learned decorrel is good
 						"Prjn.Learn.LRate.Base":    "0.0001", // .0001 > .001 -- slower better!
 						"Prjn.Learn.Trace.SubMean": "1",      // 1 is *essential* here!
-						"Prjn.SWt.Init.Var":        "0.0",
-						"Prjn.SWt.Init.Mean":       "0.1",
-						"Prjn.SWt.Init.Sym":        "false",
-						"Prjn.SWt.Adapt.On":        "false",
+						"Prjn.SWts.Init.Var":        "0.0",
+						"Prjn.SWts.Init.Mean":       "0.1",
+						"Prjn.SWts.Init.Sym":        "false",
+						"Prjn.SWts.Adapt.On":        "false",
 						"Prjn.PrjnScale.Abs":       "0.2", // .2 > .1 for controlling PCA; .3 or.4 with GiSynThr .01
 						"Prjn.IncGain":             "1",   // .5 def
 					}},
 			*/
 			{Sel: ".V1V2", Desc: "special SWt params",
 				Params: params.Params{
-					"Prjn.SWt.Init.Mean": "0.4", // .4 here is key!
-					"Prjn.SWt.Limit.Min": "0.1", // .1-.7
-					"Prjn.SWt.Limit.Max": "0.7", //
-					"Prjn.PrjnScale.Abs": "1.4", // 1.4 > 2.0 for color -- extra boost to get more v2 early on
+					"Prjn.SWts.Init.Mean": "0.4", // .4 here is key!
+					"Prjn.SWts.Limit.Min": "0.1", // .1-.7
+					"Prjn.SWts.Limit.Max": "0.7", //
+					"Prjn.PrjnScale.Abs":  "1.4", // 1.4 > 2.0 for color -- extra boost to get more v2 early on
 				}},
 			{Sel: ".V1V2fmSm", Desc: "weaker",
 				Params: params.Params{
@@ -212,10 +209,10 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".V2V4", Desc: "extra boost",
 				Params: params.Params{
-					"Prjn.PrjnScale.Abs": "1.0", // 1.0 prev, 1.2 not better
-					"Prjn.SWt.Init.Mean": "0.4", // .4 a tiny bit better overall
-					"Prjn.SWt.Limit.Min": "0.1", // .1-.7 def
-					"Prjn.SWt.Limit.Max": "0.7", //
+					"Prjn.PrjnScale.Abs":  "1.0", // 1.0 prev, 1.2 not better
+					"Prjn.SWts.Init.Mean": "0.4", // .4 a tiny bit better overall
+					"Prjn.SWts.Limit.Min": "0.1", // .1-.7 def
+					"Prjn.SWts.Limit.Max": "0.7", //
 				}},
 			{Sel: ".V2V4sm", Desc: "extra boost",
 				Params: params.Params{
@@ -250,10 +247,10 @@ var ParamSets = params.Sets{
 			// back projections
 			{Sel: ".V4V2", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.PrjnScale.Rel": "0.05", // .05 > .02 > .1 v70
-					"Prjn.SWt.Init.Mean": "0.4",  // .4 matches V2V4 -- not that big a diff on its own
-					"Prjn.SWt.Limit.Min": "0.1",  // .1-.7 def
-					"Prjn.SWt.Limit.Max": "0.7",  //
+					"Prjn.PrjnScale.Rel":  "0.05", // .05 > .02 > .1 v70
+					"Prjn.SWts.Init.Mean": "0.4",  // .4 matches V2V4 -- not that big a diff on its own
+					"Prjn.SWts.Limit.Min": "0.1",  // .1-.7 def
+					"Prjn.SWts.Limit.Max": "0.7",  //
 				}},
 			// {Sel: ".TEOV2", Desc: "weaker -- not used",
 			// 	Params: params.Params{
@@ -293,15 +290,15 @@ var ParamSets = params.Sets{
 			// 	Params: params.Params{
 			// 		"Prjn.Learn.Learn":   "false",
 			// 		"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
-			// 		"Prjn.SWt.Adapt.On":  "false", // seems better
+			// 		"Prjn.SWts.Adapt.On":  "false", // seems better
 			// 	}},
 			{Sel: ".V1SC", Desc: "v1 shortcut",
 				Params: params.Params{
 					"Prjn.Learn.LRate.Base": "0.001", //
 					// "Prjn.Learn.Learn":      "false",
 					"Prjn.PrjnScale.Rel": "0.5",   // .5 > .8 > 1 > .4 > .3 etc
-					"Prjn.SWt.Adapt.On":  "false", // seems better
-					// "Prjn.SWt.Init.Var":  "0.05",
+					"Prjn.SWts.Adapt.On": "false", // seems better
+					// "aPrjn.SWts.Init.Var":  "0.05",
 				}},
 		},
 	}},
