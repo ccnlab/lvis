@@ -830,6 +830,9 @@ func (ss *Sim) ApplyInputs() {
 	lays := net.LayersByType(axon.InputLayer, axon.TargetLayer)
 	for di := uint32(0); di < ctx.NetIdxs.NData; di++ {
 		ev.Step()
+		ss.Stats.SetStringDi("TrialName", int(di), ev.String()) // for logging
+		ss.Stats.SetIntDi("TrlCatIdx", int(di), ev.CurCatIdx)
+		ss.Stats.SetStringDi("TrlCat", int(di), ev.CurCat)
 		for _, lnm := range lays {
 			ly := ss.Net.AxonLayerByName(lnm)
 			pats := ev.State(ly.Nm)
@@ -837,7 +840,6 @@ func (ss *Sim) ApplyInputs() {
 				ly.ApplyExt(ctx, di, pats)
 			}
 		}
-		ss.Stats.SetStringDi("TrialName", int(di), ev.String()) // for logging
 	}
 	net.ApplyExts(ctx)
 }
@@ -882,16 +884,16 @@ func (ss *Sim) RunTestAll() {
 // otherwise it is the confusion row for given category.
 // data goes in the TrlErr = Err column.
 func (ss *Sim) ConfusionTstPlot(cat string) {
-	env := ss.Envs[etime.Test.String()].(*ImagesEnv)
+	ev := ss.Envs[etime.Test.String()].(*ImagesEnv)
 	ss.Logs.ResetLog(etime.Test, etime.Trial)
 	nc := ss.Stats.Confusion.N.Len()
 	ti := -1
 	if cat != "" {
-		ti = env.Images.CatMap[cat]
+		ti = ev.Images.CatMap[cat]
 	}
 	for i := 0; i < nc; i++ {
-		env.Trial.Cur = i
-		env.CurCat = env.Images.Cats[i]
+		ev.Trial.Cur = i
+		ev.CurCat = ev.Images.Cats[i]
 		if ti >= 0 {
 			ss.Stats.SetFloat("TrlErr", ss.Stats.Confusion.Prob.Value([]int{ti, i}))
 		} else {
@@ -922,8 +924,8 @@ func (ss *Sim) InitStats() {
 	ss.Stats.SetInt("TrlDecRespIdx", 0)
 	ss.Stats.SetFloat("TrlDecErr", 0.0)
 	ss.Stats.SetFloat("TrlDecErr2", 0.0)
-	env := ss.Envs[etime.Train.String()].(*ImagesEnv)
-	ss.Stats.Confusion.InitFromLabels(env.Images.Cats, 12)
+	ev := ss.Envs[etime.Train.String()].(*ImagesEnv)
+	ss.Stats.Confusion.InitFromLabels(ev.Images.Cats, 12)
 }
 
 // StatCounters saves current counters to Stats, so they are available for logging etc
@@ -940,7 +942,7 @@ func (ss *Sim) StatCounters(di int) {
 	ss.Stats.SetInt("Trial", trl+di)
 	ss.Stats.SetInt("Di", di)
 	ss.Stats.SetString("TrialName", ss.Stats.StringDi("TrialName", di))
-	ss.Stats.SetString("TrlResp", "")
+	ss.Stats.SetString("TrlResp", ss.Stats.StringDi("TrlResp", di))
 }
 
 func (ss *Sim) NetViewCounters() {
@@ -962,124 +964,52 @@ func (ss *Sim) TrialStats(di int) {
 	ss.Stats.SetFloat("UnitErr", out.PctUnitErr(ctx)[di])
 
 	ovt := ss.Stats.SetLayerTensor(ss.Net, "Output", "ActM", di)
-	env := ss.Envs.ByMode(ctx.Mode).(*ImagesEnv)
+	ev := ss.Envs.ByMode(ctx.Mode).(*ImagesEnv)
 
-	ncats := len(env.Images.Cats)
+	ncats := len(ev.Images.Cats)
 
-	rsp, trlErr, trlErr2 := env.OutErr(ovt)
-	ss.Stats.SetInt("TrlRespIdx", rsp)
+	curCatIdx := ss.Stats.IntDi("TrlCatIdx", di)
+	curCat := ss.Stats.StringDi("TrlCat", di)
+	ss.Stats.SetInt("TrlCatIdx", curCatIdx)
+	ss.Stats.SetString("TrlCat", curCat)
+
+	rsp, trlErr, trlErr2 := ev.OutErr(ovt, curCatIdx)
+	ss.Stats.SetIntDi("TrlRespIdx", di, rsp) // save for stat counter
+	ss.Stats.SetFloatDi("TrlErr", di, trlErr)
+	ss.Stats.SetFloatDi("TrlErr2", di, trlErr2)
+	ss.Stats.SetInt("TrlRespIdx", rsp) // used in logging current trial
 	ss.Stats.SetFloat("TrlErr", trlErr)
 	ss.Stats.SetFloat("TrlErr2", trlErr2)
 	if rsp >= 0 && rsp < ncats {
-		ss.Stats.SetString("TrlResp", env.Images.Cats[rsp])
+		ss.Stats.SetStringDi("TrlResp", di, ev.Images.Cats[rsp])
+		ss.Stats.SetString("TrlResp", ev.Images.Cats[rsp])
+	} else {
+		ss.Stats.SetStringDi("TrlResp", di, "none")
+		ss.Stats.SetString("TrlResp", "none")
 	}
-	ss.Stats.SetInt("TrlCatIdx", env.CurCatIdx)
-	ss.Stats.SetString("TrlCat", env.CurCat)
 
-	epc := env.Epoch.Cur
-	if epc > ss.Sim.ConfusionEpc {
-		ss.Stats.Confusion.Incr(ss.Stats.Int("TrlCatIdx"), ss.Stats.Int("TrlRespIdx"))
+	trnEpc := ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Cur
+	if trnEpc > ss.Sim.ConfusionEpc {
+		ss.Stats.Confusion.Incr(curCatIdx, rsp)
 	}
 
 	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pool(uint32(di), 0).AvgMax.Act.Plus.Avg/0.01))
 	decIdx := ss.Decoder.Decode("ActM", di)
 	ss.Stats.SetInt("TrlDecRespIdx", decIdx)
 	if ctx.Mode == etime.Train {
-		ss.Decoder.Train(env.CurCatIdx)
+		ss.Decoder.Train(curCatIdx)
 	}
 	decErr := float64(0)
-	if decIdx != env.CurCatIdx {
+	if decIdx != curCatIdx {
 		decErr = 1
 	}
 	ss.Stats.SetFloat("TrlDecErr", decErr)
 	decErr2 := decErr
-	if ss.Decoder.Sorted[1] == env.CurCatIdx {
+	if ss.Decoder.Sorted[1] == curCatIdx {
 		decErr2 = 0
 	}
 	ss.Stats.SetFloat("TrlDecErr2", decErr2)
 	ss.Stats.SetFloat32("TrlOutRT", out.Vals[di].RT)
-}
-
-// FindPeaks returns indexes of local maxima in input slice, smoothing
-// the data first using GaussKernel
-func (ss *Sim) FindPeaks(data []float64) []int {
-	// convolve.Slice64(&ss.SmoothData, data, ss.GaussKernel)
-	// dt := ss.SmoothData
-	dt := data // already smooth
-	sz := len(dt)
-	off := 10
-	peaks := []int{}
-	for wd := 4; wd >= 1; wd-- {
-		for i := off + wd; i < sz-wd; i++ {
-			ctr := dt[i]
-			fail := false
-			for j := -wd; j <= wd; j++ {
-				if dt[i+j] > ctr {
-					fail = true
-					break
-				}
-			}
-			if !fail {
-				peaks = append(peaks, i)
-				i += wd
-			}
-		}
-		if len(peaks) > 0 {
-			break
-		}
-	}
-	return peaks
-}
-
-// FindActCycle returns the point at which max activity stops going up by more than .01
-// within minus phase.
-// must be passed max act data cycle-by-cycle
-func (ss *Sim) FindActCycle(data []float64) int {
-	mx := 150
-	if len(data) < mx {
-		mpi.Printf("FindActCycle error: data is len: %d\n", len(data))
-		return mx
-	}
-	dt := data  // data is already smooth
-	start := 25 // give time for prior act to decay
-	thr := 0.01 // rise threshold
-	hit := false
-	cyc := mx
-	for i := start; i < mx; i++ {
-		del := dt[i] - dt[i-1]
-		if !hit {
-			if del > thr {
-				hit = true
-			}
-			continue
-		}
-		if del < thr {
-			cyc = i
-			break
-		}
-	}
-	return cyc
-}
-
-// FirstActStat returns first major activation of given layer
-func (ss *Sim) FirstActStat(cyclog *etable.Table, lnm string) int {
-	dc := cyclog.ColByName(lnm + "_ActMax").(*etensor.Float64)
-	return ss.FindActCycle(dc.Values)
-}
-
-// FirstOut returns first output response at first peak of output activity
-func (ss *Sim) FirstOut(cyclog *etable.Table) (fcyc, resp int, err float64, err2 float64) {
-	fcyc = ss.FirstActStat(cyclog, "Output")
-	oval := cyclog.CellTensor("Output_Act", fcyc)
-	if oval == nil {
-		err = 1
-		err2 = 1
-		return
-	}
-	out := cyclog.CellTensor("Output_Act", fcyc).(*etensor.Float32)
-	env := ss.Envs[ss.Context.Mode.String()].(*ImagesEnv)
-	resp, err, err2 = env.OutErr(out)
-	return
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1101,7 +1031,7 @@ func (ss *Sim) ConfigLogs() {
 	ss.ConfigLogItems()
 
 	// Copy over Testing items
-	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr", "PctErr2", "DecErr", "DecErr2", "FirstErr", "FirstErr2")
+	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr", "PctErr2", "DecErr", "DecErr2")
 
 	ss.ConfigActRFs()
 
@@ -1298,7 +1228,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
 
 	if time == etime.Epoch {
-		trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+		trnEpc := ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Cur
 		if trnEpc > ss.Sim.ConfusionEpc && trnEpc%ss.Sim.ConfusionEpc == 0 {
 			ss.Stats.Confusion.Probs()
 			fnm := ecmd.LogFileName("trn_conf", ss.Net.Name(), ss.Stats.String("RunName"))
@@ -1435,13 +1365,13 @@ func (ss *Sim) ConfigArgs() {
 	ss.Args.SetInt("runs", 1)
 	ss.Args.AddBool("mpi", false, "if set, use MPI for distributed computation")
 	ss.Args.Parse() // always parse
+	if ss.Args.Bool("mpi") {
+		ss.MPIInit()
+	}
 	if len(os.Args) > 1 {
 		ss.Args.SetBool("nogui", true) // by definition if here
 		ss.Sim.NData = ss.Args.Int("ndata")
 		mpi.Printf("Set NData to: %d\n", ss.Sim.NData)
-	}
-	if ss.Args.Bool("mpi") {
-		ss.MPIInit()
 	}
 }
 

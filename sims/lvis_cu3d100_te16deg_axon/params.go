@@ -21,7 +21,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":                "1.1",  // "
 					"Layer.Inhib.Layer.FB":               "1",    // setting for layers below
 					"Layer.Inhib.Pool.FB":                "1",
-					"Layer.Inhib.ActAvg.AdaptRate":       "0.01", // getting fluctations
+					"Layer.Inhib.ActAvg.AdaptRate":       "0.05", // was 0.1 -- got fluctations
 					"Layer.Inhib.ActAvg.LoTol":           "0.8",
 					"Layer.Inhib.ActAvg.HiTol":           "0.0",
 					"Layer.Acts.Decay.Act":               "0.0",   // 0 == .2

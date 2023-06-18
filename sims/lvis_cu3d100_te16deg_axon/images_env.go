@@ -441,16 +441,16 @@ func ClosestRows32(probe *etensor.Float32, col *etensor.Float32, mfun metric.Fun
 // OutErr scores the output activity of network, returning the index of
 // item with closest fit to given pattern, and 1 if that is error, 0 if correct.
 // also returns a top-two error: if 2nd closest pattern was correct.
-func (ev *ImagesEnv) OutErr(tsr *etensor.Float32) (maxi int, err, err2 float64) {
+func (ev *ImagesEnv) OutErr(tsr *etensor.Float32, curCatIdx int) (maxi int, err, err2 float64) {
 	ocol := ev.Pats.ColByName("Output").(*etensor.Float32)
 	dsts := ClosestRows32(tsr, ocol, metric.InvCorrelation32)
 	maxi = dsts[0].Idx
 	err = 1.0
-	if maxi == ev.CurCatIdx {
+	if maxi == curCatIdx {
 		err = 0
 	}
 	err2 = err
-	if dsts[1].Idx == ev.CurCatIdx {
+	if dsts[1].Idx == curCatIdx {
 		err2 = 0
 	}
 	return
