@@ -10,7 +10,6 @@ import (
 	"image"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -34,35 +33,37 @@ import (
 
 // ImagesEnv provides the rendered results of the Obj3D + Saccade generator.
 type ImagesEnv struct {
-	Nm         string       `desc:"name of this environment"`
-	Dsc        string       `desc:"description of this environment"`
-	ImageFile  string       `desc:"image file name"`
-	Test       bool         `desc:"present test items, else train"`
-	Sequential bool         `desc:"present items in sequential order -- else shuffled"`
-	High16     bool         `desc:"compute high-res full field filtering"`
-	ColorDoG   bool         `desc:"compute color DoG (blob) filtering"`
-	Images     Images       `desc:"images list"`
-	TransMax   mat32.Vec2   `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
-	TransSigma float32      `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
-	ScaleRange minmax.F32   `desc:"def 0.5 - 1.1 range of scale"`
-	RotateMax  float32      `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
-	Img        V1Img        `desc:"image that we operate upon -- one image shared among all filters"`
-	V1l16      Vis          `desc:"v1 16deg low resolution filtering of image -- V1AllTsr has result"`
-	V1m16      Vis          `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1h16      Vis          `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
-	V1l8       Vis          `desc:"v1 8deg low resolution filtering of image -- V1AllTsr has result"`
-	V1m8       Vis          `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1Cl16     ColorVis     `desc:"v1 color 16deg low resolution filtering of image -- OutAll has result"`
-	V1Cm16     ColorVis     `desc:"v1 color 16deg medium resolution filtering of image -- OutAll has result"`
-	V1Cl8      ColorVis     `desc:"v1 color 8deg low resolution filtering of image -- OutAll has result"`
-	V1Cm8      ColorVis     `desc:"v1 color 8deg medium resolution filtering of image -- OutAll has result"`
-	MaxOut     int          `desc:"maximum number of output categories representable here"`
-	OutRandom  bool         `desc:"use random bit patterns instead of localist output units"`
-	RndPctOn   float32      `desc:"proportion activity for random patterns"`
-	RndMinDiff float32      `desc:"proportion minimum difference for random patterns"`
-	OutSize    evec.Vec2i   `desc:"the output tensor geometry -- must be >= number of cats"`
-	NOutPer    int          `desc:"number of output units per category -- spiking may benefit from replication -- is Y inner dim of output tensor"`
-	Pats       etable.Table `view:"no-inline" desc:"output patterns: either localist or random"`
+	Nm         string        `desc:"name of this environment"`
+	Dsc        string        `desc:"description of this environment"`
+	ImageFile  string        `desc:"image file name"`
+	Test       bool          `desc:"present test items, else train"`
+	Sequential bool          `desc:"present items in sequential order -- else shuffled"`
+	High16     bool          `desc:"compute high-res full field filtering"`
+	ColorDoG   bool          `desc:"compute color DoG (blob) filtering"`
+	Images     Images        `desc:"images list"`
+	TransMax   mat32.Vec2    `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
+	TransSigma float32       `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
+	ScaleRange minmax.F32    `desc:"def 0.5 - 1.1 range of scale"`
+	RotateMax  float32       `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
+	Img        V1Img         `desc:"image that we operate upon -- one image shared among all filters"`
+	V1l16      Vis           `desc:"v1 16deg low resolution filtering of image -- V1AllTsr has result"`
+	V1m16      Vis           `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
+	V1h16      Vis           `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
+	V1l8       Vis           `desc:"v1 8deg low resolution filtering of image -- V1AllTsr has result"`
+	V1m8       Vis           `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
+	V1Cl16     ColorVis      `desc:"v1 color 16deg low resolution filtering of image -- OutAll has result"`
+	V1Cm16     ColorVis      `desc:"v1 color 16deg medium resolution filtering of image -- OutAll has result"`
+	V1Cl8      ColorVis      `desc:"v1 color 8deg low resolution filtering of image -- OutAll has result"`
+	V1Cm8      ColorVis      `desc:"v1 color 8deg medium resolution filtering of image -- OutAll has result"`
+	MaxOut     int           `desc:"maximum number of output categories representable here"`
+	OutRandom  bool          `desc:"use random bit patterns instead of localist output units"`
+	RndPctOn   float32       `desc:"proportion activity for random patterns"`
+	RndMinDiff float32       `desc:"proportion minimum difference for random patterns"`
+	OutSize    evec.Vec2i    `desc:"the output tensor geometry -- must be >= number of cats"`
+	NOutPer    int           `desc:"number of output units per category -- spiking may benefit from replication -- is Y inner dim of output tensor"`
+	Pats       etable.Table  `view:"no-inline" desc:"output patterns: either localist or random"`
+	Rand       erand.SysRand `view:"-" desc:"random number generator for the env -- all random calls must use this"`
+	RndSeed    int64         `inactive:"+" desc:"random seed"`
 
 	Output    etensor.Float32 `desc:"output pattern for current item"`
 	StRow     int             `desc:"starting row, e.g., for mpi allocation across processors"`
@@ -135,6 +136,11 @@ func (ev *ImagesEnv) MPIAlloc() {
 }
 
 func (ev *ImagesEnv) Init(run int) {
+	if ev.Rand.Rand == nil {
+		ev.Rand.NewRand(ev.RndSeed)
+	} else {
+		ev.Rand.Seed(ev.RndSeed)
+	}
 	ev.Run.Scale = env.Run
 	ev.Epoch.Scale = env.Epoch
 	ev.Trial.Scale = env.Trial
@@ -154,7 +160,7 @@ func (ev *ImagesEnv) Init(run int) {
 	for i := range ev.ImgIdxs {
 		ev.ImgIdxs[i] = ev.StRow + i
 	}
-	ev.Shuffle = rand.Perm(nitm)
+	ev.Shuffle = ev.Rand.Perm(nitm, -1)
 	ev.Row.Max = len(ev.ImgIdxs)
 	nc := len(ev.Images.Cats)
 	ev.MaxOut = ints.MaxInt(nc, ev.MaxOut)
@@ -303,7 +309,7 @@ func (ev *ImagesEnv) ConfigPatsRandom() {
 
 // NewShuffle generates a new random order of items to present
 func (ev *ImagesEnv) NewShuffle() {
-	erand.PermuteInts(ev.Shuffle)
+	erand.PermuteInts(ev.Shuffle, &ev.Rand)
 }
 
 // CurImage returns current image based on row and
@@ -344,16 +350,16 @@ func (ev *ImagesEnv) OpenImage() error {
 // RandTransforms generates random transforms
 func (ev *ImagesEnv) RandTransforms() {
 	if ev.TransSigma > 0 {
-		ev.CurTrans.X = float32(erand.GaussianGen(0, float64(ev.TransSigma), -1))
+		ev.CurTrans.X = float32(erand.GaussianGen(0, float64(ev.TransSigma), -1, &ev.Rand))
 		ev.CurTrans.X = mat32.Clamp(ev.CurTrans.X, -ev.TransMax.X, ev.TransMax.X)
-		ev.CurTrans.Y = float32(erand.GaussianGen(0, float64(ev.TransSigma), -1))
+		ev.CurTrans.Y = float32(erand.GaussianGen(0, float64(ev.TransSigma), -1, &ev.Rand))
 		ev.CurTrans.Y = mat32.Clamp(ev.CurTrans.Y, -ev.TransMax.Y, ev.TransMax.Y)
 	} else {
-		ev.CurTrans.X = (rand.Float32()*2 - 1) * ev.TransMax.X
-		ev.CurTrans.Y = (rand.Float32()*2 - 1) * ev.TransMax.Y
+		ev.CurTrans.X = (ev.Rand.Float32(-1)*2 - 1) * ev.TransMax.X
+		ev.CurTrans.Y = (ev.Rand.Float32(-1)*2 - 1) * ev.TransMax.Y
 	}
-	ev.CurScale = ev.ScaleRange.Min + ev.ScaleRange.Range()*rand.Float32()
-	ev.CurRot = (rand.Float32()*2 - 1) * ev.RotateMax
+	ev.CurScale = ev.ScaleRange.Min + ev.ScaleRange.Range()*ev.Rand.Float32(-1)
+	ev.CurRot = (ev.Rand.Float32(-1)*2 - 1) * ev.RotateMax
 }
 
 // TransformImage transforms the image according to current translation and scaling

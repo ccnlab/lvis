@@ -51,8 +51,8 @@ import (
 var (
 	// Debug triggers various messages etc
 	Debug = false
-	// GPU runs with the GPU (for demo, testing -- not useful for such a small network)
-	GPU = true
+	// GPU runs with the GPU
+	GPU = false
 )
 
 func main() {
@@ -84,7 +84,7 @@ type SimParams struct {
 
 // Defaults sets default params
 func (ss *SimParams) Defaults() {
-	ss.NData = 2
+	ss.NData = 1
 	ss.NTrials = 512
 	ss.TestInterval = 20
 	ss.PCAInterval = 10
@@ -175,6 +175,7 @@ func (ss *Sim) ConfigEnv() {
 	trn.Nm = etime.Train.String()
 	trn.Dsc = "training params and state"
 	trn.Defaults()
+	trn.RndSeed = 73
 	trn.NOutPer = ss.Sim.NOutPer
 	trn.High16 = false // not useful -- may need more tuning?
 	trn.ColorDoG = true
@@ -194,6 +195,7 @@ func (ss *Sim) ConfigEnv() {
 	tst.Dsc = "testing params and state"
 	tst.ImageFile = trn.ImageFile
 	tst.Defaults()
+	tst.RndSeed = 73
 	tst.NOutPer = ss.Sim.NOutPer
 	tst.High16 = trn.High16
 	tst.ColorDoG = trn.ColorDoG
@@ -637,7 +639,11 @@ func (ss *Sim) ConfigLoops() {
 
 	man.GetLoop(etime.Train, etime.Trial).OnEnd.Replace("UpdateWeights", func() {
 		ss.Net.DWt(&ss.Context)
-		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
+		if ss.ViewUpdt.IsViewingSynapse() {
+			ss.Net.GPU.SyncSynapsesFmGPU()
+			ss.Net.GPU.SyncSynCaFmGPU() // note: only time we call this
+			ss.ViewUpdt.RecordSyns()    // note: critical to update weights here so DWt is visible
+		}
 		ss.MPIWtFmDWt()
 	})
 	if Debug {
@@ -1223,6 +1229,8 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 			ss.Logs.LogRowDi(mode, time, row, di)
 		}
 		return // don't do reg below
+		// case time == etime.Epoch:
+		// 	mpi.AllPrintf("Epoch trial dt rows: %d\n", ss.Logs.Table(mode, etime.Trial).Rows)
 	}
 
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
@@ -1423,6 +1431,8 @@ func (ss *Sim) RunNoGUI() {
 	rc.Max = run + runs
 	ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Max = ss.Args.Int("epochs")
 	if ss.Args.Bool("gpu") {
+		// vgpu.Debug = true
+		os.Setenv("VK_DEVICE_SELECT", fmt.Sprintf("%d", mpi.WorldRank()))
 		ss.Net.ConfigGPUnoGUI(&ss.Context) // must happen after gui or no gui
 	}
 	thr := ss.Args.Int("threads")

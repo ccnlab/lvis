@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.8.1-0.20230618182728-86e3eeefbf10
+	github.com/emer/axon v1.8.1-0.20230620060946-b0e983611026
 	github.com/emer/emergent v1.4.10
 	github.com/emer/empi v1.0.19
 	github.com/emer/etable v1.1.23
@@ -13,7 +13,7 @@ require (
 	github.com/goki/gi v1.3.19
 	github.com/goki/ki v1.1.11
 	github.com/goki/mat32 v1.0.15
-	github.com/goki/vgpu v1.0.27
+	github.com/goki/vgpu v1.0.31
 	golang.org/x/image v0.6.0
 )
 
