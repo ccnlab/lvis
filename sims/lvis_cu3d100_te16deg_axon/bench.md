@@ -17,7 +17,7 @@ go test -v -bench Benchmark -run not
 ```
 
 
-### 1.8.18 Macbook Pro M1
+## 1.8.18 Macbook Pro M1
 
 Results are total secs and per-trl-msec.  CPU using 10 threads (GOMAXPROCS default)
 
@@ -32,7 +32,7 @@ Results are total secs and per-trl-msec.  CPU using 10 threads (GOMAXPROCS defau
 * CPU, NData 8:    122    1906
 * CPU, NData 16:   130    2031
 
-### 1.8.18: HPC2 ccnl-0 AMD EPYC 7502 32-Core Processor + NVIDIA A100 GPU 40GB
+## 1.8.18: HPC2 ccnl-0 AMD EPYC 7502 32-Core Processor + NVIDIA A100 GPU 40GB
 
 32 threads default
 
@@ -47,6 +47,15 @@ Results are total secs and per-trl-msec.  CPU using 10 threads (GOMAXPROCS defau
 * CPU, NData 8:    113    1764
 * CPU, NData 16:   105    1646
 
+### MPI
+
+Command:
+
+`mpirun -np 4 ./lvis_cu3d100_te16deg_axon -no-gui -bench -mpi -gpu -ndata=8`
+
+* MPI 4, GPU, NData 8:      31    486
+* MPI 4, GPU, NData 16:     28    439  <- note: actual longer-term run 
+ 
 
 # 1.8.0 Memory reorganization
 

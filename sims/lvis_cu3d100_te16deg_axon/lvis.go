@@ -1430,10 +1430,11 @@ func (ss *Sim) RunNoGUI() {
 	tmr.Stop()
 	if ss.Config.Bench {
 		tm := tmr.TotalSecs()
-		ptmsec := (tm / 64) * 1000
-		fmt.Printf("Total Time: %6.3g   Bench Per Trl Msec: %g\n", tm, ptmsec)
+		ptmsec := (tm / float64(ss.Config.Run.NTrials)) * 1000
+		// note: getting some variability across nodes here -- keeping this as all print
+		mpi.AllPrintf("Total Time: %6.3g   Bench Per Trl Msec: %g\n", tm, ptmsec)
 	} else {
-		fmt.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
+		mpi.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
 	}
 	ss.Net.TimerReport()
 
