@@ -1,0 +1,308 @@
+[[Base]]
+  Sel = "Layer"
+  Desc = "needs some special inhibition and learning params"
+  [Base.Params]
+    "Layer.Acts.AK.Gbar" = "0.1"
+    "Layer.Acts.Decay.Act" = "0.0"
+    "Layer.Acts.Decay.Glong" = "0.6"
+    "Layer.Acts.Dend.GbarExp" = "0.2"
+    "Layer.Acts.Dend.GbarR" = "3"
+    "Layer.Acts.Dend.SSGi" = "2"
+    "Layer.Acts.Dt.VmDendTau" = "5"
+    "Layer.Acts.GabaB.Gbar" = "0.012"
+    "Layer.Acts.Mahp.Gbar" = "0.01"
+    "Layer.Acts.NMDA.Gbar" = "0.006"
+    "Layer.Acts.NMDA.MgC" = "1.4"
+    "Layer.Acts.NMDA.Voff" = "0"
+    "Layer.Acts.Sahp.CaTau" = "5"
+    "Layer.Acts.Sahp.Gbar" = "0.05"
+    "Layer.Acts.Sahp.Off" = "0.8"
+    "Layer.Acts.Sahp.Slope" = "0.02"
+    "Layer.Acts.VGCC.Ca" = "25"
+    "Layer.Acts.VGCC.Gbar" = "0.02"
+    "Layer.Inhib.ActAvg.AdaptRate" = "0.05"
+    "Layer.Inhib.ActAvg.HiTol" = "0.0"
+    "Layer.Inhib.ActAvg.LoTol" = "0.8"
+    "Layer.Inhib.ActAvg.Nominal" = "0.04"
+    "Layer.Inhib.Layer.FB" = "1"
+    "Layer.Inhib.Layer.Gi" = "1.1"
+    "Layer.Inhib.Pool.FB" = "1"
+    "Layer.Inhib.Pool.Gi" = "1.1"
+    "Layer.Learn.CaLearn.Dt.MTau" = "2"
+    "Layer.Learn.CaLearn.Norm" = "80"
+    "Layer.Learn.CaLearn.SpkVGCC" = "true"
+    "Layer.Learn.CaLearn.SpkVgccCa" = "35"
+    "Layer.Learn.CaLearn.UpdtThr" = "0.01"
+    "Layer.Learn.CaLearn.VgccTau" = "10"
+    "Layer.Learn.CaSpk.Dt.MTau" = "5"
+    "Layer.Learn.CaSpk.SpikeG" = "12"
+    "Layer.Learn.CaSpk.SynTau" = "30"
+    "Layer.Learn.LrnNMDA.Gbar" = "0.006"
+    "Layer.Learn.LrnNMDA.MgC" = "1.4"
+    "Layer.Learn.LrnNMDA.Tau" = "100"
+    "Layer.Learn.LrnNMDA.Voff" = "0"
+    "Layer.Learn.RLRate.Diff" = "true"
+    "Layer.Learn.RLRate.DiffThr" = "0.02"
+    "Layer.Learn.RLRate.Min" = "0.001"
+    "Layer.Learn.RLRate.On" = "true"
+    "Layer.Learn.RLRate.SigmoidMin" = "0.05"
+    "Layer.Learn.RLRate.SpkThr" = "0.1"
+    "Layer.Learn.TrgAvgAct.ErrLRate" = "0.02"
+    "Layer.Learn.TrgAvgAct.On" = "true"
+    "Layer.Learn.TrgAvgAct.SubMean" = "0"
+    "Layer.Learn.TrgAvgAct.SynScaleRate" = "0.002"
+
+[[Base]]
+  Sel = ".InputLayer"
+  Desc = "all V1 input layers"
+  [Base.Params]
+    "Layer.Acts.Clamp.Ge" = "1.5"
+    "Layer.Acts.Decay.Act" = "1"
+    "Layer.Acts.Decay.Glong" = "1"
+    "Layer.Inhib.ActAvg.Nominal" = "0.04"
+    "Layer.Inhib.Layer.FB" = "1"
+    "Layer.Inhib.Layer.Gi" = "0.9"
+    "Layer.Inhib.Pool.FB" = "1"
+    "Layer.Inhib.Pool.Gi" = "0.9"
+    "Layer.Inhib.Pool.On" = "true"
+
+[[Base]]
+  Sel = ".V2"
+  Desc = "pool inhib, sparse activity"
+  [Base.Params]
+    "Layer.Inhib.ActAvg.AdaptGi" = "true"
+    "Layer.Inhib.ActAvg.Nominal" = "0.02"
+    "Layer.Inhib.ActAvg.Offset" = "0.008"
+    "Layer.Inhib.Layer.FB" = "1"
+    "Layer.Inhib.Layer.Gi" = "1.0"
+    "Layer.Inhib.Pool.FB" = "4"
+    "Layer.Inhib.Pool.Gi" = "1.05"
+    "Layer.Inhib.Pool.On" = "true"
+
+[[Base]]
+  Sel = ".V4"
+  Desc = "pool inhib, sparse activity"
+  [Base.Params]
+    "Layer.Inhib.ActAvg.AdaptGi" = "true"
+    "Layer.Inhib.ActAvg.Nominal" = "0.02"
+    "Layer.Inhib.ActAvg.Offset" = "0.008"
+    "Layer.Inhib.Layer.FB" = "1"
+    "Layer.Inhib.Layer.Gi" = "1.0"
+    "Layer.Inhib.Pool.FB" = "4"
+    "Layer.Inhib.Pool.Gi" = "1.05"
+    "Layer.Inhib.Pool.On" = "true"
+
+[[Base]]
+  Sel = ".TEO"
+  Desc = "initial activity"
+  [Base.Params]
+    "Layer.Inhib.ActAvg.AdaptGi" = "true"
+    "Layer.Inhib.ActAvg.Nominal" = "0.03"
+    "Layer.Inhib.ActAvg.Offset" = "0.01"
+    "Layer.Inhib.Layer.On" = "false"
+    "Layer.Inhib.Pool.FB" = "4"
+    "Layer.Inhib.Pool.Gi" = "1.0"
+    "Layer.Inhib.Pool.On" = "true"
+
+[[Base]]
+  Sel = "#TE"
+  Desc = "initial activity"
+  [Base.Params]
+    "Layer.Inhib.ActAvg.AdaptGi" = "true"
+    "Layer.Inhib.ActAvg.Nominal" = "0.03"
+    "Layer.Inhib.ActAvg.Offset" = "0.01"
+    "Layer.Inhib.Layer.On" = "false"
+    "Layer.Inhib.Pool.FB" = "4"
+    "Layer.Inhib.Pool.Gi" = "1.0"
+    "Layer.Inhib.Pool.On" = "true"
+
+[[Base]]
+  Sel = "#Output"
+  Desc = "general output, Localist default -- see RndOutPats, LocalOutPats"
+  [Base.Params]
+    "Layer.Acts.Clamp.Ge" = "0.8"
+    "Layer.Inhib.ActAvg.AdaptGi" = "true"
+    "Layer.Inhib.ActAvg.AdaptRate" = "0.01"
+    "Layer.Inhib.ActAvg.HiTol" = "0.02"
+    "Layer.Inhib.ActAvg.LoTol" = "0.1"
+    "Layer.Inhib.ActAvg.Nominal" = "0.005"
+    "Layer.Inhib.ActAvg.Offset" = "0.01"
+    "Layer.Inhib.Layer.FB" = "4"
+    "Layer.Inhib.Layer.Gi" = "1.17"
+    "Layer.Learn.CaSpk.SpikeG" = "12"
+    "Layer.Learn.RLRate.Diff" = "true"
+    "Layer.Learn.RLRate.DiffThr" = "0.02"
+    "Layer.Learn.RLRate.Min" = "0.001"
+    "Layer.Learn.RLRate.On" = "true"
+    "Layer.Learn.RLRate.SigmoidMin" = "0.05"
+    "Layer.Learn.RLRate.SpkThr" = "0.1"
+
+[[Base]]
+  Sel = "Prjn"
+  Desc = "exploring"
+  [Base.Params]
+    "Prjn.Com.PFail" = "0.0"
+    "Prjn.Learn.KinaseCa.Dt.DTau" = "40"
+    "Prjn.Learn.KinaseCa.Dt.MTau" = "5"
+    "Prjn.Learn.KinaseCa.Dt.PTau" = "40"
+    "Prjn.Learn.KinaseCa.MaxISI" = "100"
+    "Prjn.Learn.KinaseCa.SpikeG" = "12"
+    "Prjn.Learn.LRate.Base" = "0.005"
+    "Prjn.Learn.Trace.SubMean" = "1"
+    "Prjn.SWts.Adapt.LRate" = "0.0002"
+    "Prjn.SWts.Adapt.On" = "true"
+    "Prjn.SWts.Adapt.SubMean" = "1"
+
+[[Base]]
+  Sel = ".BackPrjn"
+  Desc = "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates -- smaller as network gets bigger"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.2"
+
+[[Base]]
+  Sel = ".ForwardPrjn"
+  Desc = "use pfail only on forward cons?"
+  [Base.Params]
+    "Prjn.Com.PFail" = "0.0"
+
+[[Base]]
+  Sel = ".ToOut"
+  Desc = "to output -- some things should be different.."
+  [Base.Params]
+    "Prjn.Com.PFail" = "0.0"
+    "Prjn.PrjnScale.Abs" = "2.0"
+    "Prjn.SWts.Adapt.On" = "false"
+    "Prjn.SWts.Init.SPct" = "0"
+
+[[Base]]
+  Sel = ".V1V2"
+  Desc = "special SWt params"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1.4"
+    "Prjn.SWts.Init.Mean" = "0.4"
+    "Prjn.SWts.Limit.Max" = "0.7"
+    "Prjn.SWts.Limit.Min" = "0.1"
+
+[[Base]]
+  Sel = ".V1V2fmSm"
+  Desc = "weaker"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.2"
+
+[[Base]]
+  Sel = ".V2V4"
+  Desc = "extra boost"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1.0"
+    "Prjn.SWts.Init.Mean" = "0.4"
+    "Prjn.SWts.Limit.Max" = "0.7"
+    "Prjn.SWts.Limit.Min" = "0.1"
+
+[[Base]]
+  Sel = ".V2V4sm"
+  Desc = "extra boost"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1.0"
+
+[[Base]]
+  Sel = "#V2m16ToV4f16"
+  Desc = "weights into V416 getting too high"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1.0"
+
+[[Base]]
+  Sel = "#V2l16ToV4f16"
+  Desc = "weights into V416 getting too high"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1.0"
+
+[[Base]]
+  Sel = ".V4TEOoth"
+  Desc = "weaker rel"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.5"
+
+[[Base]]
+  Sel = ".TEOTE"
+  Desc = "too weak at start"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1"
+
+[[Base]]
+  Sel = ".V4V2"
+  Desc = "weaker"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.05"
+    "Prjn.SWts.Init.Mean" = "0.4"
+    "Prjn.SWts.Limit.Max" = "0.7"
+    "Prjn.SWts.Limit.Min" = "0.1"
+
+[[Base]]
+  Sel = ".TEOV4"
+  Desc = "weaker"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.1"
+
+[[Base]]
+  Sel = ".TETEO"
+  Desc = "std"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.1"
+
+[[Base]]
+  Sel = ".TEOTE"
+  Desc = "stronger"
+  [Base.Params]
+    "Prjn.PrjnScale.Abs" = "1.2"
+
+[[Base]]
+  Sel = ".OutTEO"
+  Desc = "weaker"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.3"
+
+[[Base]]
+  Sel = "#OutputToTE"
+  Desc = "weaker"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "0.1"
+
+[[Base]]
+  Sel = "#TEToOutput"
+  Desc = "weaker"
+  [Base.Params]
+    "Prjn.PrjnScale.Rel" = "1.0"
+
+[[Base]]
+  Sel = ".V1SC"
+  Desc = "v1 shortcut"
+  [Base.Params]
+    "Prjn.Learn.LRate.Base" = "0.001"
+    "Prjn.PrjnScale.Rel" = "0.5"
+    "Prjn.SWts.Adapt.On" = "false"
+
+[[LocalOutPats]]
+  Sel = "#Output"
+  Desc = "high inhib for one-hot output"
+  [LocalOutPats.Params]
+    "Layer.Inhib.ActAvg.Nominal" = "0.01"
+    "Layer.Inhib.Layer.Gi" = "1.5"
+
+[[OutAdapt]]
+  Sel = "#Output"
+  Desc = "general output, Localist default -- see RndOutPats, LocalOutPats"
+  [OutAdapt.Params]
+    "Layer.Inhib.ActAvg.AdaptGi" = "true"
+
+[[RndOutPats]]
+  Sel = "#Output"
+  Desc = "high inhib for one-hot output"
+  [RndOutPats.Params]
+    "Layer.Inhib.ActAvg.Nominal" = "0.1"
+    "Layer.Inhib.Layer.Gi" = "0.9"
+
+[[ToOutTol]]
+  Sel = ".ToOut"
+  Desc = "to output -- some things should be different.."
+  [ToOutTol.Params]
+    "Prjn.PrjnScale.LoTol" = "0.5"

@@ -1,0 +1,68 @@
+          V1m16		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+          V1l16		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+           V1m8		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+           V1l8		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+         V1Cm16		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Base:Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+         V1Cl16		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+          V1Cm8		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+          V1Cl8		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
+
+          V2m16		Nominal:	  0.02	Params: .V2: 0.02 | Layer: 0.04
+						Layer.Gi:	  1.00	Params: .V2: 1.0 | Layer: 1.1
+						Pool.Gi: 	  1.05	Params: .V2: 1.05 | Layer: 1.1
+
+          V2l16		Nominal:	  0.02	Params: .V2: 0.02 | Layer: 0.04
+						Layer.Gi:	  1.00	Params: .V2: 1.0 | Layer: 1.1
+						Pool.Gi: 	  1.05	Params: .V2: 1.05 | Layer: 1.1
+
+           V2m8		Nominal:	  0.02	Params: .V2: 0.02 | Layer: 0.04
+						Layer.Gi:	  1.00	Params: .V2: 1.0 | Layer: 1.1
+						Pool.Gi: 	  1.05	Params: .V2: 1.05 | Layer: 1.1
+
+           V2l8		Nominal:	  0.02	Params: .V2: 0.02 | Layer: 0.04
+						Layer.Gi:	  1.00	Params: .V2: 1.0 | Layer: 1.1
+						Pool.Gi: 	  1.05	Params: .V2: 1.05 | Layer: 1.1
+
+          V4f16		Nominal:	  0.02	Params: .V4: 0.02 | Layer: 0.04
+						Layer.Gi:	  1.00	Params: .V4: 1.0 | Layer: 1.1
+						Pool.Gi: 	  1.05	Params: .V4: 1.05 | Layer: 1.1
+
+           V4f8		Nominal:	  0.02	Params: .V4: 0.02 | Layer: 0.04
+						Layer.Gi:	  1.00	Params: .V4: 1.0 | Layer: 1.1
+						Pool.Gi: 	  1.05	Params: .V4: 1.05 | Layer: 1.1
+
+         TEOf16		Nominal:	  0.03	Params: .TEO: 0.03 | Layer: 0.04
+						Pool.Gi: 	  1.00	Params: .TEO: 1.0 | Layer: 1.1
+
+          TEOf8		Nominal:	  0.03	Params: .TEO: 0.03 | Layer: 0.04
+						Pool.Gi: 	  1.00	Params: .TEO: 1.0 | Layer: 1.1
+
+             TE		Nominal:	  0.03	Params: #TE: 0.03 | Layer: 0.04
+						Pool.Gi: 	  1.00	Params: #TE: 1.0 | Layer: 1.1
+
+         Output		Nominal:	  0.00	Params: #Output: 0.005 | Layer: 0.04
+						Layer.Gi:	  1.17	Params: #Output: 1.17 | Base:Layer: 1.1
+

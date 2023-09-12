@@ -1,0 +1,41 @@
+GUI = false
+Debug = false
+Bench = false
+
+[Env]
+  Path = "images/CU3D_100_renders_lr20_u30_nb"
+  ImageFile = "cu3d100old"
+  NOutPer = 5
+  RndOutPats = false
+
+[Params]
+  Sheet = ""
+  Tag = ""
+  Note = ""
+  File = ""
+  SubPools = true
+  SaveAll = false
+  Good = true
+
+[Run]
+  MPI = false
+  GPU = true
+  GPUSameNodeMPI = true
+  NData = 1
+  NThreads = 0
+  Run = 0
+  NRuns = 1
+  NEpochs = 500
+  NTrials = 512
+  PCAInterval = 10
+  ConfusionEpc = 500
+  TestInterval = 20
+
+[Log]
+  SaveWts = false
+  Epoch = true
+  Run = false
+  Trial = false
+  TestEpoch = false
+  TestTrial = false
+  NetData = false

@@ -1,0 +1,127 @@
+
+Layer: V1m16
+
+Layer: V1l16
+
+Layer: V1m8
+
+Layer: V1l8
+
+Layer: V1Cm16
+
+Layer: V1Cl16
+
+Layer: V1Cm8
+
+Layer: V1Cl8
+
+Layer: V2m16
+	          V1m16	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.04	Rel:  0.41
+								    Abs Params: .V1V2: 1.4
+	          V1l16	    ForwardPrjn	Abs:	  1.40	Rel:	  0.20	GScale:	  0.02	Rel:  0.08
+								    Abs Params: .V1V2: 1.4
+								    Rel Params: .V1V2fmSm: 0.2
+	         V1Cm16	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.11	Rel:  0.41
+								    Abs Params: .V1V2: 1.4
+	         V1Cl16	    ForwardPrjn	Abs:	  1.40	Rel:	  0.20	GScale:	  0.04	Rel:  0.08
+								    Abs Params: .V1V2: 1.4
+								    Rel Params: .V1V2fmSm: 0.2
+	          V4f16	       BackPrjn	Abs:	  1.00	Rel:	  0.05	GScale:	  0.00	Rel:  0.02
+								    Rel Params: .V4V2: 0.05 | .BackPrjn: 0.2
+
+Layer: V2l16
+	          V1l16	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.05	Rel:  0.49
+								    Abs Params: .V1V2: 1.4
+	         V1Cl16	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.14	Rel:  0.49
+								    Abs Params: .V1V2: 1.4
+	          V4f16	       BackPrjn	Abs:	  1.00	Rel:	  0.05	GScale:	  0.00	Rel:  0.02
+								    Rel Params: .V4V2: 0.05 | .BackPrjn: 0.2
+
+Layer: V2m8
+	           V1m8	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.04	Rel:  0.41
+								    Abs Params: .V1V2: 1.4
+	           V1l8	    ForwardPrjn	Abs:	  1.40	Rel:	  0.20	GScale:	  0.02	Rel:  0.08
+								    Abs Params: .V1V2: 1.4
+								    Rel Params: .V1V2fmSm: 0.2
+	          V1Cm8	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.11	Rel:  0.41
+								    Abs Params: .V1V2: 1.4
+	          V1Cl8	    ForwardPrjn	Abs:	  1.40	Rel:	  0.20	GScale:	  0.04	Rel:  0.08
+								    Abs Params: .V1V2: 1.4
+								    Rel Params: .V1V2fmSm: 0.2
+	           V4f8	       BackPrjn	Abs:	  1.00	Rel:	  0.05	GScale:	  0.00	Rel:  0.02
+								    Rel Params: .V4V2: 0.05 | .BackPrjn: 0.2
+
+Layer: V2l8
+	           V1l8	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.05	Rel:  0.49
+								    Abs Params: .V1V2: 1.4
+	          V1Cl8	    ForwardPrjn	Abs:	  1.40	Rel:	  1.00	GScale:	  0.14	Rel:  0.49
+								    Abs Params: .V1V2: 1.4
+	           V4f8	       BackPrjn	Abs:	  1.00	Rel:	  0.05	GScale:	  0.00	Rel:  0.02
+								    Rel Params: .V4V2: 0.05 | .BackPrjn: 0.2
+
+Layer: V4f16
+	          V2m16	    ForwardPrjn	Abs:	  1.00	Rel:	  1.00	GScale:	  0.03	Rel:  0.38
+								    Abs Params: #V2m16ToV4f16: 1.0 | .V2V4: 1.0
+	          V2l16	    ForwardPrjn	Abs:	  1.00	Rel:	  1.00	GScale:	  0.08	Rel:  0.38
+								    Abs Params: #V2l16ToV4f16: 1.0 | .V2V4sm: 1.0
+	         TEOf16	       BackPrjn	Abs:	  1.00	Rel:	  0.10	GScale:	  0.00	Rel:  0.04
+								    Rel Params: .TEOV4: 0.1 | .BackPrjn: 0.2
+	          V1l16	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.03	Rel:  0.19
+								    Rel Params: .V1SC: 0.5
+
+Layer: V4f8
+	           V2m8	    ForwardPrjn	Abs:	  1.00	Rel:	  1.00	GScale:	  0.03	Rel:  0.38
+								    Abs Params: .V2V4: 1.0
+	           V2l8	    ForwardPrjn	Abs:	  1.00	Rel:	  1.00	GScale:	  0.08	Rel:  0.38
+								    Abs Params: .V2V4sm: 1.0
+	          TEOf8	       BackPrjn	Abs:	  1.00	Rel:	  0.10	GScale:	  0.00	Rel:  0.04
+								    Rel Params: .TEOV4: 0.1 | .BackPrjn: 0.2
+	           V1l8	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.03	Rel:  0.19
+								    Rel Params: .V1SC: 0.5
+
+Layer: TEOf16
+	          V4f16	    ForwardPrjn	Abs:	  1.00	Rel:	  1.00	GScale:	  0.02	Rel:  0.34
+	           V4f8	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.01	Rel:  0.17
+								    Rel Params: .V4TEOoth: 0.5
+	             TE	       BackPrjn	Abs:	  1.00	Rel:	  0.10	GScale:	  0.00	Rel:  0.03
+								    Rel Params: .TETEO: 0.1 | .BackPrjn: 0.2
+	         Output	       BackPrjn	Abs:	  1.00	Rel:	  0.30	GScale:	  0.03	Rel:  0.10
+								    Rel Params: .OutTEO: 0.3 | .BackPrjn: 0.2
+	          V1l16	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.02	Rel:  0.17
+								    Rel Params: .V1SC: 0.5
+	          V1l16	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.02	Rel:  0.17
+								    Rel Params: .V1SC: 0.5
+
+Layer: TEOf8
+	           V4f8	    ForwardPrjn	Abs:	  1.00	Rel:	  1.00	GScale:	  0.02	Rel:  0.34
+	          V4f16	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.01	Rel:  0.17
+								    Rel Params: .V4TEOoth: 0.5
+	             TE	       BackPrjn	Abs:	  1.00	Rel:	  0.10	GScale:	  0.00	Rel:  0.03
+								    Rel Params: .TETEO: 0.1 | .BackPrjn: 0.2
+	         Output	       BackPrjn	Abs:	  1.00	Rel:	  0.30	GScale:	  0.03	Rel:  0.10
+								    Rel Params: .OutTEO: 0.3 | .BackPrjn: 0.2
+	           V1l8	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.02	Rel:  0.17
+								    Rel Params: .V1SC: 0.5
+	           V1l8	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.02	Rel:  0.17
+								    Rel Params: .V1SC: 0.5
+
+Layer: TE
+	         TEOf16	    ForwardPrjn	Abs:	  1.20	Rel:	  1.00	GScale:	  0.01	Rel:  0.32
+								    Abs Params: .TEOTE: 1.2 | .TEOTE: 1
+	          TEOf8	    ForwardPrjn	Abs:	  1.20	Rel:	  1.00	GScale:	  0.01	Rel:  0.32
+								    Abs Params: .TEOTE: 1.2 | .TEOTE: 1
+	         Output	       BackPrjn	Abs:	  1.00	Rel:	  0.10	GScale:	  0.01	Rel:  0.03
+								    Rel Params: #OutputToTE: 0.1 | .BackPrjn: 0.2
+	          V1l16	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.02	Rel:  0.16
+								    Rel Params: .V1SC: 0.5
+	           V1l8	    ForwardPrjn	Abs:	  1.00	Rel:	  0.50	GScale:	  0.02	Rel:  0.16
+								    Rel Params: .V1SC: 0.5
+
+Layer: Output
+	         TEOf16	    ForwardPrjn	Abs:	  2.00	Rel:	  1.00	GScale:	  0.02	Rel:  0.33
+								    Abs Params: .ToOut: 2.0
+	          TEOf8	    ForwardPrjn	Abs:	  2.00	Rel:	  1.00	GScale:	  0.02	Rel:  0.33
+								    Abs Params: .ToOut: 2.0
+	             TE	    ForwardPrjn	Abs:	  2.00	Rel:	  1.00	GScale:	  0.02	Rel:  0.33
+								    Abs Params: .ToOut: 2.0
+								    Rel Params: #TEToOutput: 1.0
