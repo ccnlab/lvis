@@ -56,13 +56,6 @@ type ParamConfig struct {
 
 	// for SaveAll, save to params_good for a known good params state.  This can be done prior to making a new release after all tests are passing -- add results to git to provide a full diff record of all params over time.
 	Good bool `nest:"+" desc:"for SaveAll, save to params_good for a known good params state.  This can be done prior to making a new release after all tests are passing -- add results to git to provide a full diff record of all params over time."`
-
-	// special projections
-	Prjns Prjns `nest:"+" desc:"special projections"`
-}
-
-func (cfg *ParamConfig) Defaults() {
-	cfg.Prjns.Defaults()
 }
 
 // RunConfig has config parameters related to running the sim
@@ -89,8 +82,8 @@ type RunConfig struct {
 	// [def: 1] [min: 1] total number of runs to do when running Train
 	NRuns int `def:"1" min:"1" desc:"total number of runs to do when running Train"`
 
-	// [def: 2000] total number of epochs per run
-	NEpochs int `def:"2000" desc:"total number of epochs per run"`
+	// [def: 500] total number of epochs per run -- mostly asymptotes at 1,000 with small continued improvements out to 2,000.  500 is fine for most purposes
+	NEpochs int `def:"500" desc:"total number of epochs per run -- mostly asymptotes at 1,000 with small continued improvements out to 2,000.  500 is fine for most purposes"`
 
 	// [def: 512] total number of trials per epoch.  Should be an even multiple of NData.
 	NTrials int `def:"512" desc:"total number of trials per epoch.  Should be an even multiple of NData."`
@@ -161,11 +154,12 @@ type Config struct {
 func (cfg *Config) IncludesPtr() *[]string { return &cfg.Includes }
 
 func (cfg *Config) Defaults() {
-	cfg.Params.Defaults()
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //   Prjns
+
+// note: clutters args to put all these in config
 
 // Prjns holds all the special projections
 type Prjns struct {

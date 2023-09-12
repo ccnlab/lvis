@@ -17,7 +17,6 @@ import (
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/decoder"
-	"github.com/emer/emergent/ecmd"
 	"github.com/emer/emergent/econfig"
 	"github.com/emer/emergent/egui"
 	"github.com/emer/emergent/elog"
@@ -98,6 +97,9 @@ type Sim struct {
 	// decoder for better output
 	Decoder decoder.SoftMax `desc:"decoder for better output"`
 
+	// special projections -- see config.go
+	Prjns Prjns `desc:"special projections -- see config.go "`
+
 	// [view: -] manages all the gui elements
 	GUI egui.GUI `view:"-" desc:"manages all the gui elements"`
 
@@ -109,14 +111,12 @@ type Sim struct {
 
 	// [view: -] buffer of all dwt weight changes -- for mpi sharing
 	AllDWts []float32 `view:"-" desc:"buffer of all dwt weight changes -- for mpi sharing"`
-
-	// [view: -] buffer of MPI summed dwt weight changes
-	SumDWts []float32 `view:"-" desc:"buffer of MPI summed dwt weight changes"`
 }
 
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
 	ss.Config.Defaults()
+	ss.Prjns.Defaults()
 	econfig.Config(&ss.Config, "config.toml")
 	if ss.Config.Run.MPI {
 		ss.MPIInit()
@@ -386,7 +386,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	pool1to1 := prjn.NewPoolOneToOne()
 	_ = pool1to1
 
-	pj := &ss.Config.Params.Prjns
+	pj := &ss.Prjns
 
 	var p4x4s2, p2x2s1, p4x4s2send, p2x2s1send, p4x4s2recip, p2x2s1recip, v4toteo, teotov4 prjn.Pattern
 	p4x4s2 = pj.Prjn4x4Skp2
@@ -1240,7 +1240,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 		trnEpc := ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Cur
 		if trnEpc > ss.Config.Run.ConfusionEpc && trnEpc%ss.Config.Run.ConfusionEpc == 0 {
 			ss.Stats.Confusion.Probs()
-			fnm := ecmd.LogFileName("trn_conf", ss.Net.Name(), ss.Stats.String("RunName"))
+			fnm := elog.LogFileName("trn_conf", ss.Net.Name(), ss.Stats.String("RunName"))
 			ss.Stats.Confusion.SaveCSV(gi.FileName(fnm))
 		}
 	}
@@ -1396,11 +1396,11 @@ func (ss *Sim) RunNoGUI() {
 	}
 	// Special cases for mpi per-node saving of trial data
 	if ss.Config.Log.Trial {
-		fnm := ecmd.LogFileName(fmt.Sprintf("trl_%d", mpi.WorldRank()), netName, runName)
+		fnm := elog.LogFileName(fmt.Sprintf("trl_%d", mpi.WorldRank()), netName, runName)
 		ss.Logs.SetLogFile(etime.Train, etime.Trial, fnm)
 	}
 	if ss.Config.Log.TestTrial {
-		fnm := ecmd.LogFileName(fmt.Sprintf("tst_trl_%d", mpi.WorldRank()), netName, runName)
+		fnm := elog.LogFileName(fmt.Sprintf("tst_trl_%d", mpi.WorldRank()), netName, runName)
 		ss.Logs.SetLogFile(etime.Test, etime.Trial, fnm)
 	}
 
@@ -1475,11 +1475,6 @@ func (ss *Sim) MPIFinalize() {
 	}
 }
 
-// CollectDWts collects the weight changes from all synapses into AllDWts
-// includes all other long adapting factors too: DTrgAvg, ActAvg, etc
-func (ss *Sim) CollectDWts(net *axon.Network) {
-}
-
 // MPIWtFmDWt updates weights from weight changes, using MPI to integrate
 // DWt changes across parallel nodes, each of which are learning on different
 // sequences of inputs.
@@ -1487,12 +1482,8 @@ func (ss *Sim) MPIWtFmDWt() {
 	ctx := &ss.Context
 	if ss.Config.Run.MPI {
 		ss.Net.CollectDWts(ctx, &ss.AllDWts)
-		ndw := len(ss.AllDWts)
-		if len(ss.SumDWts) != ndw {
-			ss.SumDWts = make([]float32, ndw)
-		}
-		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
-		ss.Net.SetDWts(ctx, ss.SumDWts, mpi.WorldSize())
+		ss.Comm.AllReduceF32(mpi.OpSum, ss.AllDWts, nil) // in place
+		ss.Net.SetDWts(ctx, ss.AllDWts, mpi.WorldSize())
 	}
 	ss.Net.WtFmDWt(ctx)
 }

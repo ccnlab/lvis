@@ -49,12 +49,12 @@ Results are total secs and per-trl-msec.  CPU using 10 threads (GOMAXPROCS defau
 
 ### MPI
 
-Command:
+Note: runs 512 trials per epoch to get better data. Command:
 
 `mpirun -np 4 ./lvis_cu3d100_te16deg_axon -no-gui -bench -mpi -gpu -ndata=8`
 
-* MPI 4, GPU, NData 8:      31    486
-* MPI 4, GPU, NData 16:     28    439  <- note: actual longer-term run 
+* MPI 4, GPU, NData 8:      197   384    vs 1137/4 = 284 for linear 4x; vs 450 for long run
+* MPI 4, GPU, NData 16:     160   313    vs 1053/4 = 263 for linear 4x; vs 350 for long run
  
 
 # 1.8.0 Memory reorganization

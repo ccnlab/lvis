@@ -33,54 +33,146 @@ import (
 
 // ImagesEnv provides the rendered results of the Obj3D + Saccade generator.
 type ImagesEnv struct {
-	Nm         string        `desc:"name of this environment"`
-	Dsc        string        `desc:"description of this environment"`
-	ImageFile  string        `desc:"image file name"`
-	Test       bool          `desc:"present test items, else train"`
-	Sequential bool          `desc:"present items in sequential order -- else shuffled"`
-	High16     bool          `desc:"compute high-res full field filtering"`
-	ColorDoG   bool          `desc:"compute color DoG (blob) filtering"`
-	Images     Images        `desc:"images list"`
-	TransMax   mat32.Vec2    `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
-	TransSigma float32       `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
-	ScaleRange minmax.F32    `desc:"def 0.5 - 1.1 range of scale"`
-	RotateMax  float32       `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
-	Img        V1Img         `desc:"image that we operate upon -- one image shared among all filters"`
-	V1l16      Vis           `desc:"v1 16deg low resolution filtering of image -- V1AllTsr has result"`
-	V1m16      Vis           `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1h16      Vis           `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
-	V1l8       Vis           `desc:"v1 8deg low resolution filtering of image -- V1AllTsr has result"`
-	V1m8       Vis           `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
-	V1Cl16     ColorVis      `desc:"v1 color 16deg low resolution filtering of image -- OutAll has result"`
-	V1Cm16     ColorVis      `desc:"v1 color 16deg medium resolution filtering of image -- OutAll has result"`
-	V1Cl8      ColorVis      `desc:"v1 color 8deg low resolution filtering of image -- OutAll has result"`
-	V1Cm8      ColorVis      `desc:"v1 color 8deg medium resolution filtering of image -- OutAll has result"`
-	MaxOut     int           `desc:"maximum number of output categories representable here"`
-	OutRandom  bool          `desc:"use random bit patterns instead of localist output units"`
-	RndPctOn   float32       `desc:"proportion activity for random patterns"`
-	RndMinDiff float32       `desc:"proportion minimum difference for random patterns"`
-	OutSize    evec.Vec2i    `desc:"the output tensor geometry -- must be >= number of cats"`
-	NOutPer    int           `desc:"number of output units per category -- spiking may benefit from replication -- is Y inner dim of output tensor"`
-	Pats       etable.Table  `view:"no-inline" desc:"output patterns: either localist or random"`
-	Rand       erand.SysRand `view:"-" desc:"random number generator for the env -- all random calls must use this"`
-	RndSeed    int64         `inactive:"+" desc:"random seed"`
 
-	Output    etensor.Float32 `desc:"output pattern for current item"`
-	StRow     int             `desc:"starting row, e.g., for mpi allocation across processors"`
-	EdRow     int             `desc:"ending row -- if 0 it is ignored"`
-	Shuffle   []int           `desc:"suffled list of entire set of images -- re-shuffle every time through imgidxs"`
-	ImgIdxs   []int           `desc:"indexs of images to present -- from StRow to EdRow"`
-	Run       env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
-	Epoch     env.Ctr         `view:"inline" desc:"arbitrary aggregation of trials, for stats etc"`
-	Trial     env.Ctr         `view:"inline" desc:"each object trajectory is one trial"`
-	Row       env.Ctr         `view:"inline" desc:"row of item list  -- this is actual counter driving everything"`
-	CurCat    string          `desc:"current category"`
-	CurCatIdx int             `desc:"index of current category"`
-	CurImg    string          `desc:"current image"`
-	CurTrans  mat32.Vec2      `desc:"current translation"`
-	CurScale  float32         `desc:"current scaling"`
-	CurRot    float32         `desc:"current rotation"`
+	// name of this environment
+	Nm string `desc:"name of this environment"`
 
+	// description of this environment
+	Dsc string `desc:"description of this environment"`
+
+	// image file name
+	ImageFile string `desc:"image file name"`
+
+	// present test items, else train
+	Test bool `desc:"present test items, else train"`
+
+	// present items in sequential order -- else shuffled
+	Sequential bool `desc:"present items in sequential order -- else shuffled"`
+
+	// compute high-res full field filtering
+	High16 bool `desc:"compute high-res full field filtering"`
+
+	// compute color DoG (blob) filtering
+	ColorDoG bool `desc:"compute color DoG (blob) filtering"`
+
+	// images list
+	Images Images `desc:"images list"`
+
+	// def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge
+	TransMax mat32.Vec2 `desc:"def 0.3 maximum amount of translation as proportion of half-width size in each direction -- 1 = something in center is now at right edge"`
+
+	// [def: 0.15] if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance.
+	TransSigma float32 `def:"0.15" desc:"if > 0, generate translations using gaussian normal distribution with this standard deviation, and then clip to TransMax range -- this facilitates learning on the central region while still giving exposure to wider area.  Tyically turn off for last 100 epochs to measure true uniform distribution performance."`
+
+	// def 0.5 - 1.1 range of scale
+	ScaleRange minmax.F32 `desc:"def 0.5 - 1.1 range of scale"`
+
+	// [def: 8] def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range
+	RotateMax float32 `def:"8" desc:"def 8 maximum degrees of rotation in plane -- image is rotated plus or minus in this range"`
+
+	// image that we operate upon -- one image shared among all filters
+	Img V1Img `desc:"image that we operate upon -- one image shared among all filters"`
+
+	// v1 16deg low resolution filtering of image -- V1AllTsr has result
+	V1l16 Vis `desc:"v1 16deg low resolution filtering of image -- V1AllTsr has result"`
+
+	// v1 16deg medium resolution filtering of image -- V1AllTsr has result
+	V1m16 Vis `desc:"v1 16deg medium resolution filtering of image -- V1AllTsr has result"`
+
+	// v1 16deg high resolution filtering of image -- V1AllTsr has result
+	V1h16 Vis `desc:"v1 16deg high resolution filtering of image -- V1AllTsr has result"`
+
+	// v1 8deg low resolution filtering of image -- V1AllTsr has result
+	V1l8 Vis `desc:"v1 8deg low resolution filtering of image -- V1AllTsr has result"`
+
+	// v1 8deg medium resolution filtering of image -- V1AllTsr has result
+	V1m8 Vis `desc:"v1 8deg medium resolution filtering of image -- V1AllTsr has result"`
+
+	// v1 color 16deg low resolution filtering of image -- OutAll has result
+	V1Cl16 ColorVis `desc:"v1 color 16deg low resolution filtering of image -- OutAll has result"`
+
+	// v1 color 16deg medium resolution filtering of image -- OutAll has result
+	V1Cm16 ColorVis `desc:"v1 color 16deg medium resolution filtering of image -- OutAll has result"`
+
+	// v1 color 8deg low resolution filtering of image -- OutAll has result
+	V1Cl8 ColorVis `desc:"v1 color 8deg low resolution filtering of image -- OutAll has result"`
+
+	// v1 color 8deg medium resolution filtering of image -- OutAll has result
+	V1Cm8 ColorVis `desc:"v1 color 8deg medium resolution filtering of image -- OutAll has result"`
+
+	// maximum number of output categories representable here
+	MaxOut int `desc:"maximum number of output categories representable here"`
+
+	// use random bit patterns instead of localist output units
+	OutRandom bool `desc:"use random bit patterns instead of localist output units"`
+
+	// proportion activity for random patterns
+	RndPctOn float32 `desc:"proportion activity for random patterns"`
+
+	// proportion minimum difference for random patterns
+	RndMinDiff float32 `desc:"proportion minimum difference for random patterns"`
+
+	// the output tensor geometry -- must be >= number of cats
+	OutSize evec.Vec2i `desc:"the output tensor geometry -- must be >= number of cats"`
+
+	// number of output units per category -- spiking may benefit from replication -- is Y inner dim of output tensor
+	NOutPer int `desc:"number of output units per category -- spiking may benefit from replication -- is Y inner dim of output tensor"`
+
+	// [view: no-inline] output patterns: either localist or random
+	Pats etable.Table `view:"no-inline" desc:"output patterns: either localist or random"`
+
+	// [view: -] random number generator for the env -- all random calls must use this
+	Rand erand.SysRand `view:"-" desc:"random number generator for the env -- all random calls must use this"`
+
+	// random seed
+	RndSeed int64 `inactive:"+" desc:"random seed"`
+
+	// output pattern for current item
+	Output etensor.Float32 `desc:"output pattern for current item"`
+
+	// starting row, e.g., for mpi allocation across processors
+	StRow int `desc:"starting row, e.g., for mpi allocation across processors"`
+
+	// ending row -- if 0 it is ignored
+	EdRow int `desc:"ending row -- if 0 it is ignored"`
+
+	// suffled list of entire set of images -- re-shuffle every time through imgidxs
+	Shuffle []int `desc:"suffled list of entire set of images -- re-shuffle every time through imgidxs"`
+
+	// indexs of images to present -- from StRow to EdRow
+	ImgIdxs []int `desc:"indexs of images to present -- from StRow to EdRow"`
+
+	// [view: inline] current run of model as provided during Init
+	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+
+	// [view: inline] arbitrary aggregation of trials, for stats etc
+	Epoch env.Ctr `view:"inline" desc:"arbitrary aggregation of trials, for stats etc"`
+
+	// [view: inline] each object trajectory is one trial
+	Trial env.Ctr `view:"inline" desc:"each object trajectory is one trial"`
+
+	// [view: inline] row of item list  -- this is actual counter driving everything
+	Row env.Ctr `view:"inline" desc:"row of item list  -- this is actual counter driving everything"`
+
+	// current category
+	CurCat string `desc:"current category"`
+
+	// index of current category
+	CurCatIdx int `desc:"index of current category"`
+
+	// current image
+	CurImg string `desc:"current image"`
+
+	// current translation
+	CurTrans mat32.Vec2 `desc:"current translation"`
+
+	// current scaling
+	CurScale float32 `desc:"current scaling"`
+
+	// current rotation
+	CurRot float32 `desc:"current rotation"`
+
+	// [view: -] rendered image as loaded
 	Image image.Image `view:"-" desc:"rendered image as loaded"`
 }
 

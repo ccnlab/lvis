@@ -7,23 +7,24 @@ The `lvix_fix8.proj` version has "blob" color filters in addition to the monochr
 # Images: CU3D100
 
 This [google drive folder](https://drive.google.com/drive/folders/13Mi9aUlF1A3sx3JaofX-qzKlxGoViT86?usp=sharing) has .png input files for use with this model.
-By default the models looks for the images extracted from `CU3D_100_renders_lr20_u30_nb.tar.gz` in the `<repo>/sims/lvis_cu3d100_te16deg_axon/images/CU3D_100_renders_lr20_u30_nb/` folder.
 
-See 
+By default the models looks for the images extracted from `CU3D_100_renders_lr20_u30_nb.tar.gz` in the `<repo>/sims/lvis_cu3d100_te16deg_axon/images/CU3D_100_renders_lr20_u30_nb/` folder.  This contains 18,859 images of rendered 3D objects from 100 different object categories, with roughly 8-10 3D object instances per category.
 
-`CU3D_100_plus_renders.tar.gz` is a set of 30,240 rendered images from 100 3D object categories, with 14.45 average different instances per category, used for much of our object recognition work, including the above paper and originally: O'Reilly, R.C., Wyatte, D., Herd, S., Mingus, B. & Jilk, D.J. (2013). Recurrent Processing during Object Recognition. *Frontiers in Psychology, 4,* 124. [PDF](https://ccnlab.org/papers/OReillyWyatteHerdEtAl13.pdf) | [URL](http://www.ncbi.nlm.nih.gov/pubmed/23554596)
+See `Config.Env.Path` for path to use for finding these files -- typically make a symlink for `images` to point to a central location having these files.
+
+There is also a larger collection of images: `CU3D_100_plus_renders.tar.gz` which has 30,240 rendered images from the same 100 3D object categories, with 14.45 average different instances per category.  However, the additional instances were of lower quality overall and performance is generally slightly worse with this set.
+
+The original reference for these images and the LVis model is:
+
+O'Reilly, R.C., Wyatte, D., Herd, S., Mingus, B. & Jilk, D.J. (2013). Recurrent Processing during Object Recognition. *Frontiers in Psychology, 4,* 124. [PDF](https://ccnlab.org/papers/OReillyWyatteHerdEtAl13.pdf) | [URL](http://www.ncbi.nlm.nih.gov/pubmed/23554596)
 
 The image specs are: 320x320 color images. 100 object classes, 20 images per exemplar. Rendered with 40° depth rotation about y-axis (plus horizontal flip), 20° tilt rotation about x-axis, 80° overhead lighting rotation.
 
-The `ImagesEnv` environment in `images_env.go` adds in-plane affine transformations (translation, scale, rotation) (now known as "data augmentation"), with the standard case being scaling in the range .5 - 1.1, rotation +/- 8 degrees, and translation using gaussian normal distribution with sigma of .15 and a max of .3.  The previous transforms had some kind of automatic border generating mechanism -- now this is handled by preserving the existing border, by using a smaller range of scales: .4 - 1.0.
+The `ImagesEnv` environment in `images_env.go` adds in-plane affine transformations (translation, scale, rotation) (now known as "data augmentation"), with the standard case being scaling in the range .7 - 1.2, rotation +/- 16 degrees, and translation using a uniform distribution of 30% of the half-width of the image, where 100% would move something in the center to be centered on the edge.  30% is about the maximum amount of translation that does not result in significant amounts of the image being off the edge.
 
-# Cemer standard performance
+# Benchmarking
 
-With standard params, the cemer versions of the model would learn to about 80% percent correct on the *training set*, with generalization accuracy of about 50%.  The inability of the `leabra` algorithm to continue to improve any further on the training set, despite many attempts to fix this problem, was an indication of some significant limitations in the scaling behavior.  Also, this large network is highly susceptible to the hogging problem, where a small subset of neurons lock in and take over the representational space, due to positive feedback loops present in bidirectionally connected networks.
-
-The translation params have a big impact: .3 uniform is fairly difficult, and the gaussian distribution is helpful.
-
-# Compute Speed
+See [bench](bench.md) for full info.
 
 # Building
 
@@ -39,6 +40,8 @@ To run with MPI (e.g.):
 ```bash
 mpirun -np 4 ./lvis_cu3d100_te16deg_axon -no-gui -mpi
 ```
+
+See [grunter_ex.py](grunter_ex.py) for an example run script for use with the [grunt](https://github.com/emer/grunt) git-based run tool.
 
 # TODO:
 
