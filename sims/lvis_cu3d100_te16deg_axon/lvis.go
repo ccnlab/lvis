@@ -30,6 +30,7 @@ import (
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/timer"
 	"github.com/emer/empi/empi"
 	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/agg"
@@ -123,6 +124,10 @@ func (ss *Sim) New() {
 	if mpi.WorldRank() != 0 {
 		ss.Config.Log.SaveWts = false
 		ss.Config.Log.NetData = false
+	}
+	if ss.Config.Bench {
+		ss.Config.Run.NTrials = 64
+		ss.Config.Run.NEpochs = 1
 	}
 	ss.Net = &axon.Network{}
 	ss.Params.Config(ParamSets, ss.Config.Params.Sheet, ss.Config.Params.Tag, ss.Net)
@@ -1411,7 +1416,20 @@ func (ss *Sim) RunNoGUI() {
 	}
 	mpi.Printf("Set NThreads to: %d\n", ss.Net.NThreads)
 
+	tmr := timer.Time{}
+	tmr.Start()
+
 	ss.Loops.Run(etime.Train)
+
+	tmr.Stop()
+	if ss.Config.Bench {
+		tm := tmr.TotalSecs()
+		ptmsec := (tm / 64) * 1000
+		fmt.Printf("Total Time: %6.3g   Bench Per Trl Msec: %g\n", tm, ptmsec)
+	} else {
+		fmt.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
+	}
+	ss.Net.TimerReport()
 
 	ss.Logs.CloseLogFiles()
 
@@ -1421,39 +1439,6 @@ func (ss *Sim) RunNoGUI() {
 
 	ss.Net.GPU.Destroy() // safe even if no GPU
 	ss.MPIFinalize()
-
-	//////////////
-
-	// bench := ss.Args.Bool("bench")
-	// tmr := timer.Time{}
-	// tmr.Start()
-	//
-	// net := ss.Net
-	//
-	// if bench {
-	// 	net.RecFunTimes = bench // this determines whether GPU waits or not
-	// 	runtime.GOMAXPROCS(4)
-	// 	net.SetNThreads(4)
-	// }
-	//
-	// if false {
-	// 	ss.Loops.Step(etime.Train, 1, etime.Trial) // get past NewRun
-	// 	wtsFile := "images/Lvis_Base_000_00999.wts.gz"
-	// 	net.OpenWtsJSON(gi.FileName(wtsFile))
-	// 	mpi.Printf("loaded weights: %s\n", wtsFile)
-	// }
-
-	// if bench {
-	// 	tmr.Stop()
-	// 	fmt.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
-	// 	net.TimerReport()
-	// }
-	//
-	// ss.Logs.CloseLogFiles()
-	//
-	// if netdata {
-	// 	ss.GUI.SaveNetData(ss.Stats.String("RunName"))
-	// }
 }
 
 ////////////////////////////////////////////////////////////////////

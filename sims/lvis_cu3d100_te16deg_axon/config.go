@@ -111,8 +111,8 @@ type LogConfig struct {
 	// [def: true] if true, save train epoch log to file, as .epc.tsv typically
 	Epoch bool `def:"true" nest:"+" desc:"if true, save train epoch log to file, as .epc.tsv typically"`
 
-	// [def: true] if true, save run log to file, as .run.tsv typically
-	Run bool `def:"true" nest:"+" desc:"if true, save run log to file, as .run.tsv typically"`
+	// [def: false] if true, save run log to file, as .run.tsv typically
+	Run bool `def:"false" nest:"+" desc:"if true, save run log to file, as .run.tsv typically"`
 
 	// [def: false] if true, save train trial log to file, as .trl.tsv typically. May be large.
 	Trial bool `def:"false" nest:"+" desc:"if true, save train trial log to file, as .trl.tsv typically. May be large."`
@@ -139,6 +139,9 @@ type Config struct {
 	// log debugging information
 	Debug bool `desc:"log debugging information"`
 
+	// run a standard benchmarking configuration: runs 64 trials for 1 epoch and reports timing
+	Bench bool `desc:"run a standard benchmarking configuration: runs 64 trials for 1 epoch and reports timing"`
+
 	// [view: add-fields] environment configuration options
 	Env EnvConfig `view:"add-fields" desc:"environment configuration options"`
 
@@ -157,6 +160,9 @@ func (cfg *Config) IncludesPtr() *[]string { return &cfg.Includes }
 func (cfg *Config) Defaults() {
 	cfg.Params.Defaults()
 }
+
+//////////////////////////////////////////////////////////////////////////////
+//   Prjns
 
 // Prjns holds all the special projections
 type Prjns struct {
