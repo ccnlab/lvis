@@ -247,7 +247,7 @@ func (ev *ImagesEnv) ConfigPats() {
 	if ev.OutRandom {
 		ev.ConfigPatsRandom()
 	} else {
-		ev.ConfigPatsLocalist()
+		ev.ConfigPatsLocalist2D()
 	}
 }
 
@@ -262,10 +262,32 @@ func (ev *ImagesEnv) ConfigPatsName() {
 	}
 }
 
-// ConfigPatsLocalist configures the output patterns: localist case
-func (ev *ImagesEnv) ConfigPatsLocalist() {
+// ConfigPatsLocalistPools configures the output patterns: localist case
+// with pools for each sub-pool
+func (ev *ImagesEnv) ConfigPatsLocalistPools() {
 	oshp := []int{ev.OutSize.Y, ev.OutSize.X, ev.NOutPer, 1}
 	oshpnm := []string{"Y", "X", "NPer", "1"}
+	ev.Output.SetShape(oshp, nil, oshpnm)
+	sch := etable.Schema{
+		{"Name", etensor.STRING, nil, nil},
+		{"Output", etensor.FLOAT32, oshp, oshpnm},
+	}
+	ev.Pats.SetFromSchema(sch, ev.MaxOut)
+	for pi := 0; pi < ev.MaxOut; pi++ {
+		out := ev.Pats.CellTensor("Output", pi)
+		si := ev.NOutPer * pi
+		for i := 0; i < ev.NOutPer; i++ {
+			out.SetFloat1D(si+i, 1)
+		}
+	}
+	ev.ConfigPatsName()
+}
+
+// ConfigPatsLocalist2D configures the output patterns: localist case
+// as an overall 2D layer -- NOutPer goes along X axis to be contiguous
+func (ev *ImagesEnv) ConfigPatsLocalist2D() {
+	oshp := []int{ev.OutSize.Y, ev.OutSize.X * ev.NOutPer}
+	oshpnm := []string{"Y", "X"}
 	ev.Output.SetShape(oshp, nil, oshpnm)
 	sch := etable.Schema{
 		{"Name", etensor.STRING, nil, nil},

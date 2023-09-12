@@ -82,7 +82,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Nominal": "0.02",  // .02 1.6.15 SSGi -- was higher
 					"Layer.Inhib.ActAvg.Offset":  "0.008", // 0.008 > 0.005; nominal is lower to increase Ge
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // true
+					"Layer.Inhib.ActAvg.AdaptGi": "true",  // true
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",     //
 					"Layer.Inhib.Pool.FB":        "4",
@@ -93,7 +93,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Nominal": "0.02",  // .02 1.6.15 SSGi
 					"Layer.Inhib.ActAvg.Offset":  "0.008", // 0.008 > 0.005; nominal is lower to increase Ge
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // true
+					"Layer.Inhib.ActAvg.AdaptGi": "true",  // true
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Layer.FB":       "1",     //
 					"Layer.Inhib.Pool.FB":        "4",
@@ -104,7 +104,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Nominal": "0.03",  // .03 1.6.15 SSGi
 					"Layer.Inhib.ActAvg.Offset":  "0.01",  // 0.01 > lower, higher; nominal is lower to increase Ge
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // true
+					"Layer.Inhib.ActAvg.AdaptGi": "true",  // true
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Pool.FB":        "4",
@@ -114,7 +114,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Nominal": "0.03",  // .03 1.6.15 SSGi
 					"Layer.Inhib.ActAvg.Offset":  "0.01",  // 0.01 > lower, higher; nominal is lower to increase Ge
-					"Layer.Inhib.ActAvg.AdaptGi": "false", // true
+					"Layer.Inhib.ActAvg.AdaptGi": "true",  // true
 					"Layer.Inhib.Layer.On":       "false", // no layer!
 					"Layer.Inhib.Pool.On":        "true",  // needs pool-level
 					"Layer.Inhib.Pool.FB":        "4",
@@ -122,11 +122,11 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#Output", Desc: "general output, Localist default -- see RndOutPats, LocalOutPats",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":          "1.2",   // 1.2 FB4 > 1.3 FB 1 SS0
+					"Layer.Inhib.Layer.Gi":          "1.17",  // 1.2 FB4 > 1.3 FB 1 SS0
 					"Layer.Inhib.Layer.FB":          "4",     // 4 > 1 -- try higher
 					"Layer.Inhib.ActAvg.Nominal":    "0.005", // .005 > .008 > .01 -- prevents loss of Ge over time..
 					"Layer.Inhib.ActAvg.Offset":     "0.01",  // 0.01 > 0.012 > 0.005?
-					"Layer.Inhib.ActAvg.AdaptGi":    "false", // needed in any case
+					"Layer.Inhib.ActAvg.AdaptGi":    "true",  // needed in any case
 					"Layer.Inhib.ActAvg.LoTol":      "0.1",   // 0.1 > 0.05 > 0.2 > 0.5 older..
 					"Layer.Inhib.ActAvg.HiTol":      "0.02",  // 0.02 > 0 tiny bit
 					"Layer.Inhib.ActAvg.AdaptRate":  "0.01",  // 0.01 > 0.1

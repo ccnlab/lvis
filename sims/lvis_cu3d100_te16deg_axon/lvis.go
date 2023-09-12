@@ -50,9 +50,9 @@ import (
 
 var (
 	// Debug triggers various messages etc
-	Debug = false
+	Debug = true
 	// GPU runs with the GPU
-	GPU = false
+	GPU = true
 )
 
 func main() {
@@ -84,7 +84,7 @@ type SimParams struct {
 
 // Defaults sets default params
 func (ss *SimParams) Defaults() {
-	ss.NData = 1
+	ss.NData = 8
 	ss.NTrials = 512
 	ss.TestInterval = 20
 	ss.PCAInterval = 10
@@ -359,7 +359,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	if ss.Sim.RndOutPats {
 		out = net.AddLayer2D("Output", trn.OutSize.Y, trn.OutSize.X, axon.TargetLayer)
 	} else {
-		out = net.AddLayer4D("Output", trn.OutSize.Y, trn.OutSize.X, trn.NOutPer, 1, axon.TargetLayer)
+		// out = net.AddLayer4D("Output", trn.OutSize.Y, trn.OutSize.X, trn.NOutPer, 1, axon.TargetLayer)
+		// 2D layer:
+		out = net.AddLayer2D("Output", trn.OutSize.Y, trn.OutSize.X*trn.NOutPer, axon.TargetLayer)
 	}
 
 	full := prjn.NewFull()
@@ -583,6 +585,8 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	ss.Params.SetObject("Network")
 	net.InitWts(ctx)
 
+	mpi.Println(net.SizeReport(false))
+
 	// adding each additional layer type improves decoding..
 	layers := []emer.Layer{v4f16, v4f8, teo16, teo8, out}
 	// layers := []emer.Layer{teo16, teo8, out}
@@ -621,6 +625,8 @@ func (ss *Sim) InitRndSeed() {
 // ConfigLoops configures the control loops: Training, Testing
 func (ss *Sim) ConfigLoops() {
 	man := looper.NewManager()
+
+	ss.Context.SlowInterval = int32(4 * 100) // decompensate..
 
 	totND := ss.Sim.NData * mpi.WorldSize() // both sources of data parallel
 	totTrls := int(mat32.IntMultipleGE(float32(ss.Sim.NTrials), float32(totND)))
@@ -711,36 +717,16 @@ func (ss *Sim) ConfigLoops() {
 	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("SaveWeights", func() { ss.SaveWeights() })
 
 	// lrate schedule
-	/*
-		man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("LrateSched", func() {
-			trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
-			switch trnEpc {
-			case 50:
-				// mpi.Printf("learning rate drop at: %d\n", trnEpc)
-				// ss.Net.LrateSched(0.5)
-			case 200:
-				// 100 is too early..
-				// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
-				// ss.Net.SetSubMean(1, 1)
-			case 500:
-				// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc) // at no point useful!
-				// ss.Net.SetSubMean(1, 1)
-				// mpi.Printf("learning rate drop at: %d\n", trnEpc)
-				// ss.Net.LrateSched(0.1)
-				// case 200:
-				// 	mpi.Printf("learning rate drop at: %d\n", trnEpc)
-				// 	ss.Net.LrateSched(0.1)
-			case 1000:
-				// mpi.Printf("setting SubMean = 1 at: %d\n", trnEpc)
-				// ss.Net.SetSubMean(1, 1)
-			}
-			// ly := ss.Net.LayerByName("Output")
-			// fmit := ly.RecvPrjns().SendName("IT").(axon.AxonPrjn)
-			// fmit.Learn.Lrate.Mod = 1.0 / fmit.Learn.Lrate.Sched
-			// fmit.Learn.Lrate.Update()
-		})
-	*/
+	// man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("LrateSched", func() {
+	// 	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+	// 	switch trnEpc {
+	// 	case 10:
+	// 		mpi.Printf("NData increase back to specified: %d at: %d\n", ss.Sim.NData, trnEpc)
+	// 		ss.Context.NetIdxs.NData = uint32(ss.Sim.NData)
+	// 	}
+	// })
 
+	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 10, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 100, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 500, func() { ss.SaveWeights() })
 	man.GetLoop(etime.Train, etime.Epoch).AddNewEvent("SaveWeights", 1000, func() { ss.SaveWeights() })
@@ -755,7 +741,7 @@ func (ss *Sim) ConfigLoops() {
 	} else {
 		// this is actually fairly expensive
 		man.GetLoop(etime.Test, etime.Trial).OnEnd.Add("ActRFs", func() {
-			for di := 0; di < ss.Sim.NData; di++ {
+			for di := 0; di < int(ss.Context.NetIdxs.NData); di++ {
 				ss.Stats.UpdateActRFs(ss.Net, "ActM", 0.01, di)
 			}
 		})
@@ -999,7 +985,7 @@ func (ss *Sim) TrialStats(di int) {
 		ss.Stats.Confusion.Incr(curCatIdx, rsp)
 	}
 
-	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pool(uint32(di), 0).AvgMax.Act.Plus.Avg/0.01))
+	ss.Stats.SetFloat("TrlTrgAct", float64(out.Pool(0, uint32(di)).AvgMax.Act.Plus.Avg/0.01))
 	decIdx := ss.Decoder.Decode("ActM", di)
 	ss.Stats.SetInt("TrlDecRespIdx", decIdx)
 	if ctx.Mode == etime.Train {
@@ -1223,7 +1209,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 	case time == etime.Cycle:
 		return
 	case time == etime.Trial:
-		for di := 0; di < ss.Sim.NData; di++ {
+		for di := 0; di < int(ctx.NetIdxs.NData); di++ {
 			ss.TrialStats(di)
 			ss.StatCounters(di)
 			ss.Logs.LogRowDi(mode, time, row, di)
@@ -1434,6 +1420,8 @@ func (ss *Sim) RunNoGUI() {
 		// vgpu.Debug = true
 		os.Setenv("VK_DEVICE_SELECT", fmt.Sprintf("%d", mpi.WorldRank()))
 		ss.Net.ConfigGPUnoGUI(&ss.Context) // must happen after gui or no gui
+		// ss.Context.SynapseCaVars.SetSynapseOuter(int(ss.Context.NetIdxs.MaxData))
+		// ss.Net.Ctx.SynapseCaVars.SetSynapseOuter(int(ss.Context.NetIdxs.MaxData))
 	}
 	thr := ss.Args.Int("threads")
 	runtime.GOMAXPROCS(thr)
@@ -1450,8 +1438,15 @@ func (ss *Sim) RunNoGUI() {
 
 	if bench {
 		net.RecFunTimes = bench // this determines whether GPU waits or not
-		runtime.GOMAXPROCS(2)
-		net.SetNThreads(2)
+		runtime.GOMAXPROCS(4)
+		net.SetNThreads(4)
+	}
+
+	if false {
+		ss.Loops.Step(etime.Train, 1, etime.Trial) // get past NewRun
+		wtsFile := "images/Lvis_Base_000_00999.wts.gz"
+		net.OpenWtsJSON(gi.FileName(wtsFile))
+		mpi.Printf("loaded weights: %s\n", wtsFile)
 	}
 
 	ss.Loops.Run(etime.Train)
@@ -1505,6 +1500,7 @@ func (ss *Sim) CollectDWts(net *axon.Network) {
 // DWt changes across parallel nodes, each of which are learning on different
 // sequences of inputs.
 func (ss *Sim) MPIWtFmDWt() {
+	ctx := &ss.Context
 	if ss.Args.Bool("mpi") {
 		ss.CollectDWts(ss.Net)
 		ndw := len(ss.AllDWts)
@@ -1512,9 +1508,9 @@ func (ss *Sim) MPIWtFmDWt() {
 			ss.SumDWts = make([]float32, ndw)
 		}
 		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
-		ss.Net.SetDWts(&ss.Context, ss.SumDWts, mpi.WorldSize())
+		ss.Net.SetDWts(ctx, ss.SumDWts, mpi.WorldSize())
 	}
-	ss.Net.WtFmDWt(&ss.Context)
+	ss.Net.WtFmDWt(ctx)
 }
 
 func (ss *Sim) AssertMPIReplicaConsistency() {
