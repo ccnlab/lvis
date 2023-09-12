@@ -74,6 +74,9 @@ type RunConfig struct {
 	// [def: true] use the GPU for computation -- generally faster even for small models if NData ~16
 	GPU bool `def:"true" desc:"use the GPU for computation -- generally faster even for small models if NData ~16"`
 
+	// [def: true] if true and both MPI and GPU are being used, this selects a different GPU for each MPI proc rank, assuming a multi-GPU node -- set to false if running MPI across multiple GPU nodes
+	GPUSameNodeMPI bool `def:"true" desc:"if true and both MPI and GPU are being used, this selects a different GPU for each MPI proc rank, assuming a multi-GPU node -- set to false if running MPI across multiple GPU nodes"`
+
 	// [def: 16] [min: 1] number of data-parallel items to process in parallel per trial -- works (and is significantly faster) for both CPU and GPU.  Results in an effective mini-batch of learning.
 	NData int `def:"16" min:"1" desc:"number of data-parallel items to process in parallel per trial -- works (and is significantly faster) for both CPU and GPU.  Results in an effective mini-batch of learning."`
 

@@ -10,19 +10,43 @@ Command (use -no-gpu to turn off gpu):
 ./lvis_cu3d100_te16deg_axon -no-gui -bench -gpu -ndata=8
 ```
 
+or to run the whole slate of GPU and CPU for various ndata levels:
+
+```
+go test -v -bench Benchmark -run not
+```
+
+
 ### 1.8.18 Macbook Pro M1
 
 Results are total secs and per-trl-msec.  CPU using 10 threads (GOMAXPROCS default)
 
-* GPU, NData 1:    110    1718
+* GPU, NData 1:    109    1708
+* GPU, NData 2:     80    1245
 * GPU, NData 4:     58     906
 * GPU, NData 8:     48     753 <- sweet spot -- 6.5gb ram
-* GPU, NData 16:    58     906 <- nvidia does better here..  13.1gb ram
+* GPU, NData 16:    58     906
 
 * CPU, NData 1:    129    2015
 * CPU, NData 4:    124    1934
 * CPU, NData 8:    122    1906
 * CPU, NData 16:   130    2031
+
+### 1.8.18: HPC2 ccnl-0 AMD EPYC 7502 32-Core Processor + NVIDIA A100 GPU 40GB
+
+32 threads default
+
+* GPU, NData 1:    110    1718
+* GPU, NData 4:     83    1303
+* GPU, NData 8:     72    1137
+* GPU, NData 16:    67    1053  <- just slightly faster
+
+* CPU, NData 1:    155    2415
+* CPU, NData 2:    134    2096
+* CPU, NData 4:    127    1980
+* CPU, NData 8:    113    1764
+* CPU, NData 16:   105    1646
+
 
 # 1.8.0 Memory reorganization
 

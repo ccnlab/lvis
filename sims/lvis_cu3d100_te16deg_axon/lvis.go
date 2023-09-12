@@ -1412,6 +1412,12 @@ func (ss *Sim) RunNoGUI() {
 	ss.Loops.GetLoop(etime.Train, etime.Run).Counter.SetCurMaxPlusN(ss.Config.Run.Run, ss.Config.Run.NRuns)
 
 	if ss.Config.Run.GPU {
+		if ss.Config.Run.MPI && ss.Config.Run.GPUSameNodeMPI {
+			os.Setenv("VK_DEVICE_SELECT", fmt.Sprintf("%d", mpi.WorldRank()))
+		}
+		// expt with diff memory config:
+		// ss.Context.SynapseCaVars.SetSynapseOuter(int(ss.Context.NetIdxs.MaxData))
+		// ss.Net.Ctx.SynapseCaVars.SetSynapseOuter(int(ss.Context.NetIdxs.MaxData))
 		ss.Net.ConfigGPUnoGUI(&ss.Context)
 	}
 	mpi.Printf("Set NThreads to: %d\n", ss.Net.NThreads)
