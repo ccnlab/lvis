@@ -15,7 +15,7 @@
 						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
 
          V1Cm16		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
-						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Base:Layer: 1.1
+						Layer.Gi:	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
 						Pool.Gi: 	  0.90	Params: .InputLayer: 0.9 | Layer: 1.1
 
          V1Cl16		Nominal:	  0.04	Params: .InputLayer: 0.04 | Layer: 0.04
@@ -64,5 +64,5 @@
 						Pool.Gi: 	  1.00	Params: #TE: 1.0 | Layer: 1.1
 
          Output		Nominal:	  0.00	Params: #Output: 0.005 | Layer: 0.04
-						Layer.Gi:	  1.17	Params: #Output: 1.17 | Base:Layer: 1.1
+						Layer.Gi:	  1.17	Params: #Output: 1.17 | Layer: 1.1
 

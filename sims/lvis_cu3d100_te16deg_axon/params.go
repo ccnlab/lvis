@@ -20,6 +20,8 @@ var ParamSets = netparams.Sets{
 				"Layer.Inhib.Pool.Gi":                "1.1",  // "
 				"Layer.Inhib.Layer.FB":               "1",    // setting for layers below
 				"Layer.Inhib.Pool.FB":                "1",
+				"Layer.Inhib.Layer.ClampExtMin":      "0.0", // 0.05 default doesn't activate output!
+				"Layer.Inhib.Pool.ClampExtMin":       "0.0",
 				"Layer.Inhib.ActAvg.AdaptRate":       "0.05", // was 0.1 -- got fluctations
 				"Layer.Inhib.ActAvg.LoTol":           "0.8",
 				"Layer.Inhib.ActAvg.HiTol":           "0.0",

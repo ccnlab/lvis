@@ -1,30 +1,48 @@
 V1m16.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1m16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1m16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1m16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1m16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1l16.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1l16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1l16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1l16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1l16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1m8.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1m8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1m8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1m8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1m8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1l8.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1l8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1l8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1l8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1l8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1Cm16.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1Cm16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1Cm16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1Cm16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1Cm16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1Cl16.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1Cl16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1Cl16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1Cl16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1Cl16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1Cm8.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1Cm8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1Cm8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1Cm8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1Cm8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V1Cl8.Acts.Decay.Glong: 1 // [Def: 0,0.6] <br>
 V1Cl8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V1Cl8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+V1Cl8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V1Cl8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V2m16.Inhib.ActAvg.Offset: 0.008 // [Def: 0] <br>
 V2m16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V2m16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
 V2m16.Inhib.Pool.Gi: 1.05 // [Def: 1,1.1,0.75,0.9] <br>
+V2m16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V2m16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V2m16.V1m16ToV2m16.PrjnScale.Abs: 1.4 // [Def: 1] <br>
 V2m16.V1m16ToV2m16.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
@@ -42,7 +60,9 @@ V2m16.V4f16ToV2m16.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
 V2m16.V4f16ToV2m16.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 V2l16.Inhib.ActAvg.Offset: 0.008 // [Def: 0] <br>
 V2l16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V2l16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
 V2l16.Inhib.Pool.Gi: 1.05 // [Def: 1,1.1,0.75,0.9] <br>
+V2l16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V2l16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V2l16.V1l16ToV2l16.PrjnScale.Abs: 1.4 // [Def: 1] <br>
 V2l16.V1l16ToV2l16.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
@@ -54,7 +74,9 @@ V2l16.V4f16ToV2l16.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
 V2l16.V4f16ToV2l16.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 V2m8.Inhib.ActAvg.Offset: 0.008 // [Def: 0] <br>
 V2m8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V2m8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
 V2m8.Inhib.Pool.Gi: 1.05 // [Def: 1,1.1,0.75,0.9] <br>
+V2m8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V2m8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V2m8.V1m8ToV2m8.PrjnScale.Abs: 1.4 // [Def: 1] <br>
 V2m8.V1m8ToV2m8.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
@@ -72,7 +94,9 @@ V2m8.V4f8ToV2m8.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
 V2m8.V4f8ToV2m8.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 V2l8.Inhib.ActAvg.Offset: 0.008 // [Def: 0] <br>
 V2l8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V2l8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
 V2l8.Inhib.Pool.Gi: 1.05 // [Def: 1,1.1,0.75,0.9] <br>
+V2l8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V2l8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V2l8.V1l8ToV2l8.PrjnScale.Abs: 1.4 // [Def: 1] <br>
 V2l8.V1l8ToV2l8.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
@@ -84,7 +108,9 @@ V2l8.V4f8ToV2l8.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
 V2l8.V4f8ToV2l8.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 V4f16.Inhib.ActAvg.Offset: 0.008 // [Def: 0] <br>
 V4f16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V4f16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
 V4f16.Inhib.Pool.Gi: 1.05 // [Def: 1,1.1,0.75,0.9] <br>
+V4f16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V4f16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V4f16.V2m16ToV4f16.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
 V4f16.V2m16ToV4f16.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
@@ -93,7 +119,9 @@ V4f16.TEOf16ToV4f16.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 V4f16.V1l16ToV4f16.Learn.LRate.Base: 0.001 // [Def: 0.04,0.1,0.2] <br>
 V4f8.Inhib.ActAvg.Offset: 0.008 // [Def: 0] <br>
 V4f8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+V4f8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
 V4f8.Inhib.Pool.Gi: 1.05 // [Def: 1,1.1,0.75,0.9] <br>
+V4f8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 V4f8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 V4f8.V2m8ToV4f8.SWts.Limit: {0.1 0.7} // [Def: {'Min':0.2,'Max':0.8}] <br>
 V4f8.V2m8ToV4f8.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
@@ -102,6 +130,8 @@ V4f8.TEOf8ToV4f8.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 V4f8.V1l8ToV4f8.Learn.LRate.Base: 0.001 // [Def: 0.04,0.1,0.2] <br>
 TEOf16.Inhib.ActAvg.Offset: 0.01 // [Def: 0] <br>
 TEOf16.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+TEOf16.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+TEOf16.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 TEOf16.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 TEOf16.V4f16ToTEOf16.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 TEOf16.V4f8ToTEOf16.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
@@ -111,6 +141,8 @@ TEOf16.V1l16ToTEOf16.Learn.LRate.Base: 0.001 // [Def: 0.04,0.1,0.2] <br>
 TEOf16.V1l16ToTEOf16.Learn.LRate.Base: 0.001 // [Def: 0.04,0.1,0.2] <br>
 TEOf8.Inhib.ActAvg.Offset: 0.01 // [Def: 0] <br>
 TEOf8.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+TEOf8.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+TEOf8.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 TEOf8.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 TEOf8.V4f8ToTEOf8.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
 TEOf8.V4f16ToTEOf8.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
@@ -120,6 +152,8 @@ TEOf8.V1l8ToTEOf8.Learn.LRate.Base: 0.001 // [Def: 0.04,0.1,0.2] <br>
 TEOf8.V1l8ToTEOf8.Learn.LRate.Base: 0.001 // [Def: 0.04,0.1,0.2] <br>
 TE.Inhib.ActAvg.Offset: 0.01 // [Def: 0] <br>
 TE.Inhib.ActAvg.AdaptRate: 0.05 // [Def: 0.1] <br>
+TE.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+TE.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 TE.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 TE.TEOf16ToTE.PrjnScale.Abs: 1.2 // [Def: 1] <br>
 TE.TEOf16ToTE.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
@@ -133,6 +167,8 @@ Output.Inhib.ActAvg.HiTol: 0.02 // [Def: 0] <br>
 Output.Inhib.ActAvg.LoTol: 0.1 // [Def: 0.8] <br>
 Output.Inhib.ActAvg.AdaptRate: 0.01 // [Def: 0.1] <br>
 Output.Inhib.Layer.Gi: 1.17 // [Def: 1,1.1,0.75,0.9] <br>
+Output.Inhib.Layer.ClampExtMin: 0 // [Def: 0.05] <br>
+Output.Inhib.Pool.ClampExtMin: 0 // [Def: 0.05] <br>
 Output.Learn.TrgAvgAct.SynScaleRate: 0.002 // [Def: 0.005,0.0002] <br>
 Output.TEOf16ToOutput.PrjnScale.Abs: 2 // [Def: 1] <br>
 Output.TEOf16ToOutput.Learn.LRate.Base: 0.005 // [Def: 0.04,0.1,0.2] <br>
