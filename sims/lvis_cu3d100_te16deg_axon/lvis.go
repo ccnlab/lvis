@@ -126,7 +126,11 @@ func (ss *Sim) New() {
 		ss.Config.Log.NetData = false
 	}
 	if ss.Config.Bench {
-		ss.Config.Run.NTrials = 64
+		if ss.Config.Run.MPI {
+			ss.Config.Run.NTrials = 512
+		} else {
+			ss.Config.Run.NTrials = 64
+		}
 		ss.Config.Run.NEpochs = 1
 	}
 	ss.Net = &axon.Network{}

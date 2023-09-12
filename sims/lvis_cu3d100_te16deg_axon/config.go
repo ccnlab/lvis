@@ -142,8 +142,8 @@ type Config struct {
 	// log debugging information
 	Debug bool `desc:"log debugging information"`
 
-	// run a standard benchmarking configuration: runs 64 trials for 1 epoch and reports timing
-	Bench bool `desc:"run a standard benchmarking configuration: runs 64 trials for 1 epoch and reports timing"`
+	// run a standard benchmarking configuration: runs 64 trials (512 for MPI which can run more data parallel) for 1 epoch and reports timing
+	Bench bool `desc:"run a standard benchmarking configuration: runs 64 trials (512 for MPI which can run more data parallel) for 1 epoch and reports timing "`
 
 	// [view: add-fields] environment configuration options
 	Env EnvConfig `view:"add-fields" desc:"environment configuration options"`
