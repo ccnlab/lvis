@@ -4,16 +4,16 @@ go 1.18
 
 require (
 	github.com/anthonynsimon/bild v0.13.0
-	github.com/emer/axon v1.8.2-0.20230627222450-aedde0edbb81
-	github.com/emer/emergent v1.4.10
-	github.com/emer/empi v1.0.19
-	github.com/emer/etable v1.1.23
+	github.com/emer/axon v1.8.18
+	github.com/emer/emergent v1.4.29
+	github.com/emer/empi v1.0.22
+	github.com/emer/etable v1.1.24
 	github.com/emer/leabra v1.2.8
 	github.com/emer/vision v1.1.18
-	github.com/goki/gi v1.3.19
-	github.com/goki/ki v1.1.11
+	github.com/goki/gi v1.3.22
+	github.com/goki/ki v1.1.15
 	github.com/goki/mat32 v1.0.15
-	github.com/goki/vgpu v1.0.32
+	github.com/goki/vgpu v1.0.33
 	golang.org/x/image v0.6.0
 )
 
@@ -21,6 +21,7 @@ require (
 	git.sr.ht/~sbinet/gg v0.3.1 // indirect
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/BurntSushi/xgb v0.0.0-20210121224620-deaf085860bc // indirect
 	github.com/BurntSushi/xgbutil v0.0.0-20190907113008-ad855c713046 // indirect
 	github.com/Masterminds/vcs v1.13.3 // indirect
@@ -56,7 +57,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/srwiley/scanx v0.0.0-20190309010443-e94503791388 // indirect
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect

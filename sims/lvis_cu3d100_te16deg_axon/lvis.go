@@ -14,11 +14,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 
 	"github.com/emer/axon/axon"
 	"github.com/emer/emergent/decoder"
 	"github.com/emer/emergent/ecmd"
+	"github.com/emer/emergent/econfig"
 	"github.com/emer/emergent/egui"
 	"github.com/emer/emergent/elog"
 	"github.com/emer/emergent/emer"
@@ -28,8 +28,8 @@ import (
 	"github.com/emer/emergent/etime"
 	"github.com/emer/emergent/looper"
 	"github.com/emer/emergent/netview"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/timer"
 	"github.com/emer/empi/empi"
 	"github.com/emer/empi/mpi"
 	"github.com/emer/etable/agg"
@@ -44,55 +44,21 @@ import (
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
-)
-
-var (
-	// Debug triggers various messages etc
-	Debug = true
-	// GPU runs with the GPU
-	GPU = true
 )
 
 func main() {
 	sim := &Sim{}
 	sim.New()
-	sim.Config()
-	if len(os.Args) > 1 {
-		sim.RunNoGUI() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	sim.ConfigAll()
+	if sim.Config.GUI {
+		gimain.Main(sim.RunGUI)
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			sim.RunGUI()
-		})
+		sim.RunNoGUI()
 	}
 }
 
-// see params.go for params
-
-// SimParams has all the custom params for this sim
-type SimParams struct {
-	NData        int  `desc:"number of data-parallel items to process at once"`
-	NTrials      int  `desc:"number of trials per epoch"`
-	TestInterval int  `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
-	PCAInterval  int  `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
-	NOutPer      int  `desc:"number of units per localist output unit"`
-	SubPools     bool `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
-	RndOutPats   bool `desc:"if true, use random output patterns -- else localist"`
-	ConfusionEpc int  `desc:"epoch to start recording confusion matrix"`
-}
-
-// Defaults sets default params
-func (ss *SimParams) Defaults() {
-	ss.NData = 8
-	ss.NTrials = 512
-	ss.TestInterval = 20
-	ss.PCAInterval = 10
-	ss.NOutPer = 5
-	ss.SubPools = true
-	ss.RndOutPats = false
-	ss.ConfusionEpc = 500
-}
+// see params.go for params, config.go for Config
 
 // Sim encapsulates the entire simulation model, and we define all the
 // functionality as methods on this struct.  This structure keeps all relevant
@@ -100,54 +66,86 @@ func (ss *SimParams) Defaults() {
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net      *axon.Network    `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	Sim      SimParams        `desc:"misc params specific to this simulation"`
-	Prjns    Prjns            `desc:"special projections"`
-	Params   emer.Params      `view:"inline" desc:"all parameter management"`
-	Loops    *looper.Manager  `view:"no-inline" desc:"contains looper control loops for running sim"`
-	Stats    estats.Stats     `desc:"contains computed statistic values"`
-	Logs     elog.Logs        `desc:"Contains all the logs and information about the logs.'"`
-	Envs     env.Envs         `view:"no-inline" desc:"Environments"`
-	Context  axon.Context     `desc:"axon timing parameters and state"`
+
+	// simulation configuration parameters -- set by .toml config file and / or args
+	Config Config `desc:"simulation configuration parameters -- set by .toml config file and / or args"`
+
+	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
+	Net *axon.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+
+	// [view: inline] all parameter management
+	Params emer.NetParams `view:"inline" desc:"all parameter management"`
+
+	// [view: no-inline] contains looper control loops for running sim
+	Loops *looper.Manager `view:"no-inline" desc:"contains looper control loops for running sim"`
+
+	// contains computed statistic values
+	Stats estats.Stats `desc:"contains computed statistic values"`
+
+	// Contains all the logs and information about the logs.'
+	Logs elog.Logs `desc:"Contains all the logs and information about the logs.'"`
+
+	// [view: no-inline] Environments
+	Envs env.Envs `view:"no-inline" desc:"Environments"`
+
+	// axon timing parameters and state
+	Context axon.Context `desc:"axon timing parameters and state"`
+
+	// [view: inline] netview update parameters
 	ViewUpdt netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
-	Decoder  decoder.SoftMax  `desc:"decoder for better output"`
 
-	GUI      egui.GUI    `view:"-" desc:"manages all the gui elements"`
-	Args     ecmd.Args   `view:"no-inline" desc:"command line args"`
+	// decoder for better output
+	Decoder decoder.SoftMax `desc:"decoder for better output"`
+
+	// [view: -] manages all the gui elements
+	GUI egui.GUI `view:"-" desc:"manages all the gui elements"`
+
+	// [view: -] a list of random seeds to use for each run
 	RndSeeds erand.Seeds `view:"-" desc:"a list of random seeds to use for each run"`
-	Comm     *mpi.Comm   `view:"-" desc:"mpi communicator"`
-	AllDWts  []float32   `view:"-" desc:"buffer of all dwt weight changes -- for mpi sharing"`
-	SumDWts  []float32   `view:"-" desc:"buffer of MPI summed dwt weight changes"`
-}
 
-// this registers this Sim Type and gives it properties that e.g.,
-// prompt for args when calling methods
-var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
+	// [view: -] mpi communicator
+	Comm *mpi.Comm `view:"-" desc:"mpi communicator"`
+
+	// [view: -] buffer of all dwt weight changes -- for mpi sharing
+	AllDWts []float32 `view:"-" desc:"buffer of all dwt weight changes -- for mpi sharing"`
+
+	// [view: -] buffer of MPI summed dwt weight changes
+	SumDWts []float32 `view:"-" desc:"buffer of MPI summed dwt weight changes"`
+}
 
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
-	ss.Sim.Defaults()
+	ss.Config.Defaults()
+	econfig.Config(&ss.Config, "config.toml")
+	if ss.Config.Run.MPI {
+		ss.MPIInit()
+	}
+	if mpi.WorldRank() != 0 {
+		ss.Config.Log.SaveWts = false
+		ss.Config.Log.NetData = false
+	}
 	ss.Net = &axon.Network{}
-	ss.Prjns.New()
-	ss.Params.Params = ParamSets
-	ss.Params.AddNetwork(ss.Net)
-	ss.Params.AddSim(ss)
-	ss.Params.AddNetSize()
+	ss.Params.Config(ParamSets, ss.Config.Params.Sheet, ss.Config.Params.Tag, ss.Net)
 	ss.Stats.Init()
 	ss.RndSeeds.Init(100) // max 100 runs
+	ss.InitRndSeed(0)
 	ss.Context.Defaults()
-	ss.ConfigArgs() // do this first, has key defaults
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Configs
 
 // Config configures all the elements using the standard functions
-func (ss *Sim) Config() {
+func (ss *Sim) ConfigAll() {
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
 	ss.ConfigLogs()
 	ss.ConfigLoops()
+	if ss.Config.Params.SaveAll {
+		ss.Config.Params.SaveAll = false
+		ss.Net.SaveParamsSnapshot(&ss.Params.Params, &ss.Config, ss.Config.Params.Good)
+		os.Exit(0)
+	}
 }
 
 func (ss *Sim) ConfigEnv() {
@@ -176,39 +174,45 @@ func (ss *Sim) ConfigEnv() {
 	trn.Dsc = "training params and state"
 	trn.Defaults()
 	trn.RndSeed = 73
-	trn.NOutPer = ss.Sim.NOutPer
+	trn.NOutPer = ss.Config.Env.NOutPer
 	trn.High16 = false // not useful -- may need more tuning?
 	trn.ColorDoG = true
 	trn.Images.NTestPerCat = 2
 	trn.Images.SplitByItm = true
-	trn.OutRandom = ss.Sim.RndOutPats
+	tst.OutRandom = ss.Config.Env.RndOutPats
 	trn.OutSize.Set(10, 10)
 	trn.Images.SetPath(path, []string{".png"}, "_")
 	trn.OpenConfig()
+	if ss.Config.Env.Env != nil {
+		params.ApplyMap(trn, ss.Config.Env.Env, ss.Config.Debug)
+	}
 	// trn.Images.OpenPath(path, []string{".png"}, "_")
 	// trn.SaveConfig()
 
 	trn.Validate()
-	trn.Trial.Max = ss.Sim.NTrials
+	trn.Trial.Max = ss.Config.Run.NTrials
 
 	tst.Nm = etime.Test.String()
 	tst.Dsc = "testing params and state"
 	tst.ImageFile = trn.ImageFile
 	tst.Defaults()
 	tst.RndSeed = 73
-	tst.NOutPer = ss.Sim.NOutPer
+	trn.NOutPer = ss.Config.Env.NOutPer
 	tst.High16 = trn.High16
 	tst.ColorDoG = trn.ColorDoG
 	tst.Images.NTestPerCat = 2
 	tst.Images.SplitByItm = true
-	tst.OutRandom = ss.Sim.RndOutPats
+	tst.OutRandom = ss.Config.Env.RndOutPats
 	tst.OutSize.Set(10, 10)
 	tst.Test = true
 	tst.Images.SetPath(path, []string{".png"}, "_")
 	tst.OpenConfig()
 	// tst.Images.OpenPath(path, []string{".png"}, "_")
 	// tst.SaveConfig()
-	tst.Trial.Max = ss.Sim.NTrials
+	tst.Trial.Max = ss.Config.Run.NTrials
+	if ss.Config.Env.Env != nil {
+		params.ApplyMap(tst, ss.Config.Env.Env, ss.Config.Debug)
+	}
 	tst.Validate()
 
 	/*
@@ -236,8 +240,8 @@ func (ss *Sim) ConfigEnv() {
 	trn.Images.DeleteCats(confuse)
 	tst.Images.DeleteCats(confuse)
 
-	if ss.Args.Bool("mpi") {
-		if Debug {
+	if ss.Config.Run.MPI {
+		if ss.Config.Debug {
 			mpi.Printf("Did Env MPIAlloc\n")
 		}
 		trn.MPIAlloc()
@@ -253,7 +257,7 @@ func (ss *Sim) ConfigEnv() {
 func (ss *Sim) ConfigNet(net *axon.Network) {
 	ctx := &ss.Context
 	net.InitName(net, "Lvis")
-	net.SetMaxData(ctx, ss.Sim.NData)
+	net.SetMaxData(ctx, ss.Config.Run.NData)
 	net.SetRndSeed(ss.RndSeeds[0]) // init new separate random seed, using run = 0
 
 	trn := ss.Envs.ByMode(etime.Train).(*ImagesEnv)
@@ -270,7 +274,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v2Nu := 8
 	v4Np := 4
 	v4Nu := 10
-	if ss.Sim.SubPools {
+	if ss.Config.Params.SubPools {
 		v2mNp *= 2
 		v2lNp *= 2
 		v2Nu = 6
@@ -356,7 +360,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	te := net.AddLayer4D("TE", 2, 2, 15, 15, axon.SuperLayer)
 
 	var out *axon.Layer
-	if ss.Sim.RndOutPats {
+	if ss.Config.Env.RndOutPats {
 		out = net.AddLayer2D("Output", trn.OutSize.Y, trn.OutSize.X, axon.TargetLayer)
 	} else {
 		// out = net.AddLayer4D("Output", trn.OutSize.Y, trn.OutSize.X, trn.NOutPer, 1, axon.TargetLayer)
@@ -373,7 +377,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	pool1to1 := prjn.NewPoolOneToOne()
 	_ = pool1to1
 
-	pj := &ss.Prjns
+	pj := &ss.Config.Params.Prjns
 
 	var p4x4s2, p2x2s1, p4x4s2send, p2x2s1send, p4x4s2recip, p2x2s1recip, v4toteo, teotov4 prjn.Pattern
 	p4x4s2 = pj.Prjn4x4Skp2
@@ -385,7 +389,7 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	v4toteo = full
 	teotov4 = full
 
-	if ss.Sim.SubPools {
+	if ss.Config.Params.SubPools {
 		p4x4s2 = pj.Prjn4x4Skp2Sub2
 		p2x2s1 = pj.Prjn2x2Skp1Sub2
 		p4x4s2send = pj.Prjn4x4Skp2Sub2Send
@@ -576,13 +580,10 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 
 	out.PlaceBehind(te, 15)
 
-	err := net.Build(ctx)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	net.Build(ctx)
 	net.Defaults()
-	ss.Params.SetObject("Network")
+	net.SetNThreads(ss.Config.Run.NThreads)
+	ss.ApplyParams()
 	net.InitWts(ctx)
 
 	mpi.Println(net.SizeReport(false))
@@ -595,29 +596,36 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	ss.Decoder.Lrate = 0.05 // 0.05 > 0.1 > 0.2 for larger number of objs!
 }
 
+func (ss *Sim) ApplyParams() {
+	ss.Params.SetAll() // first hard-coded defaults
+	if ss.Config.Params.Network != nil {
+		ss.Params.SetNetworkMap(ss.Net, ss.Config.Params.Network)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 	    Init, utils
 
 // Init restarts the run, and initializes everything, including network weights
 // and resets the epoch log table
 func (ss *Sim) Init() {
-	if !ss.Args.Bool("nogui") {
+	if ss.Config.GUI {
 		ss.Stats.SetString("RunName", ss.Params.RunName(0)) // in case user interactively changes tag
 	}
 	ss.Loops.ResetCounters()
-	ss.InitRndSeed()
+	ss.InitRndSeed(0)
 	// ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
 	ss.GUI.StopNow = false
-	ss.Params.SetAll()
+	ss.ApplyParams()
+	ss.Net.GPU.SyncParamsToGPU()
 	ss.NewRun()
 	ss.ViewUpdt.Update()
 	ss.ViewUpdt.RecordSyns()
 }
 
 // InitRndSeed initializes the random seed based on current training run number
-func (ss *Sim) InitRndSeed() {
-	run := ss.Loops.GetLoop(etime.Train, etime.Run).Counter.Cur
+func (ss *Sim) InitRndSeed(run int) {
 	ss.RndSeeds.Set(run)
 	ss.RndSeeds.Set(run, &ss.Net.Rand)
 }
@@ -628,17 +636,20 @@ func (ss *Sim) ConfigLoops() {
 
 	ss.Context.SlowInterval = int32(4 * 100) // decompensate..
 
-	totND := ss.Sim.NData * mpi.WorldSize() // both sources of data parallel
-	totTrls := int(mat32.IntMultipleGE(float32(ss.Sim.NTrials), float32(totND)))
+	totND := ss.Config.Run.NData * mpi.WorldSize() // both sources of data parallel
+	totTrls := int(mat32.IntMultipleGE(float32(ss.Config.Run.NTrials), float32(totND)))
 	trls := totTrls / mpi.WorldSize()
 
-	if ss.Args.Bool("bench") {
-		trls = 10
-	}
+	man.AddStack(etime.Train).
+		AddTime(etime.Run, ss.Config.Run.NRuns).
+		AddTime(etime.Epoch, ss.Config.Run.NEpochs).
+		AddTimeIncr(etime.Trial, trls, ss.Config.Run.NData).
+		AddTime(etime.Cycle, 200)
 
-	man.AddStack(etime.Train).AddTime(etime.Run, 1).AddTime(etime.Epoch, 2000).AddTimeIncr(etime.Trial, trls, ss.Sim.NData).AddTime(etime.Cycle, 200)
-
-	man.AddStack(etime.Test).AddTime(etime.Epoch, 1).AddTimeIncr(etime.Trial, trls, ss.Sim.NData).AddTime(etime.Cycle, 200)
+	man.AddStack(etime.Test).
+		AddTime(etime.Epoch, 1).
+		AddTimeIncr(etime.Trial, trls, ss.Config.Run.NData).
+		AddTime(etime.Cycle, 200)
 
 	axon.LooperStdPhases(man, &ss.Context, ss.Net, 150, 199)            // plus phase timing
 	axon.LooperSimCycleAndLearn(man, ss.Net, &ss.Context, &ss.ViewUpdt) // std algo code
@@ -652,7 +663,7 @@ func (ss *Sim) ConfigLoops() {
 		}
 		ss.MPIWtFmDWt()
 	})
-	if Debug {
+	if ss.Config.Debug {
 		man.GetLoop(etime.Train, etime.Epoch).OnStart.Add("ValidateMPIReplicaConsistency",
 			ss.AssertMPIReplicaConsistency)
 	}
@@ -670,14 +681,14 @@ func (ss *Sim) ConfigLoops() {
 	// Add Testing
 	trainEpoch := man.GetLoop(etime.Train, etime.Epoch)
 	trainEpoch.OnStart.Add("TestAtInterval", func() {
-		if (ss.Sim.TestInterval > 0) && ((trainEpoch.Counter.Cur+1)%ss.Sim.TestInterval == 0) {
+		if (ss.Config.Run.TestInterval > 0) && ((trainEpoch.Counter.Cur+1)%ss.Config.Run.TestInterval == 0) {
 			// Note the +1 so that it doesn't occur at the 0th timestep.
 			ss.TestAll()
 		}
 	})
 
 	trainEpoch.OnEnd.Add("RandCheck", func() {
-		if ss.Args.Bool("mpi") {
+		if ss.Config.Run.MPI {
 			empi.RandCheck(ss.Comm) // prints error message
 		}
 	})
@@ -690,8 +701,8 @@ func (ss *Sim) ConfigLoops() {
 	})
 	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("PCAStats", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
-		if (ss.Sim.PCAInterval > 0) && (trnEpc%ss.Sim.PCAInterval == 0) {
-			if ss.Args.Bool("mpi") {
+		if (ss.Config.Run.PCAInterval > 0) && (trnEpc%ss.Config.Run.PCAInterval == 0) {
+			if ss.Config.Run.MPI {
 				ss.Logs.MPIGatherTableRows(etime.Analyze, etime.Trial, ss.Comm)
 			}
 			axon.PCAStats(ss.Net, &ss.Logs, &ss.Stats)
@@ -704,7 +715,7 @@ func (ss *Sim) ConfigLoops() {
 
 	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("LogAnalyze", func() {
 		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
-		if (ss.Sim.PCAInterval > 0) && (trnEpc%ss.Sim.PCAInterval == 0) {
+		if (ss.Config.Run.PCAInterval > 0) && (trnEpc%ss.Config.Run.PCAInterval == 0) {
 			ss.Log(etime.Analyze, etime.Trial)
 		}
 	})
@@ -721,8 +732,8 @@ func (ss *Sim) ConfigLoops() {
 	// 	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
 	// 	switch trnEpc {
 	// 	case 10:
-	// 		mpi.Printf("NData increase back to specified: %d at: %d\n", ss.Sim.NData, trnEpc)
-	// 		ss.Context.NetIdxs.NData = uint32(ss.Sim.NData)
+	// 		mpi.Printf("NData increase back to specified: %d at: %d\n", ss.Config.Run.NData, trnEpc)
+	// 		ss.Context.NetIdxs.NData = uint32(ss.Config.Run.NData)
 	// 	}
 	// })
 
@@ -734,7 +745,7 @@ func (ss *Sim) ConfigLoops() {
 
 	////////////////////////////////////////////
 	// GUI
-	if ss.Args.Bool("nogui") {
+	if ss.Config.GUI {
 		// man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
 		// 	ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
 		// })
@@ -753,19 +764,11 @@ func (ss *Sim) ConfigLoops() {
 			ss.GUI.Grid("Image").UpdateSig()
 		})
 
-		axon.LooperUpdtNetView(man, &ss.ViewUpdt, ss.Net)
+		axon.LooperUpdtNetView(man, &ss.ViewUpdt, ss.Net, ss.NetViewCounters)
 		axon.LooperUpdtPlots(man, &ss.GUI)
-		for _, m := range man.Stacks {
-			m.Loops[etime.Cycle].OnEnd.Prepend("GUI:CounterUpdt", func() {
-				ss.NetViewCounters()
-			})
-			m.Loops[etime.Trial].OnEnd.Prepend("GUI:CounterUpdt", func() {
-				ss.NetViewCounters()
-			})
-		}
 	}
 
-	if Debug {
+	if ss.Config.Debug {
 		mpi.Println(man.DocString())
 	}
 	ss.Loops = man
@@ -774,7 +777,7 @@ func (ss *Sim) ConfigLoops() {
 // SaveWeights saves weights with filename recording run, epoch
 func (ss *Sim) SaveWeights() {
 	ctrString := ss.Stats.PrintVals([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
-	axon.SaveWeightsIfArgSet(ss.Net, &ss.Args, ctrString, ss.Stats.String("RunName"))
+	axon.SaveWeightsIfConfigSet(ss.Net, ss.Config.Log.SaveWts, ctrString, ss.Stats.String("RunName"))
 }
 
 // CenterPoolIdxs returns the unit indexes for 2x2 center pools
@@ -785,7 +788,7 @@ func (ss *Sim) CenterPoolIdxs(ly emer.Layer, n int) []int {
 	npxact := npx
 	nu := ly.Shape().Dim(2) * ly.Shape().Dim(3)
 	nsp := 1
-	if ss.Sim.SubPools {
+	if ss.Config.Params.SubPools {
 		npy /= 2
 		npx /= 2
 		nsp = 2
@@ -840,7 +843,7 @@ func (ss *Sim) ApplyInputs() {
 // for the new run value
 func (ss *Sim) NewRun() {
 	ctx := &ss.Context
-	ss.InitRndSeed()
+	ss.InitRndSeed(ss.Loops.GetLoop(etime.Train, etime.Run).Counter.Cur)
 	ss.Envs.ByMode(etime.Train).Init(0)
 	ss.Envs.ByMode(etime.Test).Init(0)
 	ctx.Reset()
@@ -937,11 +940,14 @@ func (ss *Sim) StatCounters(di int) {
 	ss.Stats.SetString("TrlResp", ss.Stats.StringDi("TrlResp", di))
 }
 
-func (ss *Sim) NetViewCounters() {
+func (ss *Sim) NetViewCounters(tm etime.Times) {
 	if ss.ViewUpdt.View == nil {
 		return
 	}
 	di := ss.ViewUpdt.View.Di
+	if tm == etime.Trial {
+		ss.TrialStats(di) // get trial stats for current di
+	}
 	ss.StatCounters(di)
 	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "Di", "TrlCat", "TrlResp", "TrialName", "Cycle", "UnitErr", "TrlErr", "CorSim"})
 }
@@ -981,7 +987,7 @@ func (ss *Sim) TrialStats(di int) {
 	}
 
 	trnEpc := ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Cur
-	if trnEpc > ss.Sim.ConfusionEpc {
+	if trnEpc > ss.Config.Run.ConfusionEpc {
 		ss.Stats.Confusion.Incr(curCatIdx, rsp)
 	}
 
@@ -1023,7 +1029,7 @@ func (ss *Sim) ConfigLogs() {
 	ss.ConfigLogItems()
 
 	// Copy over Testing items
-	ss.Logs.AddCopyFromFloatItems(etime.Train, etime.Epoch, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr", "PctErr2", "DecErr", "DecErr2")
+	ss.Logs.AddCopyFromFloatItems(etime.Train, []etime.Times{etime.Epoch, etime.Run}, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr", "PctErr2", "DecErr", "DecErr2")
 
 	ss.ConfigActRFs()
 
@@ -1198,7 +1204,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 		ctx.Mode = mode // Also set specifically in a Loop callback.
 	}
 
-	if ss.Args.Bool("mpi") && time == etime.Epoch { // gather data from trial level
+	if ss.Config.Run.MPI && time == etime.Epoch { // gather data from trial level
 		ss.Logs.MPIGatherTableRows(mode, etime.Trial, ss.Comm)
 	}
 
@@ -1223,7 +1229,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 
 	if time == etime.Epoch {
 		trnEpc := ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Cur
-		if trnEpc > ss.Sim.ConfusionEpc && trnEpc%ss.Sim.ConfusionEpc == 0 {
+		if trnEpc > ss.Config.Run.ConfusionEpc && trnEpc%ss.Config.Run.ConfusionEpc == 0 {
 			ss.Stats.Confusion.Probs()
 			fnm := ecmd.LogFileName("trn_conf", ss.Net.Name(), ss.Stats.String("RunName"))
 			ss.Stats.Confusion.SaveCSV(gi.FileName(fnm))
@@ -1333,7 +1339,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		},
 	})
 	ss.GUI.FinalizeGUI(false)
-	if GPU {
+	if ss.Config.Run.GPU {
 		ss.Net.ConfigGPUwithGUI(&ss.Context)
 		gi.SetQuitCleanFunc(func() {
 			ss.Net.GPU.Destroy()
@@ -1346,27 +1352,6 @@ func (ss *Sim) RunGUI() {
 	ss.Init()
 	win := ss.ConfigGui()
 	win.StartEventLoop()
-}
-
-func (ss *Sim) ConfigArgs() {
-	ss.Args.Init()
-	ss.Args.AddStd()
-	ss.Args.AddInt("threads", 0, "number of threads per node")
-	ss.Args.AddBool("bench", false, "run benchmarking -- sets trials = 10 and reports func timing")
-	ss.Args.AddInt("ndata", 2, "number of data items to run in parallel")
-	ss.Args.SetInt("epochs", 2000)
-	ss.Args.AddInt("trials", 512, "number of trials per epoch -- must be evenly divisible by mpi nodes")
-	ss.Args.SetInt("runs", 1)
-	ss.Args.AddBool("mpi", false, "if set, use MPI for distributed computation")
-	ss.Args.Parse() // always parse
-	if ss.Args.Bool("mpi") {
-		ss.MPIInit()
-	}
-	if len(os.Args) > 1 {
-		ss.Args.SetBool("nogui", true) // by definition if here
-		ss.Sim.NData = ss.Args.Int("ndata")
-		mpi.Printf("Set NData to: %d\n", ss.Sim.NData)
-	}
 }
 
 // These props register methods so they can be called through gui with arg prompts
@@ -1385,23 +1370,32 @@ var SimProps = ki.Props{
 }
 
 func (ss *Sim) RunNoGUI() {
-	ss.Args.ProcStd(&ss.Params)
-	if mpi.WorldRank() == 0 {
-		ss.Args.ProcStdLogs(&ss.Logs, &ss.Params, ss.Net.Name())
+	if ss.Config.Params.Note != "" {
+		mpi.Printf("Note: %s\n", ss.Config.Params.Note)
 	}
-	if ss.Args.Bool("triallog") && mpi.WorldRank() > 0 {
-		fnm := ecmd.LogFileName(fmt.Sprintf("trl_%d", mpi.WorldRank()), ss.Net.Name(), ss.Params.RunName(ss.Args.Int("run")))
+	if ss.Config.Log.SaveWts {
+		mpi.Printf("Saving final weights per run\n")
+	}
+	runName := ss.Params.RunName(ss.Config.Run.Run)
+	ss.Stats.SetString("RunName", runName) // used for naming logs, stats, etc
+	netName := ss.Net.Name()
+
+	if mpi.WorldRank() == 0 {
+		elog.SetLogFile(&ss.Logs, ss.Config.Log.Epoch, etime.Train, etime.Epoch, "epc", netName, runName)
+		elog.SetLogFile(&ss.Logs, ss.Config.Log.Run, etime.Train, etime.Run, "run", netName, runName)
+		elog.SetLogFile(&ss.Logs, ss.Config.Log.TestEpoch, etime.Test, etime.Epoch, "tst_epc", netName, runName)
+	}
+	// Special cases for mpi per-node saving of trial data
+	if ss.Config.Log.Trial {
+		fnm := ecmd.LogFileName(fmt.Sprintf("trl_%d", mpi.WorldRank()), netName, runName)
 		ss.Logs.SetLogFile(etime.Train, etime.Trial, fnm)
 	}
-
-	ss.Args.SetBool("nogui", true)                                       // by definition if here
-	ss.Stats.SetString("RunName", ss.Params.RunName(ss.Args.Int("run"))) // used for naming logs, stats, etc
-
-	if mpi.WorldRank() != 0 {
-		ss.Args.SetBool("wts", false)
+	if ss.Config.Log.TestTrial {
+		fnm := ecmd.LogFileName(fmt.Sprintf("tst_trl_%d", mpi.WorldRank()), netName, runName)
+		ss.Logs.SetLogFile(etime.Test, etime.Trial, fnm)
 	}
 
-	netdata := ss.Args.Bool("netdata")
+	netdata := ss.Config.Log.NetData
 	if netdata {
 		mpi.Printf("Saving NetView data from testing\n")
 		ss.GUI.InitNetData(ss.Net, 200)
@@ -1409,53 +1403,15 @@ func (ss *Sim) RunNoGUI() {
 
 	ss.Init()
 
-	runs := ss.Args.Int("runs")
-	run := ss.Args.Int("run")
-	mpi.Printf("Running %d Runs starting at %d\n", runs, run)
-	rc := &ss.Loops.GetLoop(etime.Train, etime.Run).Counter
-	rc.Set(run)
-	rc.Max = run + runs
-	ss.Loops.GetLoop(etime.Train, etime.Epoch).Counter.Max = ss.Args.Int("epochs")
-	if ss.Args.Bool("gpu") {
-		// vgpu.Debug = true
-		os.Setenv("VK_DEVICE_SELECT", fmt.Sprintf("%d", mpi.WorldRank()))
-		ss.Net.ConfigGPUnoGUI(&ss.Context) // must happen after gui or no gui
-		// ss.Context.SynapseCaVars.SetSynapseOuter(int(ss.Context.NetIdxs.MaxData))
-		// ss.Net.Ctx.SynapseCaVars.SetSynapseOuter(int(ss.Context.NetIdxs.MaxData))
+	mpi.Printf("Running %d Runs starting at %d\n", ss.Config.Run.NRuns, ss.Config.Run.Run)
+	ss.Loops.GetLoop(etime.Train, etime.Run).Counter.SetCurMaxPlusN(ss.Config.Run.Run, ss.Config.Run.NRuns)
+
+	if ss.Config.Run.GPU {
+		ss.Net.ConfigGPUnoGUI(&ss.Context)
 	}
-	thr := ss.Args.Int("threads")
-	runtime.GOMAXPROCS(thr)
-	ss.Net.SetNThreads(thr)
 	mpi.Printf("Set NThreads to: %d\n", ss.Net.NThreads)
 
-	ss.NewRun()
-
-	bench := ss.Args.Bool("bench")
-	tmr := timer.Time{}
-	tmr.Start()
-
-	net := ss.Net
-
-	if bench {
-		net.RecFunTimes = bench // this determines whether GPU waits or not
-		runtime.GOMAXPROCS(4)
-		net.SetNThreads(4)
-	}
-
-	if false {
-		ss.Loops.Step(etime.Train, 1, etime.Trial) // get past NewRun
-		wtsFile := "images/Lvis_Base_000_00999.wts.gz"
-		net.OpenWtsJSON(gi.FileName(wtsFile))
-		mpi.Printf("loaded weights: %s\n", wtsFile)
-	}
-
 	ss.Loops.Run(etime.Train)
-
-	if bench {
-		tmr.Stop()
-		fmt.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
-		net.TimerReport()
-	}
 
 	ss.Logs.CloseLogFiles()
 
@@ -1463,8 +1419,41 @@ func (ss *Sim) RunNoGUI() {
 		ss.GUI.SaveNetData(ss.Stats.String("RunName"))
 	}
 
-	ss.Net.GPU.Destroy()
+	ss.Net.GPU.Destroy() // safe even if no GPU
 	ss.MPIFinalize()
+
+	//////////////
+
+	// bench := ss.Args.Bool("bench")
+	// tmr := timer.Time{}
+	// tmr.Start()
+	//
+	// net := ss.Net
+	//
+	// if bench {
+	// 	net.RecFunTimes = bench // this determines whether GPU waits or not
+	// 	runtime.GOMAXPROCS(4)
+	// 	net.SetNThreads(4)
+	// }
+	//
+	// if false {
+	// 	ss.Loops.Step(etime.Train, 1, etime.Trial) // get past NewRun
+	// 	wtsFile := "images/Lvis_Base_000_00999.wts.gz"
+	// 	net.OpenWtsJSON(gi.FileName(wtsFile))
+	// 	mpi.Printf("loaded weights: %s\n", wtsFile)
+	// }
+
+	// if bench {
+	// 	tmr.Stop()
+	// 	fmt.Printf("Total Time: %6.3g\n", tmr.TotalSecs())
+	// 	net.TimerReport()
+	// }
+	//
+	// ss.Logs.CloseLogFiles()
+	//
+	// if netdata {
+	// 	ss.GUI.SaveNetData(ss.Stats.String("RunName"))
+	// }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1477,7 +1466,7 @@ func (ss *Sim) MPIInit() {
 	ss.Comm, err = mpi.NewComm(nil) // use all procs
 	if err != nil {
 		log.Println(err)
-		ss.Args.SetBool("mpi", false)
+		ss.Config.Run.MPI = false
 	} else {
 		mpi.Printf("MPI running on %d procs\n", mpi.WorldSize())
 	}
@@ -1485,7 +1474,7 @@ func (ss *Sim) MPIInit() {
 
 // MPIFinalize finalizes MPI
 func (ss *Sim) MPIFinalize() {
-	if ss.Args.Bool("mpi") {
+	if ss.Config.Run.MPI {
 		mpi.Finalize()
 	}
 }
@@ -1501,7 +1490,7 @@ func (ss *Sim) CollectDWts(net *axon.Network) {
 // sequences of inputs.
 func (ss *Sim) MPIWtFmDWt() {
 	ctx := &ss.Context
-	if ss.Args.Bool("mpi") {
+	if ss.Config.Run.MPI {
 		ss.CollectDWts(ss.Net)
 		ndw := len(ss.AllDWts)
 		if len(ss.SumDWts) != ndw {
