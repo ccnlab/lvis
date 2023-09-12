@@ -745,7 +745,7 @@ func (ss *Sim) ConfigLoops() {
 
 	////////////////////////////////////////////
 	// GUI
-	if ss.Config.GUI {
+	if !ss.Config.GUI {
 		// man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
 		// 	ss.GUI.NetDataRecord(ss.ViewUpdt.Text)
 		// })
@@ -1263,7 +1263,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	nv := ss.GUI.AddNetView("NetView")
 	nv.Params.MaxRecs = 300
 	nv.SetNet(ss.Net)
-	ss.ViewUpdt.Config(nv, etime.Phase, etime.Phase)
+	ss.ViewUpdt.Config(nv, etime.Trial, etime.Trial)
 	ss.GUI.ViewUpdt = &ss.ViewUpdt
 	ss.ConfigNetView(nv)
 
@@ -1482,7 +1482,6 @@ func (ss *Sim) MPIFinalize() {
 // CollectDWts collects the weight changes from all synapses into AllDWts
 // includes all other long adapting factors too: DTrgAvg, ActAvg, etc
 func (ss *Sim) CollectDWts(net *axon.Network) {
-	net.CollectDWts(&ss.Context, &ss.AllDWts)
 }
 
 // MPIWtFmDWt updates weights from weight changes, using MPI to integrate
@@ -1491,7 +1490,7 @@ func (ss *Sim) CollectDWts(net *axon.Network) {
 func (ss *Sim) MPIWtFmDWt() {
 	ctx := &ss.Context
 	if ss.Config.Run.MPI {
-		ss.CollectDWts(ss.Net)
+		ss.Net.CollectDWts(ctx, &ss.AllDWts)
 		ndw := len(ss.AllDWts)
 		if len(ss.SumDWts) != ndw {
 			ss.SumDWts = make([]float32, ndw)

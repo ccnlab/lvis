@@ -48,8 +48,8 @@ type ParamConfig struct {
 	// Name of the JSON file to input saved parameters from.
 	File string `nest:"+" desc:"Name of the JSON file to input saved parameters from."`
 
-	// if true, organize layers and connectivity with 2x2 sub-pools within each topological pool
-	SubPools bool `desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
+	// [def: true] if true, organize layers and connectivity with 2x2 sub-pools within each topological pool
+	SubPools bool `def:"true" desc:"if true, organize layers and connectivity with 2x2 sub-pools within each topological pool"`
 
 	// Save a snapshot of all current param and config settings in a directory named params_<datestamp> (or _good if Good is true), then quit -- useful for comparing to later changes and seeing multiple views of current params
 	SaveAll bool `nest:"+" desc:"Save a snapshot of all current param and config settings in a directory named params_<datestamp> (or _good if Good is true), then quit -- useful for comparing to later changes and seeing multiple views of current params"`
