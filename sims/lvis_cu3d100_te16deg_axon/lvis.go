@@ -603,6 +603,9 @@ func (ss *Sim) ConfigNet(net *axon.Network) {
 	// layers := []emer.Layer{teo16, teo8}
 	ss.Decoder.InitLayer(len(trn.Images.Cats), layers)
 	ss.Decoder.Lrate = 0.05 // 0.05 > 0.1 > 0.2 for larger number of objs!
+	if ss.Config.Run.MPI {
+		ss.Decoder.Comm = ss.Comm
+	}
 }
 
 func (ss *Sim) ApplyParams() {
@@ -1004,7 +1007,11 @@ func (ss *Sim) TrialStats(di int) {
 	decIdx := ss.Decoder.Decode("ActM", di)
 	ss.Stats.SetInt("TrlDecRespIdx", decIdx)
 	if ctx.Mode == etime.Train {
-		ss.Decoder.Train(curCatIdx)
+		if ss.Config.Run.MPI {
+			ss.Decoder.TrainMPI(curCatIdx)
+		} else {
+			ss.Decoder.Train(curCatIdx)
+		}
 	}
 	decErr := float64(0)
 	if decIdx != curCatIdx {
