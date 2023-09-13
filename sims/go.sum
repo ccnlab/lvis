@@ -60,8 +60,8 @@ github.com/dlclark/regexp2 v1.8.1 h1:6Lcdwya6GjPUNsBct8Lg/yRPwMhABj269AAzdGSiR+0
 github.com/dlclark/regexp2 v1.8.1/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/emer/axon v1.8.18 h1:0OU6VRr0kBL89hS0D2IxXjwbl9SsCFE5HDEEXVcfBlc=
 github.com/emer/axon v1.8.18/go.mod h1:ox4NfM9VeLarn4gKM5hWxuRa+t+WqPDlfBCdcNvvErI=
-github.com/emer/emergent v1.4.30-0.20230913000104-0dd9e974f593 h1:tm16U8yYm0koEI5IS/QnhFzfDa8AthoiOzQ991Sei/0=
-github.com/emer/emergent v1.4.30-0.20230913000104-0dd9e974f593/go.mod h1:ILxelktdMeqzAHj4wVf7jLc1j91hPuEK72XZCDPxPS8=
+github.com/emer/emergent v1.4.30 h1:F8ZYEtWaQu94KRp0V1ByJr4UU4WVi78IMh8J3mN4H8w=
+github.com/emer/emergent v1.4.30/go.mod h1:ILxelktdMeqzAHj4wVf7jLc1j91hPuEK72XZCDPxPS8=
 github.com/emer/empi v1.0.22 h1:FPrM68LNQYydODqgs6ZddVEGRBOdFOrbUrLhIsn3eL8=
 github.com/emer/empi v1.0.22/go.mod h1:wr0eFV/S2/sAyowA7/8jGmK5AjiWW4saT5QMQuw87GY=
 github.com/emer/etable v1.1.24 h1:lxcZFalEERTQJpbAR0nNfyM4+K/ku2H+Nl6y4cmDHyE=
