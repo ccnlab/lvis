@@ -55,7 +55,11 @@ Note: runs 512 trials per epoch to get better data. Command:
 
 * MPI 4, GPU, NData 8:      197   384    vs 1137/4 = 284 for linear 4x; vs 450 for long run
 * MPI 4, GPU, NData 16:     160   313    vs 1053/4 = 263 for linear 4x; vs 350 for long run
+
+Replication run of full sim running on cluster is also now significantly faster -- the MPI seems to "warm up" over time and does better than the benchmark.
  
+* ndata=16,mpi=4 = 64x dp = 285 pertrlmsec
+
 
 # 1.8.0 Memory reorganization
 

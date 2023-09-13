@@ -23,8 +23,7 @@ import getpass
 # key job parameters here, used in writing the job.sbatch
 
 # max number of hours -- slurm will terminate if longer, so be generous
-# 2d = 48, 3d = 72, 4d = 96, 5d = 120, 6d = 144, 7d = 168
-# full run taking about 60 hrs, so use 72
+# 2d = 48, 3d = 72, 4d = 96, 5d = 120, 6d = 144, 7d = 168, 10d = 240
 hours = 240
 
 # memory per CPU, which is only way to allocate on hpc2 (otherwise per node and doesn't fit)
@@ -32,27 +31,31 @@ hours = 240
 # on a prior job, and divide that by number of tasks
 # 7 is max per node x 16 nodes x 2 cpus
 # full orig requires 7G @ 2 CPU
-mem = "5G" # 3G @ 2 thr is minimum, 5G reserves a node and is sig faster
+mem = "5G" # 2G @ 2 thr works, 5G reserves a node and is sig faster
 
-# number of mpi "tasks" (procs in MPI terminology)
-tasks = 16
+# tasks = number of mpi "tasks" (procs in MPI terminology)
+# cpus_per_task = number of cpu cores (threads) per task
+# tasks_per_node = how to allocate tasks within compute nodes -- should be = tasks
 
-# number of cpu cores (threads) per task
-cpus_per_task = 2
+# cpu settings;
+# gpus_per_task = 0
+# partition = "high"
+# tasks = 4
+# tasks_per_node = 4
+# cpus_per_task = 8
 
-# how to allocate tasks within compute nodes
-# cpus_per_task * tasks_per_node <= total cores per node
-tasks_per_node = 16
+# gpu settings
+gpus_per_task = 1
+partition = "gpu-ccnl"
+tasks = 4
+tasks_per_node = 4
+cpus_per_task = 4
+
 
 # qos is the queue name
 qos = "oreillylab"
-
 # qos short is short name for queue if name is cutoff
 qos_short = "oreillyl"
-
-# in other cases, you might have to specify a partition
-# partition = "low"
-
 
 ##############################################################
 # main vars
@@ -149,9 +152,16 @@ def write_sbatch():
     f.write("#SBATCH --time=" + str(hours) + ":00:00\n") 
     f.write("#SBATCH --ntasks=" + str(tasks) + "\n")
     f.write("#SBATCH --cpus-per-task=" + str(cpus_per_task) + "\n")
+    f.write("#SBATCH --gpus-per-task=" + str(gpus_per_task) + "\n")
     f.write("#SBATCH --ntasks-per-node=" + str(tasks_per_node) + "\n")
+    f.write("#SBATCH --hint=memory_bound\n")
+    # f.write("#SBATCH --nodelist=agate-16\n")
+    # f.write("#SBATCH --exclude=agate-[12-22]\n")
+    # f.write("#SBATCH --hint=nomultithread\n")
+    # f.write("#SBATCH --ntasks-per-core=1\n")
+    # f.write("#SBATCH --threads-per-core=2\n") # 2 > 1  but worse than nothing
     # f.write("#SBATCH --qos=" + qos + "\n")
-    # f.write("#SBATCH --partition=" + partition + "\n")
+    f.write("#SBATCH --partition=" + partition + "\n")
     f.write("#SBATCH --output=job.out\n")
     f.write("#SBATCH --mail-type=FAIL\n")
     f.write("#SBATCH --mail-user=" + grunt_user + "\n")
@@ -159,16 +169,20 @@ def write_sbatch():
     # f.write("#SBATCH --export=NONE\n")
     # f.write("unset SLURM_EXPORT_ENV\n")
     f.write("\n\n")
-    f.write("go build -mod=mod -tags mpi\n")
+    f.write("export GOMAXPROCS="+ str(cpus_per_task) + "\n")
+    f.write("go build -v -mod=mod -tags mpi\n")
+    # f.write("go build\n")
     f.write("/bin/rm images\n")
     f.write("ln -s $HOME/ccn_images images\n")
+    # f.write("/usr/bin/env\n")
     f.write("date -u '+%Y-%m-%d %T %Z' > job.start\n")
-    f.write("mpirun ./" + grunt_proj + " --nogui " + args + "\n")
+    f.write("mpirun ./" + grunt_proj + " -no-gui " + args + "\n")
     f.write("date -u '+%Y-%m-%d %T %Z' > job.end\n")
     f.flush()
     f.close()
     
 def submit():
+    result = ""
     if os.path.isfile('job.sbatch'):
         print("Error: job.sbatch exists -- attempt to submit job twice!")
         return
@@ -187,9 +201,10 @@ def submit():
 def results():
     # important: update this to include any results you want to add to results repo
     print("\n".join(glob.glob('*_epc.*sv')))
-    print("\n".join(glob.glob('*_trl.*sv')))
+    print("\n".join(glob.glob('*_trl*.*sv')))
     print("\n".join(glob.glob('*_run.*sv')))
     print("\n".join(glob.glob('*_TEsim.tsv')))
+    print("\n".join(glob.glob('*_conf.tsv')))
 
 def status():
     slid = read_string("job.slurmid")
